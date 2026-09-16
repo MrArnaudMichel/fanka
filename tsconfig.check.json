@@ -1,0 +1,13 @@
+{
+  // The prescribed `tsc --noEmit -p tsconfig.json` only follows Nuxt's project
+  // references, none of which include `core/` or `test/` — so nothing there
+  // has ever been type-checked by that command. This config extends the same
+  // generated shared settings (strict, noUncheckedIndexedAccess, the `~core`
+  // path alias) but points `include` at the files that command was supposed
+  // to cover.
+  "extends": "./.nuxt/tsconfig.shared.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "dom", "dom.iterable"]
+  },
+  "include": ["core/**/*.ts", "test/**/*.ts"]
+}
