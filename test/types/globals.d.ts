@@ -12,6 +12,8 @@ export {};
 declare global {
   const ref: typeof import('vue').ref;
   const readonly: typeof import('vue').readonly;
+  const computed: typeof import('vue').computed;
+  const onScopeDispose: typeof import('vue').onScopeDispose;
 
   interface ImportMeta {
     readonly client?: boolean;
