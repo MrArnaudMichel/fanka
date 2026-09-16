@@ -9,6 +9,7 @@ import type { Card, Deck, PartOfSpeech } from '~core/db/schema';
 export const SEED_VERSION = 1;
 
 interface SeedCard {
+  id: string;
   hanzi: string;
   pinyin: string;
   translation: string;
@@ -31,12 +32,15 @@ interface SeedDeck {
 const SEEDS: SeedDeck[] = [hsk1 as SeedDeck];
 
 /**
- * Ids are derived from the deck and the characters rather than random, so a
- * second run recognises a card it already created and leaves the learner's
- * edits to it alone.
+ * Ids are derived from the deck and each entry's own stable `id` field,
+ * never from the hanzi. A hanzi-derived id would mint a new id — and so a
+ * duplicate, orphaning the old row — the moment a later `SEED_VERSION`
+ * corrects a typo in the seed source's own headword. The entry's `id` never
+ * changes across such a correction, so the existing card is still found and
+ * the per-card guard below still recognises it as already created.
  */
-function seedCardId(deckId: string, hanzi: string): string {
-  return `${deckId}:${hanzi}`;
+function seedCardId(deckId: string, entryId: string): string {
+  return `${deckId}:${entryId}`;
 }
 
 export async function seedIfNeeded(now: number): Promise<{ seeded: boolean; deckCount: number }> {
@@ -58,7 +62,7 @@ export async function seedIfNeeded(now: number): Promise<{ seeded: boolean; deck
     if (!(await decks.get(deck.id))) await decks.put(deck);
 
     for (const entry of seed.cards) {
-      const id = seedCardId(seed.id, entry.hanzi);
+      const id = seedCardId(seed.id, entry.id);
       if (await cards.get(id)) continue;
 
       const pinyin = parsePinyin(entry.pinyin);
