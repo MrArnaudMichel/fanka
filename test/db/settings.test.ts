@@ -31,4 +31,12 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS.algorithm).toBe('FSRS');
     expect(DEFAULT_SETTINGS.desiredRetention).toBe(0.9);
   });
+
+  it('merges a partial reminders object field by field', async () => {
+    await db.settings.put({ key: 'settings', value: { reminders: { hour: 8 } } });
+    const loaded = await loadSettings();
+    expect(loaded.reminders.hour).toBe(8);
+    expect(loaded.reminders.enabled).toBe(DEFAULT_SETTINGS.reminders.enabled);
+    expect(loaded.reminders.minute).toBe(DEFAULT_SETTINGS.reminders.minute);
+  });
 });

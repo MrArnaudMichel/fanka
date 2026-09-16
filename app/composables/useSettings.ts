@@ -3,10 +3,10 @@ import { DEFAULT_SETTINGS, type Settings, loadSettings, saveSettings } from '~co
 const settings = ref<Settings>({ ...DEFAULT_SETTINGS });
 const ready = ref(false);
 
-// Guards the initial load so concurrent calls to useSettings() in the same
+// Dedupes the initial load so concurrent calls to useSettings() in the same
 // tick (e.g. two components mounting together) share one Dexie read instead
-// of racing several. Without this, a later read resolving after an update()
-// call would overwrite the freshly saved value with stale data.
+// of racing several. That alone does not order the load against a concurrent
+// update() — see the `await loading` below for that half of the guarantee.
 let loading: Promise<void> | null = null;
 
 /**
@@ -23,6 +23,12 @@ export function useSettings() {
   }
 
   async function update(patch: Partial<Settings>): Promise<void> {
+    // Wait for the initial load to settle before applying a patch. Without
+    // this, a patch applied while the first read is still in flight (nothing
+    // stops a caller from calling update() before `ready` flips) can be
+    // overwritten when that slow read finally resolves and unconditionally
+    // assigns its now-stale snapshot to settings.value.
+    if (loading) await loading;
     settings.value = await saveSettings(patch);
     applyTheme(settings.value);
   }
