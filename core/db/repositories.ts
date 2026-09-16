@@ -10,15 +10,26 @@ function outboxEntry(entity: OutboxEntry['entity'], entityId: string, op: Outbox
   return { id: uid(), entity, entityId, op, at };
 }
 
-/**
- * `Review.before` is typed as `SrsState`, which has no `updatedAt`, but a
- * caller that snapshots a real `Item` before mutating it (the documented,
- * exact-undo usage) still carries that field on the object at runtime. This
- * reads it back without widening the public type or resorting to `any`.
- */
-function capturedUpdatedAt(before: SrsState): number | undefined {
-  const withUpdatedAt = before as SrsState & { updatedAt?: unknown };
-  return typeof withUpdatedAt.updatedAt === 'number' ? withUpdatedAt.updatedAt : undefined;
+/** Indexes bulkGet results by id, dropping the gaps for keys that missed. */
+function byId<T extends { id: string }>(rows: (T | undefined)[]): Map<string, T> {
+  const map = new Map<string, T>();
+  for (const row of rows) {
+    if (row) map.set(row.id, row);
+  }
+  return map;
+}
+
+/** An item is visible only while both its card and that card's deck are live. */
+function cardVisible(card: Card | undefined, decksById: Map<string, Deck>): boolean {
+  if (!card || card.deletedAt !== null) return false;
+  const deck = decksById.get(card.deckId);
+  return deck !== undefined && deck.deletedAt === null;
+}
+
+/** decksById for the distinct decks referenced by the given cards. */
+async function decksByIdFor(cardsById: Map<string, Card>): Promise<Map<string, Deck>> {
+  const deckIds = [...new Set([...cardsById.values()].map((c) => c.deckId))];
+  return byId(await db.decks.bulkGet(deckIds));
 }
 
 export const decks = {
@@ -79,20 +90,34 @@ export const items = {
 
   forCard: (cardId: string) => db.items.where('cardId').equals(cardId).toArray(),
 
-  /** Due, already introduced, not suspended — soonest first. */
+  /**
+   * Due, already introduced, not suspended, and belonging to a card and deck
+   * that are both still live — soonest first. A soft-deleted card or deck
+   * must never surface a review, so this always re-checks both, not just
+   * `suspended`.
+   */
   async due(now: number): Promise<Item[]> {
-    const candidates = await db.items.where('due').belowOrEqual(now).toArray();
+    const candidates = (await db.items.where('due').belowOrEqual(now).toArray()).filter(
+      (i) => !i.suspended && i.state !== 'new',
+    );
+    const cardsById = byId(await db.cards.bulkGet(candidates.map((i) => i.cardId)));
+    const decksById = await decksByIdFor(cardsById);
     return candidates
-      .filter((i) => !i.suspended && i.state !== 'new')
+      .filter((i) => cardVisible(cardsById.get(i.cardId), decksById))
       .sort((a, b) => a.due - b.due);
   },
 
-  /** Never-seen items, oldest card first, so a deck is learned in its order. */
+  /**
+   * Never-seen items, oldest card first, so a deck is learned in its order.
+   * Excludes items whose card or deck is soft-deleted, same as `due()`.
+   */
   async fresh(limit: number): Promise<Item[]> {
-    const fresh = (await db.items.where('state').equals('new').toArray()).filter((i) => !i.suspended);
-    const byCard = new Map((await db.cards.bulkGet(fresh.map((i) => i.cardId))).filter(Boolean).map((c) => [c!.id, c!]));
-    return fresh
-      .sort((a, b) => (byCard.get(a.cardId)?.createdAt ?? 0) - (byCard.get(b.cardId)?.createdAt ?? 0))
+    const candidates = (await db.items.where('state').equals('new').toArray()).filter((i) => !i.suspended);
+    const cardsById = byId(await db.cards.bulkGet(candidates.map((i) => i.cardId)));
+    const decksById = await decksByIdFor(cardsById);
+    return candidates
+      .filter((i) => cardVisible(cardsById.get(i.cardId), decksById))
+      .sort((a, b) => (cardsById.get(a.cardId)?.createdAt ?? 0) - (cardsById.get(b.cardId)?.createdAt ?? 0))
       .slice(0, limit);
   },
 };
@@ -107,29 +132,36 @@ export interface RecordedReview {
 
 export const reviews = {
   async record({ item, before, grade, reviewedAt, durationMs }: RecordedReview): Promise<string> {
-    const review: Review = { id: uid(), itemId: item.id, grade, reviewedAt, durationMs, before };
+    const reviewId = uid();
     await db.transaction('rw', db.items, db.reviews, db.outbox, async () => {
+      // The caller's `before` is typed as `SrsState`, which has no
+      // `updatedAt`, and a caller may legally pass a bare SrsState (not a
+      // previously-fetched Item) — so it is never a trustworthy source for
+      // the item's real prior `updatedAt`. The item's row, read here before
+      // this write touches it, is the true previous state and is what gets
+      // persisted. If the row is somehow absent (the item was deleted
+      // concurrently), fall back to the incoming `item.updatedAt`.
+      const priorItem = await db.items.get(item.id);
+      const review: Review = {
+        id: reviewId,
+        itemId: item.id,
+        grade,
+        reviewedAt,
+        durationMs,
+        before: { ...before, updatedAt: priorItem?.updatedAt ?? item.updatedAt },
+      };
       await db.items.put({ ...item, updatedAt: reviewedAt });
       await db.reviews.put(review);
       await db.outbox.put(outboxEntry('item', item.id, 'put', reviewedAt));
-      await db.outbox.put(outboxEntry('review', review.id, 'put', reviewedAt));
+      await db.outbox.put(outboxEntry('review', reviewId, 'put', reviewedAt));
     });
-    return review.id;
+    return reviewId;
   },
 
   /**
-   * Undo is exact: the previous scheduling state was captured in the review
-   * row, so restoring it is a copy rather than a recalculation.
-   *
-   * `before` is typed as `SrsState`, but every real caller derives it from a
-   * previously-fetched `Item` (as `reviews.record` requires), which still
-   * carries its original `updatedAt` at runtime even though the type doesn't
-   * say so. Preferring that value over the `lastReview` fallback is what
-   * makes the restore exact rather than merely equal-by-coincidence: a bare
-   * `lastReview ?? item.updatedAt` heuristic restores the wrong `updatedAt`
-   * whenever a review's `reviewedAt` differs from the item's `updatedAt` at
-   * the time it was last touched and the item had never been reviewed
-   * before (`lastReview === null`).
+   * Undo is exact: the previous scheduling state, including the item's real
+   * prior `updatedAt`, was captured in the review row by `record()`, so
+   * restoring it is a copy rather than a recalculation or a heuristic.
    */
   async undo(reviewId: string): Promise<void> {
     await db.transaction('rw', db.items, db.reviews, db.outbox, async () => {
@@ -137,8 +169,7 @@ export const reviews = {
       if (!review) return;
       const item = await db.items.get(review.itemId);
       if (item) {
-        const restoredUpdatedAt = capturedUpdatedAt(review.before) ?? review.before.lastReview ?? item.updatedAt;
-        await db.items.put({ ...item, ...review.before, updatedAt: restoredUpdatedAt });
+        await db.items.put({ ...item, ...review.before });
         await db.outbox.put(outboxEntry('item', item.id, 'put', Date.now()));
       }
       await db.reviews.delete(reviewId);

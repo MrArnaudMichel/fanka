@@ -83,6 +83,38 @@ describe('items', () => {
     const fresh = await items.fresh(10);
     expect(fresh.map((i) => i.cardId)).toEqual(['c1', 'c2']);
   });
+
+  it('excludes an item whose card is soft-deleted from due', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+    await items.put({ ...(await items.get(id))!, state: 'review', due: NOW - DAY });
+    await db.cards.put({ ...(await cards.get('c1'))!, deletedAt: NOW });
+    expect(await items.due(NOW)).toEqual([]);
+  });
+
+  it('excludes an item whose card is soft-deleted from fresh', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    await db.cards.put({ ...(await cards.get('c1'))!, deletedAt: NOW });
+    expect(await items.fresh(10)).toEqual([]);
+  });
+
+  it('excludes an item whose deck is soft-deleted from due, even though the card itself is not', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+    await items.put({ ...(await items.get(id))!, state: 'review', due: NOW - DAY });
+    await decks.put({ ...(await decks.get('d1'))!, deletedAt: NOW });
+    expect(await items.due(NOW)).toEqual([]);
+  });
+
+  it('excludes an item whose deck is soft-deleted from fresh, even though the card itself is not', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    await decks.put({ ...(await decks.get('d1'))!, deletedAt: NOW });
+    expect(await items.fresh(10)).toEqual([]);
+  });
 });
 
 describe('reviews', () => {
@@ -111,5 +143,29 @@ describe('reviews', () => {
 
     expect(await items.get(id)).toEqual(before);
     expect(await db.reviews.count()).toBe(0);
+  });
+
+  it('undoes correctly even when record() was given a bare SrsState as before, not a full Item', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+    const before = (await items.get(id))!; // updatedAt: NOW, lastReview: null
+    const laterReviewedAt = NOW + 5000; // deliberately different from before.updatedAt
+    const after = { ...before, state: 'learning' as const, due: laterReviewedAt + 600_000, reps: 1 };
+
+    // `before: newSrsState(NOW)` is a bare SrsState, matching the brief's own
+    // usage in "records a review and updates the item in one transaction"
+    // above — legal per RecordedReview's type, and exactly the shape that
+    // let the updatedAt bug through undetected.
+    const reviewId = await reviews.record({
+      item: after,
+      before: newSrsState(NOW),
+      grade: 3,
+      reviewedAt: laterReviewedAt,
+      durationMs: 1000,
+    });
+    await reviews.undo(reviewId);
+
+    expect(await items.get(id)).toEqual(before);
   });
 });

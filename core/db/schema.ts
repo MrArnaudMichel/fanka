@@ -60,7 +60,14 @@ export interface Review {
   grade: Grade;
   reviewedAt: number;
   durationMs: number;
-  before: SrsState;
+  /**
+   * The item's scheduling state immediately before this review, plus its
+   * real `updatedAt` at that moment. `record()` is the only writer of this
+   * field and always captures `updatedAt` from the item's row as it stood
+   * before the write, regardless of what the caller's `before` argument
+   * carries — so the type can promise it is always present.
+   */
+  before: SrsState & { updatedAt: number };
 }
 
 export interface OutboxEntry {
