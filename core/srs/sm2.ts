@@ -13,6 +13,13 @@ const DAY = 86_400_000;
 const MIN_EASE = 1.3;
 const RELEARN_MINUTES = 10;
 
+/**
+ * SrsState seeds difficulty at 0 for a card no scheduler has touched yet.
+ * SM-2 keeps its ease factor in that field, and 0 is not a valid ease, so
+ * it reads as "unset" and the card starts at SM-2's standard 2.5.
+ */
+const DEFAULT_EASE = 2.5;
+
 /** SM-2's q scale is 0-5; Fanka's four buttons map onto its upper half. */
 const QUALITY: Record<Grade, number> = { 1: 2, 2: 3, 3: 4, 4: 5 };
 
@@ -23,7 +30,7 @@ function nextEase(ease: number, grade: Grade): number {
 }
 
 function step(state: SrsState, grade: Grade, now: number, settings: SchedulerSettings): SrsState {
-  const ease = nextEase(state.difficulty ?? 2.5, grade);
+  const ease = nextEase(state.difficulty === 0 ? DEFAULT_EASE : state.difficulty, grade);
   const common = {
     ...state,
     difficulty: ease,

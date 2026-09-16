@@ -102,4 +102,15 @@ describe('SM-2 scheduler', () => {
     const afterSecondGood = scheduler.apply(afterFirstGood, 3, NOW, settings);
     expect(afterSecondGood.scheduledDays).toBe(6);
   });
+
+  it('starts an untouched card at the standard ease, not the floor', () => {
+    const next = scheduler.apply(newSrsState(NOW), 3, NOW, settings);
+    expect(next.difficulty).toBe(2.5);
+  });
+
+  it('applies the Hard delta to the standard ease, not to zero', () => {
+    const next = scheduler.apply(newSrsState(NOW), 2, NOW, settings);
+    expect(next.difficulty).toBeLessThan(2.5);
+    expect(next.difficulty).toBeGreaterThan(1.3);
+  });
 });
