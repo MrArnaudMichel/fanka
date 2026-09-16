@@ -1,4 +1,4 @@
-import type { Grade, Scheduler, SchedulerSettings, SrsState } from './types';
+import type { Grade, ItemState, Scheduler, SchedulerSettings, SrsState } from './types';
 
 /**
  * SM-2, offered because the settings screen presents it as a real choice and a
@@ -23,7 +23,7 @@ function nextEase(ease: number, grade: Grade): number {
 }
 
 function step(state: SrsState, grade: Grade, now: number, settings: SchedulerSettings): SrsState {
-  const ease = nextEase(state.difficulty || 2.5, grade);
+  const ease = nextEase(state.difficulty ?? 2.5, grade);
   const common = {
     ...state,
     difficulty: ease,
@@ -43,16 +43,32 @@ function step(state: SrsState, grade: Grade, now: number, settings: SchedulerSet
     };
   }
 
+  // A lapse zeroes scheduledDays and moves the card to 'relearning' without
+  // touching reps, which stays a truthful lifetime counter (as on the FSRS
+  // side) rather than a ladder position. So the ladder rung is derived from
+  // the card's own state/scheduledDays instead of reps: a card that is new,
+  // mid-relearning, or was just zeroed by a lapse restarts at the 1-day step
+  // rather than multiplying the zero the lapse just wrote.
+  const restarting = state.state === 'new' || state.state === 'relearning' || state.scheduledDays === 0;
+
   let days: number;
-  if (state.reps === 0) days = 1;
-  else if (state.reps === 1) days = 6;
-  else days = Math.round(state.scheduledDays * ease);
+  let nextState: ItemState;
+  if (restarting) {
+    days = 1;
+    nextState = 'learning';
+  } else if (state.scheduledDays === 1) {
+    days = 6;
+    nextState = 'review';
+  } else {
+    days = Math.round(state.scheduledDays * ease);
+    nextState = 'review';
+  }
 
   days = Math.min(days, settings.maxInterval);
 
   return {
     ...common,
-    state: state.reps >= 1 ? 'review' : 'learning',
+    state: nextState,
     scheduledDays: days,
     stability: days,
     due: now + days * DAY,

@@ -69,4 +69,37 @@ describe('SM-2 scheduler', () => {
     const next = scheduler.apply(reviewing(), 3, NOW, settings);
     expect(next.due).toBe(NOW + next.scheduledDays * DAY);
   });
+
+  it('restarts the ladder after a lapse instead of multiplying a zeroed interval', () => {
+    const afterFirstGood = scheduler.apply(newSrsState(NOW), 3, NOW, settings);
+    expect(afterFirstGood.scheduledDays).toBe(1);
+
+    const afterAgain = scheduler.apply(afterFirstGood, 1, NOW, settings);
+    expect(afterAgain.scheduledDays).toBe(0);
+
+    const afterSecondGood = scheduler.apply(afterAgain, 3, NOW, settings);
+    expect(afterSecondGood.scheduledDays).toBe(1);
+
+    const afterThirdGood = scheduler.apply(afterSecondGood, 3, NOW, settings);
+    expect(afterThirdGood.scheduledDays).toBe(6);
+  });
+
+  it('gives one day, not six, when Good follows an immediate Again on a new card', () => {
+    const afterAgain = scheduler.apply(newSrsState(NOW), 1, NOW, settings);
+    const afterGood = scheduler.apply(afterAgain, 3, NOW, settings);
+    expect(afterGood.scheduledDays).toBe(1);
+  });
+
+  it('recovers a mature card through the ladder after a lapse', () => {
+    const mature = reviewing({ scheduledDays: 30 });
+
+    const afterAgain = scheduler.apply(mature, 1, NOW, settings);
+    expect(afterAgain.scheduledDays).toBe(0);
+
+    const afterFirstGood = scheduler.apply(afterAgain, 3, NOW, settings);
+    expect(afterFirstGood.scheduledDays).toBe(1);
+
+    const afterSecondGood = scheduler.apply(afterFirstGood, 3, NOW, settings);
+    expect(afterSecondGood.scheduledDays).toBe(6);
+  });
 });
