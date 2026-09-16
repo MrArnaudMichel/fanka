@@ -41,5 +41,5 @@ const route = useRoute();
   color: var(--text-muted);
 }
 
-.tab.active { background: var(--color-primary-soft); color: var(--color-white); }
+.tab.active { background: var(--color-primary-soft); color: var(--text-body); }
 </style>

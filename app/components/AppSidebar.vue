@@ -68,7 +68,7 @@ const route = useRoute();
 }
 
 .wordmark { display: flex; flex-direction: column; }
-.name { font: var(--font-title-h6); letter-spacing: 4px; color: var(--color-white); }
+.name { font: var(--font-title-h6); letter-spacing: 4px; color: var(--text-body); }
 .tagline { font: var(--font-normal-small); color: var(--text-muted); }
 
 nav { display: flex; flex-direction: column; gap: 2px; }
@@ -96,8 +96,8 @@ nav { display: flex; flex-direction: column; gap: 2px; }
   background: transparent;
 }
 
-.entry:hover { background: var(--surface-hover); color: var(--color-white); }
-.entry.active { background: var(--color-primary-soft); color: var(--color-white); }
+.entry:hover { background: var(--surface-hover); color: var(--text-body); }
+.entry.active { background: var(--color-primary-soft); color: var(--text-body); }
 .label { flex: 1; }
 .badge { font: var(--font-normal-small); font-family: var(--font-family-code); color: var(--color-primary-base); }
 </style>
