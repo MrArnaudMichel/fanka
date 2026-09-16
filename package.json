@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:app": "nuxt generate",
-    "typecheck": "tsc --noEmit -p tsconfig.check.json"
+    "typecheck": "tsc --noEmit -p tsconfig.check.json && nuxt typecheck"
   },
   "dependencies": {
     "dexie": "^4.4.6",
@@ -28,6 +28,7 @@
     "happy-dom": "^20.14.5",
     "typescript": "^5.9.3",
     "unplugin-auto-import": "^21.1.0",
-    "vitest": "^3.2.7"
+    "vitest": "^3.2.7",
+    "vue-tsc": "^3.3.11"
   }
 }
