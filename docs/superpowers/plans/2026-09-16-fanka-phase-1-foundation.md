@@ -488,7 +488,7 @@ export function toNumbered(syllables: PinyinSyllable[]): string {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `npm test -- test/chinese/pinyin.test.ts`
-Expected: PASS, 14 tests.
+Expected: PASS, 13 tests.
 
 - [ ] **Step 5: Commit**
 
