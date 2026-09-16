@@ -22,4 +22,20 @@ describe('toZhuyin', () => {
   it('returns an empty string for no syllables', () => {
     expect(toZhuyin([])).toBe('');
   });
+
+  it('handles the zero-initial "wei" spelling, not just its post-consonant reduction "ui"', () => {
+    expect(toZhuyin(parsePinyin('wei4'))).toBe('ㄨㄟˋ');
+  });
+
+  it('handles the zero-initial "wen" spelling, not just its post-consonant reduction "un"', () => {
+    expect(toZhuyin(parsePinyin('wen2'))).toBe('ㄨㄣˊ');
+  });
+
+  it('handles the zero-initial "you" spelling, not just its post-consonant reduction "iu"', () => {
+    expect(toZhuyin(parsePinyin('you3'))).toBe('ㄧㄡˇ');
+  });
+
+  it('returns an empty string for the whole input, rather than a bare tone mark, when a syllable\'s final has no table entry', () => {
+    expect(toZhuyin(parsePinyin('bue1'))).toBe('');
+  });
 });

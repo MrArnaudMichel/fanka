@@ -17,11 +17,12 @@ const INITIALS: Array<[string, string]> = [
 
 const FINALS: Array<[string, string]> = [
   ['iang', 'ㄧㄤ'], ['iong', 'ㄩㄥ'], ['uang', 'ㄨㄤ'], ['ueng', 'ㄨㄥ'],
-  ['ang', 'ㄤ'], ['eng', 'ㄥ'], ['ian', 'ㄧㄢ'], ['iao', 'ㄧㄠ'],
+  ['ang', 'ㄤ'], ['eng', 'ㄥ'], ['ian', 'ㄧㄢ'], ['iao', 'ㄧㄠ'], ['iou', 'ㄧㄡ'],
   ['ing', 'ㄧㄥ'], ['ong', 'ㄨㄥ'], ['uai', 'ㄨㄞ'], ['uan', 'ㄨㄢ'],
+  ['uei', 'ㄨㄟ'], ['uen', 'ㄨㄣ'],
   ['üan', 'ㄩㄢ'], ['üe', 'ㄩㄝ'], ['ün', 'ㄩㄣ'],
   ['ai', 'ㄞ'], ['ei', 'ㄟ'], ['ao', 'ㄠ'], ['ou', 'ㄡ'],
-  ['an', 'ㄢ'], ['en', 'ㄣ'], ['er', 'ㄦ'],
+  ['an', 'ㄢ'], ['en', 'ㄣ'], ['er', 'ㄦ'], ['io', 'ㄧㄛ'],
   ['ia', 'ㄧㄚ'], ['ie', 'ㄧㄝ'], ['iu', 'ㄧㄡ'], ['in', 'ㄧㄣ'],
   ['ua', 'ㄨㄚ'], ['uo', 'ㄨㄛ'], ['ui', 'ㄨㄟ'], ['un', 'ㄨㄣ'],
   ['a', 'ㄚ'], ['o', 'ㄛ'], ['e', 'ㄜ'], ['i', 'ㄧ'], ['u', 'ㄨ'], ['ü', 'ㄩ'],
@@ -43,7 +44,13 @@ function stripTone(text: string): string {
     .normalize('NFC');
 }
 
-function syllableToZhuyin(syllable: PinyinSyllable): string {
+/**
+ * Returns null when the final has no entry in FINALS, rather than emitting
+ * an initial (or a bare tone mark) with the rest of the syllable silently
+ * dropped. A missing table entry must surface as a missing result, not as
+ * mojibake on a learner's card.
+ */
+function syllableToZhuyin(syllable: PinyinSyllable): string | null {
   let bare = stripTone(syllable.text).toLowerCase();
   for (const [pattern, replacement] of REWRITES) {
     bare = bare.replace(pattern, replacement);
@@ -70,10 +77,18 @@ function syllableToZhuyin(syllable: PinyinSyllable): string {
     }
   }
 
+  if (bare.length > 0) {
+    return null;
+  }
+
   const mark = TONE_MARKS[syllable.tone];
   return syllable.tone === 5 ? `˙${out}` : `${out}${mark}`;
 }
 
 export function toZhuyin(syllables: PinyinSyllable[]): string {
-  return syllables.map(syllableToZhuyin).join(' ');
+  const converted = syllables.map(syllableToZhuyin);
+  if (converted.some((result) => result === null)) {
+    return '';
+  }
+  return converted.join(' ');
 }
