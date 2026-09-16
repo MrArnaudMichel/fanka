@@ -18,6 +18,16 @@ export interface QueueInput {
  * "學習 → to study" and then immediately "to study → 學習" tests recall of the
  * previous screen, not of the word.
  *
+ * These two rules can conflict: a card due in one direction and still new
+ * in the other is the ordinary state of a partially-learned card, and
+ * nothing stops both from landing in the same session. When fixing a
+ * same-card adjacency forces a choice, adjacency always wins — a run of new
+ * material is a worse session than the alternative, but two directions of
+ * one card back to back turns the second answer into a memory test of the
+ * previous screen rather than of the word. See `separateDirections` for how
+ * that priority is enforced and where the new-item spread bound becomes
+ * best-effort rather than guaranteed.
+ *
  * `due` and `fresh` are trusted as already filtered: `items.due()` excludes
  * suspended items, items whose card/deck is soft-deleted, and anything not
  * yet due; `items.fresh()` excludes suspended and soft-deleted items and
@@ -103,12 +113,25 @@ function distributeEvenly(total: number, bins: number): number[] {
  * invariant; it is not a general "no two adjacent equal" solver. The one
  * case nothing can fix is a queue of exactly two items that are both the
  * same card — there is nothing else to place between them.
+ *
+ * Adjacency is unconditional: every conflict found gets fixed, regardless
+ * of what that does to the new-item spread. Where there is a *choice* of
+ * forward swap partner, though, this prefers the nearest one that keeps the
+ * queue's longest new-item run within `spread()`'s bound
+ * (`ceil(new / (review + 1))`), falling back to the nearest valid partner
+ * when none of them do. That preference is best-effort, not a guarantee:
+ * `due` and `fresh` normally share no cardId, so this code path rarely
+ * even runs, but when a card is due in one direction and still new in the
+ * other, resolving the resulting adjacency conflicts can force two new
+ * items together in a way no available swap avoids — adjacency still wins
+ * when that happens.
  */
 function separateDirections(queue: Item[]): Item[] {
   const out = [...queue];
+  const bound = newItemRunBound(out);
   for (let i = 1; i < out.length; i += 1) {
     if (out[i]!.cardId !== out[i - 1]!.cardId) continue;
-    const swapWith = out.findIndex((candidate, j) => j > i && candidate.cardId !== out[i - 1]!.cardId);
+    const swapWith = bestSwapPartner(out, i, bound);
     if (swapWith > i) {
       [out[i], out[swapWith]] = [out[swapWith]!, out[i]!];
       continue;
@@ -118,4 +141,50 @@ function separateDirections(queue: Item[]): Item[] {
     }
   }
   return out;
+}
+
+/** The bound `spread()` guarantees on its own output, recomputed from the
+ * item counts actually in `queue` (state `'new'` vs. everything else) so it
+ * stays correct through `separateDirections`' swaps, which reorder items
+ * but never change how many of each kind there are. */
+function newItemRunBound(queue: Item[]): number {
+  const newCount = queue.filter((candidate) => candidate.state === 'new').length;
+  const reviewCount = queue.length - newCount;
+  return Math.ceil(newCount / (reviewCount + 1));
+}
+
+/**
+ * Among the indices `j > i` whose cardId differs from `out[i - 1]`'s (valid
+ * swap partners for the conflict at `i`), returns the nearest one that would
+ * keep the queue's longest new-item run within `bound` after the swap, or
+ * the nearest valid partner at all if none of them do. Returns -1 if there
+ * is no valid partner, in which case the caller falls back to the backward
+ * swap described above.
+ */
+function bestSwapPartner(out: Item[], i: number, bound: number): number {
+  const conflictingCardId = out[i - 1]!.cardId;
+  let nearestValid = -1;
+  for (let j = i + 1; j < out.length; j += 1) {
+    if (out[j]!.cardId === conflictingCardId) continue;
+    if (nearestValid === -1) nearestValid = j;
+    if (maxNewRunAfterSwap(out, i, j) <= bound) return j;
+  }
+  return nearestValid;
+}
+
+/** The longest run of `state === 'new'` items the queue would have if
+ * positions `i` and `j` were swapped. Simulated on a scratch copy rather
+ * than reasoned about from neighbours alone, since a swap can touch two
+ * non-adjacent runs at once — simplicity here matters more than the
+ * constant-factor cost, and session queues are small. */
+function maxNewRunAfterSwap(out: Item[], i: number, j: number): number {
+  const scratch = [...out];
+  [scratch[i], scratch[j]] = [scratch[j]!, scratch[i]!];
+  let run = 0;
+  let max = 0;
+  for (const candidate of scratch) {
+    run = candidate.state === 'new' ? run + 1 : 0;
+    max = Math.max(max, run);
+  }
+  return max;
 }

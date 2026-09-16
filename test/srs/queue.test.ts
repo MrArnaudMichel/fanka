@@ -116,6 +116,11 @@ describe('buildQueue', () => {
     expect(reviewPosition).toBeLessThan(queue.length - 1);
   });
 
+  // These cases all use disjoint cardIds between due and fresh (the `d`/`n`
+  // id prefixes never collide), which is the only shape under which
+  // spread()'s bound is a guarantee rather than a best effort — see the
+  // shared-card tests below for what happens when that assumption doesn't
+  // hold.
   it.each([
     { due: 3, fresh: 3 },
     { due: 2, fresh: 10 },
@@ -123,7 +128,7 @@ describe('buildQueue', () => {
     { due: 0, fresh: 4 }, // no review items to spread across: the bound degenerates to fresh.length, which is correct and unavoidable
     { due: 4, fresh: 0 },
   ])(
-    'keeps the longest run of new items within the even-spread bound (due=$due, fresh=$fresh)',
+    'keeps the longest run of new items within the even-spread bound on disjoint cards (due=$due, fresh=$fresh)',
     ({ due: dueCount, fresh: freshCount }) => {
       const due = Array.from({ length: dueCount }, (_, i) => item(`d${i}:recognition`, { state: 'review' }));
       const fresh = Array.from({ length: freshCount }, (_, i) => item(`n${i}:recognition`, { state: 'new' }));
@@ -145,5 +150,64 @@ describe('buildQueue', () => {
     const due = Array.from({ length: 5 }, (_, i) => item(`a:${i}`, { cardId: 'a', dir: 'recognition' }));
     const queue = buildQueue({ due, fresh: [], newPerDay: 0, introducedToday: 0 });
     expect(new Set(queue.map((q) => q.id)).size).toBe(5);
+  });
+
+  // due and fresh sharing a cardId is not exotic: a card with one direction
+  // due and the other still new is the ordinary state of a partially-learned
+  // card, and nothing in the repository layer stops both from landing in the
+  // same session. When resolving same-card adjacency forces a choice between
+  // the two rules, adjacency always wins — these two tests cover that case
+  // with the same repro: three cards, each due in one direction and new in
+  // the other, with the fresh order (c0, c2, c1) chosen so that the naive
+  // nearest-swap-partner choice cascades into a run of new items.
+
+  it('separates same-card items even when due and fresh share a card', () => {
+    const due = [
+      item('c0:recognition', { cardId: 'c0', dir: 'recognition', state: 'review' }),
+      item('c1:recognition', { cardId: 'c1', dir: 'recognition', state: 'review' }),
+      item('c2:recognition', { cardId: 'c2', dir: 'recognition', state: 'review' }),
+    ];
+    const fresh = [
+      item('c0:production', { cardId: 'c0', dir: 'production', state: 'new' }),
+      item('c2:production', { cardId: 'c2', dir: 'production', state: 'new' }),
+      item('c1:production', { cardId: 'c1', dir: 'production', state: 'new' }),
+    ];
+    const queue = buildQueue({ due, fresh, newPerDay: 3, introducedToday: 0 });
+    // Adjacency is the hard invariant: it must hold no matter what that
+    // costs the new-item spread on this input.
+    for (let i = 1; i < queue.length; i += 1) {
+      expect(queue[i]!.cardId).not.toBe(queue[i - 1]!.cardId);
+    }
+    expect(new Set(queue.map((q) => q.id)).size).toBe(6);
+  });
+
+  it('prefers a swap partner that keeps the new-item run within the spread bound, when adjacency allows it', () => {
+    const due = [
+      item('c0:recognition', { cardId: 'c0', dir: 'recognition', state: 'review' }),
+      item('c1:recognition', { cardId: 'c1', dir: 'recognition', state: 'review' }),
+      item('c2:recognition', { cardId: 'c2', dir: 'recognition', state: 'review' }),
+    ];
+    const fresh = [
+      item('c0:production', { cardId: 'c0', dir: 'production', state: 'new' }),
+      item('c2:production', { cardId: 'c2', dir: 'production', state: 'new' }),
+      item('c1:production', { cardId: 'c1', dir: 'production', state: 'new' }),
+    ];
+    const queue = buildQueue({ due, fresh, newPerDay: 3, introducedToday: 0 });
+    let maxRun = 0;
+    let run = 0;
+    for (const q of queue) {
+      run = q.state === 'new' ? run + 1 : 0;
+      maxRun = Math.max(maxRun, run);
+    }
+    // Not a guaranteed bound on shared-card inputs — adjacency wins over the
+    // spread when the two conflict, so this records what separateDirections'
+    // bound-aware candidate choice actually achieves for this input, rather
+    // than asserting a bound the contract no longer promises. For this input
+    // it happens to fully recover spread()'s own bound (1): a bound-satisfying
+    // swap partner exists at every conflict here, so the preference finds it.
+    // Before that preference existed, the naive nearest-candidate choice gave
+    // a run of 3 for this exact input (see task-9-report.md, fix round 2, RED
+    // evidence) — this assertion is what catches a regression back to that.
+    expect(maxRun).toBe(1);
   });
 });
