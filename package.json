@@ -16,6 +16,7 @@
   "dependencies": {
     "dexie": "^4.4.6",
     "kanto": "file:../kanto",
+    "lucide": "^1.43.0",
     "nuxt": "^4.5.2",
     "ts-fsrs": "^5.4.2",
     "vue": "^3.5.42",

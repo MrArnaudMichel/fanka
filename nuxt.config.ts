@@ -14,4 +14,9 @@ export default defineNuxtConfig({
   },
   typescript: { strict: true, typeCheck: false },
   alias: { '~core': fileURLToPath(new URL('./core', import.meta.url)) },
+  // Kanto is consumed as a sibling `file:` dependency, not a workspace
+  // member, so Vite's dev server otherwise refuses to serve its font files
+  // (they sit outside the project root) and every Kanto element falls back
+  // to a system font.
+  vite: { server: { fs: { allow: [fileURLToPath(new URL('../kanto', import.meta.url))] } } },
 });
