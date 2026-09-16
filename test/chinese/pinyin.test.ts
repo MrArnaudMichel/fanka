@@ -78,4 +78,17 @@ describe('round trip', () => {
       expect(parsePinyin(toNumbered(parsed))).toEqual(parsed);
     }
   });
+
+  it('emits ASCII form with v for umlaut', () => {
+    expect(toNumbered(parsePinyin('lv4'))).toBe('lv4');
+    expect(toNumbered(parsePinyin('nu:3'))).toBe('nv3');
+  });
+
+  it('always produces ASCII output', () => {
+    const cases = ['lv4', 'nu:3', 'xue2 xi2', 'hao3', 'ma5'];
+    for (const input of cases) {
+      const output = toNumbered(parsePinyin(input));
+      expect(output).toMatch(/^[\x20-\x7E]*$/);
+    }
+  });
 });

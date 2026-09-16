@@ -90,16 +90,22 @@ export function parsePinyin(input: string): PinyinSyllable[] {
     });
 }
 
+/** Converts a diacritic syllable to bare ASCII by stripping marks and normalising ü to v. */
+function toBareAscii(diacriticText: string): string {
+  let bare = '';
+  for (const ch of diacriticText) {
+    const hit = UNMARK.get(ch);
+    if (hit) {
+      bare += hit.plain;
+    } else {
+      bare += ch;
+    }
+  }
+  return bare.replace(/ü/g, 'v');
+}
+
 export function toNumbered(syllables: PinyinSyllable[]): string {
   return syllables
-    .map(({ text, tone }) => {
-      const { text: plain } = fromDiacritic(text);
-      let bare = '';
-      for (const ch of plain) {
-        const hit = UNMARK.get(ch);
-        bare += hit ? hit.plain : ch;
-      }
-      return `${bare}${tone}`;
-    })
+    .map(({ text, tone }) => `${toBareAscii(text)}${tone}`)
     .join(' ');
 }
