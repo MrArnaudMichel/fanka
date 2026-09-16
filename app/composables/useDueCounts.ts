@@ -21,7 +21,10 @@ export function useDueCounts() {
     total.value = due.length + fresh.length;
   }
 
-  if (import.meta.client) void refresh();
+  // Fire-and-forget: nothing awaits the initial load, so a rejection would
+  // otherwise vanish as an unhandled promise rejection and leave the counts
+  // pinned at zero with no sign anything went wrong.
+  if (import.meta.client) refresh().catch((err: unknown) => console.error('useDueCounts: refresh failed', err));
 
   return { total: readonly(total), byState: readonly(byState), refresh };
 }

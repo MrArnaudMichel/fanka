@@ -6,7 +6,7 @@ const route = useRoute();
 </script>
 
 <template>
-  <nav class="bar">
+  <nav class="bar" aria-label="Primary">
     <NuxtLink v-for="entry in entries" :key="entry.to" :to="entry.to" class="tab" :class="{ active: route.path === entry.to }">
       <kt-icon :name="entry.icon" size="18" />
       <span>{{ entry.label }}</span>
@@ -23,7 +23,7 @@ const route = useRoute();
   gap: 2px;
   padding: 8px 8px 10px;
   border-top: var(--border-width) solid var(--border-subtle);
-  background: var(--color-dark-8);
+  background: var(--surface-card);
 }
 
 .tab {

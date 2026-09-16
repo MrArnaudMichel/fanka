@@ -15,12 +15,12 @@ export function useNavigation(dueTotal: Readonly<Ref<number>>) {
     { to: '/review', label: 'Review', icon: 'play' },
   ]);
 
-  const library = computed<NavEntry[]>(() => [{ to: '/settings', label: 'Settings', icon: 'settings' }]);
+  // Settings has no page until phase 3. Nothing lists it until then.
+  const library = computed<NavEntry[]>(() => []);
 
   const bar = computed<NavEntry[]>(() => [
     { to: '/', label: 'Home', icon: 'house' },
     { to: '/review', label: 'Review', icon: 'play' },
-    { to: '/settings', label: 'Settings', icon: 'settings' },
   ]);
 
   return { main, library, bar };

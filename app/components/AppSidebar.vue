@@ -8,7 +8,7 @@ const route = useRoute();
 <template>
   <aside class="sidebar">
     <div class="brand">
-      <span class="mark">繁</span>
+      <span class="mark" aria-hidden="true">繁</span>
       <span class="wordmark">
         <span class="name">FANKA</span>
         <span class="tagline">Traditional Chinese</span>
@@ -19,7 +19,7 @@ const route = useRoute();
       Today's session · {{ dueTotal }}
     </kt-button>
 
-    <nav>
+    <nav aria-label="Primary">
       <p class="overline">Learn</p>
       <NuxtLink v-for="entry in main" :key="entry.to" :to="entry.to" class="entry" :class="{ active: route.path === entry.to }">
         <kt-icon :name="entry.icon" size="16" />
@@ -27,11 +27,13 @@ const route = useRoute();
         <span v-if="entry.badge" class="badge">{{ entry.badge }}</span>
       </NuxtLink>
 
-      <p class="overline">Collection</p>
-      <NuxtLink v-for="entry in library" :key="entry.to" :to="entry.to" class="entry" :class="{ active: route.path === entry.to }">
-        <kt-icon :name="entry.icon" size="16" />
-        <span class="label">{{ entry.label }}</span>
-      </NuxtLink>
+      <template v-if="library.length">
+        <p class="overline">Collection</p>
+        <NuxtLink v-for="entry in library" :key="entry.to" :to="entry.to" class="entry" :class="{ active: route.path === entry.to }">
+          <kt-icon :name="entry.icon" size="16" />
+          <span class="label">{{ entry.label }}</span>
+        </NuxtLink>
+      </template>
     </nav>
   </aside>
 </template>
@@ -41,7 +43,7 @@ const route = useRoute();
   width: 252px;
   flex: 0 0 252px;
   border-right: var(--border-width) solid var(--border-subtle);
-  background: var(--color-dark-8);
+  background: var(--surface-card);
   display: flex;
   flex-direction: column;
   gap: 24px;
