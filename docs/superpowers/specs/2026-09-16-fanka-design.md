@@ -123,6 +123,8 @@ interface Item {                       // one SRS state per direction
   scheduledDays: number;
   reps: number;
   lapses: number;
+  learningSteps: number;               // ts-fsrs round-trips this; short-term
+                                       // scheduling breaks without it
   lastReview: number | null;
   suspended: boolean;
   updatedAt: number;
@@ -205,8 +207,14 @@ Two implementations:
   offers it as a real choice.
 
 **Invariant:** the interval shown on a grade button and the interval applied
-when it is pressed come from the same call. `preview` and `apply` share their
-arithmetic; the UI never recomputes anything.
+when it is pressed come from the same call. `ts-fsrs`'s `repeat(card, now)`
+returns all four outcomes at once, so `preview` and `apply` read the same
+object and the UI never recomputes anything.
+
+This holds only with **fuzz disabled** (`enable_fuzz: false`). Fuzz randomises
+the interval on each call, which would make the button lie about what pressing
+it does. Determinism is worth more here than the small scheduling benefit fuzz
+provides.
 
 Undo restores the `Item` from `Review.before` and deletes the `Review` row. It
 is exact, not an approximation.
