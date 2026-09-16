@@ -33,41 +33,59 @@ export function buildQueue({ due, fresh, newPerDay, introducedToday }: QueueInpu
 }
 
 /**
- * Places `introducing` items across `reviewing` so they land at
- * proportionally even gaps through the whole sequence, decided up front from
- * the total counts rather than incrementally.
+ * Distributes `introducing` items as evenly as possible across the
+ * `reviewing.length + 1` gaps around the review items (before the first,
+ * between each consecutive pair, and after the last), so that gap sizes
+ * differ by at most one. That is a hard guarantee, not an aspiration: the
+ * longest run of consecutive new items in the result is at most
+ * `ceil(introducing.length / (reviewing.length + 1))`, because every run of
+ * new items lives entirely inside one gap — review items are what separate
+ * gaps — so the longest run is exactly the size of the largest gap, and no
+ * gap can exceed the ceiling of the even split.
  *
- * An incremental "insert every N reviews" scheme (advancing a running
- * threshold as review items are consumed) looks equivalent but is not: once
- * `reviewing` runs out, any new items not yet placed have nowhere principled
- * left to go and end up dumped in a clump at the end — precisely the
- * front-loading problem this function exists to avoid, just moved to the
- * back. A case as ordinary as one review item and five new ones reproduces
- * it: every new item ends up after the lone review item, in a solid run.
- * Computing each new item's target position from the full counts up front
- * avoids that: it also cleanly degrades to "no reviews" (all new items
- * placed back to back, nothing else to spread them across — unavoidable)
- * and to "no new items" (reviews untouched).
+ * An earlier version computed each new item's insertion point incrementally
+ * from a running threshold advanced as review items were consumed. That
+ * looks equivalent but is not: it has no such bound. E.g. 2 review items and
+ * 10 new ones produced a run of 6 consecutive new items — worse than the
+ * bound of `ceil(10 / 3) = 4` this version guarantees — because once the
+ * threshold overshot the remaining review supply, every new item still
+ * waiting got placed back to back with nothing between them. Computing the
+ * whole distribution up front, rather than one threshold at a time, is what
+ * makes the bound provable: each gap's size is fixed before any item is
+ * placed, independent of how the previous gaps happened to round.
  */
 function spread(reviewing: Item[], introducing: Item[]): Item[] {
+  const gapSizes = distributeEvenly(introducing.length, reviewing.length + 1);
   const merged: Item[] = [];
-  let reviewIndex = 0;
-  const gaps = introducing.length + 1;
+  let newIndex = 0;
 
-  for (let n = 0; n < introducing.length; n += 1) {
-    const targetReviewCount = Math.round((reviewing.length / gaps) * (n + 1));
-    while (reviewIndex < targetReviewCount && reviewIndex < reviewing.length) {
-      merged.push(reviewing[reviewIndex]!);
-      reviewIndex += 1;
+  for (let gap = 0; gap < gapSizes.length; gap += 1) {
+    for (let k = 0; k < gapSizes[gap]!; k += 1) {
+      merged.push(introducing[newIndex]!);
+      newIndex += 1;
     }
-    merged.push(introducing[n]!);
-  }
-  while (reviewIndex < reviewing.length) {
-    merged.push(reviewing[reviewIndex]!);
-    reviewIndex += 1;
+    if (gap < reviewing.length) merged.push(reviewing[gap]!);
   }
 
   return merged;
+}
+
+/**
+ * Splits `total` into `bins` non-negative integers that sum to `total` and
+ * differ from one another by at most one — the standard "as evenly as
+ * possible" integer split. Each bin's size is `floor(total / bins)` or
+ * `ceil(total / bins)`; which bins get the larger share is an implementation
+ * detail, but the bound on every bin's size is not.
+ */
+function distributeEvenly(total: number, bins: number): number[] {
+  const sizes: number[] = [];
+  let assigned = 0;
+  for (let bin = 0; bin < bins; bin += 1) {
+    const cumulative = Math.floor(((bin + 1) * total) / bins);
+    sizes.push(cumulative - assigned);
+    assigned = cumulative;
+  }
+  return sizes;
 }
 
 /**

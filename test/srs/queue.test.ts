@@ -116,22 +116,30 @@ describe('buildQueue', () => {
     expect(reviewPosition).toBeLessThan(queue.length - 1);
   });
 
-  it('does not clump all leftover new items into one run when review and new counts match', () => {
-    const due = Array.from({ length: 3 }, (_, i) => item(`d${i}:recognition`, { state: 'review' }));
-    const fresh = Array.from({ length: 3 }, (_, i) => item(`n${i}:recognition`, { state: 'new' }));
-    const queue = buildQueue({ due, fresh, newPerDay: 3, introducedToday: 0 });
-    let maxRun = 0;
-    let run = 0;
-    for (const q of queue) {
-      run = q.state === 'new' ? run + 1 : 0;
-      maxRun = Math.max(maxRun, run);
-    }
-    // The bug this guards against dumped every leftover new item into one
-    // solid run at the tail once review items ran out. A perfectly even
-    // spread is a UX nicety, not a hard invariant, so this only requires
-    // that not every new item ends up in the same run.
-    expect(maxRun).toBeLessThan(fresh.length);
-  });
+  it.each([
+    { due: 3, fresh: 3 },
+    { due: 2, fresh: 10 },
+    { due: 1, fresh: 5 },
+    { due: 0, fresh: 4 }, // no review items to spread across: the bound degenerates to fresh.length, which is correct and unavoidable
+    { due: 4, fresh: 0 },
+  ])(
+    'keeps the longest run of new items within the even-spread bound (due=$due, fresh=$fresh)',
+    ({ due: dueCount, fresh: freshCount }) => {
+      const due = Array.from({ length: dueCount }, (_, i) => item(`d${i}:recognition`, { state: 'review' }));
+      const fresh = Array.from({ length: freshCount }, (_, i) => item(`n${i}:recognition`, { state: 'new' }));
+      const queue = buildQueue({ due, fresh, newPerDay: freshCount, introducedToday: 0 });
+      let maxRun = 0;
+      let run = 0;
+      for (const q of queue) {
+        run = q.state === 'new' ? run + 1 : 0;
+        maxRun = Math.max(maxRun, run);
+      }
+      // spread() guarantees new items land in reviewing.length + 1 gaps whose
+      // sizes differ by at most one, so no run of consecutive new items can
+      // exceed the size of the largest gap: ceil(fresh / (due + 1)).
+      expect(maxRun).toBeLessThanOrEqual(Math.ceil(fresh.length / (due.length + 1)));
+    },
+  );
 
   it('does not crash or drop items when every item shares one card (impossible to fully separate)', () => {
     const due = Array.from({ length: 5 }, (_, i) => item(`a:${i}`, { cardId: 'a', dir: 'recognition' }));
