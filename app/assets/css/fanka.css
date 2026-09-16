@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@400;500&display=swap');
+
+:root {
+  --fk-font-hanzi-serif: 'Noto Serif TC', 'Songti TC', serif;
+  --fk-font-hanzi-sans: 'Noto Sans TC', 'PingFang TC', sans-serif;
+  --fk-font-hanzi: var(--fk-font-hanzi-serif);
+}
+
+:root[data-hanzi-font='sans'] {
+  --fk-font-hanzi: var(--fk-font-hanzi-sans);
+}
+
+html,
+body,
+#__nuxt {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--surface-page);
+  color: var(--text-body);
+  font: var(--font-normal-regular);
+}
+
+* {
+  box-sizing: border-box;
+}
