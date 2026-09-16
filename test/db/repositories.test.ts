@@ -1,0 +1,115 @@
+import 'fake-indexeddb/auto';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { db } from '~core/db/db';
+import { cards, decks, items, reviews } from '~core/db/repositories';
+import { itemId } from '~core/db/schema';
+import { newSrsState } from '~core/srs';
+
+const NOW = Date.parse('2026-09-16T08:00:00Z');
+const DAY = 86_400_000;
+
+const aDeck = (over = {}) => ({
+  id: 'd1', name: 'HSK 1', description: '', colorToken: 'var(--chart-series-1)',
+  tag: 'HSK', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null, ...over,
+});
+
+const aCard = (over = {}) => ({
+  id: 'c1', deckId: 'd1', hanzi: '學習', pinyin: [{ text: 'xué', tone: 2 as const }],
+  zhuyin: '', translation: 'to study', pos: 'verb' as const, example: '', examplePinyin: '',
+  exampleTranslation: '', tags: [], note: '', createdAt: NOW, updatedAt: NOW, deletedAt: null, ...over,
+});
+
+beforeEach(async () => {
+  await db.delete();
+  await db.open();
+});
+
+describe('decks', () => {
+  it('stores and reads a deck back', async () => {
+    await decks.put(aDeck());
+    expect(await decks.get('d1')).toMatchObject({ name: 'HSK 1' });
+  });
+
+  it('hides soft-deleted decks from listAll', async () => {
+    await decks.put(aDeck());
+    await decks.put(aDeck({ id: 'd2', deletedAt: NOW }));
+    expect((await decks.listAll()).map((d) => d.id)).toEqual(['d1']);
+  });
+});
+
+describe('cards', () => {
+  it('creates one item per requested direction', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition', 'production'], NOW);
+    const made = await items.forCard('c1');
+    expect(made.map((i) => i.dir).sort()).toEqual(['production', 'recognition']);
+    expect(made.every((i) => i.state === 'new')).toBe(true);
+  });
+
+  it('writes an outbox entry in the same transaction', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const pending = await db.outbox.toArray();
+    expect(pending.some((e) => e.entity === 'card' && e.entityId === 'c1')).toBe(true);
+  });
+});
+
+describe('items', () => {
+  it('returns only items that are due, not suspended, and not new', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+    await items.put({ ...(await items.get(id))!, state: 'review', due: NOW - DAY });
+    await cards.create(aCard({ id: 'c2' }), ['recognition'], NOW);
+    const later = itemId('c2', 'recognition');
+    await items.put({ ...(await items.get(later))!, state: 'review', due: NOW + DAY });
+
+    const due = await items.due(NOW);
+    expect(due.map((i) => i.id)).toEqual([id]);
+  });
+
+  it('excludes suspended items from due', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+    await items.put({ ...(await items.get(id))!, state: 'review', due: NOW - DAY, suspended: true });
+    expect(await items.due(NOW)).toEqual([]);
+  });
+
+  it('returns new items separately, oldest card first', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard({ id: 'c2', createdAt: NOW + 10 }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c1', createdAt: NOW }), ['recognition'], NOW);
+    const fresh = await items.fresh(10);
+    expect(fresh.map((i) => i.cardId)).toEqual(['c1', 'c2']);
+  });
+});
+
+describe('reviews', () => {
+  it('records a review and updates the item in one transaction', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+    const before = (await items.get(id))!;
+    const after = { ...before, state: 'learning' as const, due: NOW + 600_000, reps: 1 };
+
+    await reviews.record({ item: after, before: newSrsState(NOW), grade: 3, reviewedAt: NOW, durationMs: 4200 });
+
+    expect((await items.get(id))!.reps).toBe(1);
+    expect(await db.reviews.count()).toBe(1);
+  });
+
+  it('undoes a review exactly, restoring the previous state', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+    const before = (await items.get(id))!;
+    const after = { ...before, state: 'learning' as const, due: NOW + 600_000, reps: 1, stability: 2.3 };
+
+    const reviewId = await reviews.record({ item: after, before, grade: 3, reviewedAt: NOW, durationMs: 1000 });
+    await reviews.undo(reviewId);
+
+    expect(await items.get(id)).toEqual(before);
+    expect(await db.reviews.count()).toBe(0);
+  });
+});
