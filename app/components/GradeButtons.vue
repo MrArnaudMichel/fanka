@@ -12,6 +12,26 @@ import type { Grade } from '~core/srs/types';
 const props = defineProps<{ intervals: Record<Grade, number>; busy: boolean }>();
 const emit = defineEmits<{ grade: [Grade] }>();
 
+// Vue auto-collects one ref per v-for(ref="gradeButtons") iteration into this
+// array, in list order.
+const gradeButtons = ref<HTMLButtonElement[]>([]);
+
+/**
+ * This component only exists while the answer is revealed — it replaces the
+ * "Show answer" button in the same instant `ReviewCard`'s answer content
+ * mounts. That unmounts whatever had focus (the Show-answer button), and
+ * without this, focus falls back to `<body>`: a keyboard user gets no
+ * indication of where they landed, and the 1–4 grade shortcuts stop being
+ * discoverable. The first grade button is the next control they will use,
+ * so it is also the natural focus target — and it sits outside
+ * `ReviewCard`'s `role="status"` answer region, so the live-region
+ * announcement and this focus-driven announcement never read the same text
+ * twice.
+ */
+onMounted(() => {
+  gradeButtons.value[0]?.focus();
+});
+
 /**
  * Tone follows meaning: Again is danger, Easy is info. The interval sits on
  * the button so the learner sees the consequence before committing to it.
@@ -34,6 +54,7 @@ const interval = (grade: Grade) => {
     <button
       v-for="button in buttons"
       :key="button.grade"
+      ref="gradeButtons"
       type="button"
       :class="['grade', button.tone]"
       :disabled="busy"
@@ -51,7 +72,7 @@ const interval = (grade: Grade) => {
 </template>
 
 <style scoped>
-.grades { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.grades { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--gap-button); }
 
 .grade {
   cursor: pointer;

@@ -21,7 +21,7 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
         <PinyinText v-if="!settings.hidePinyinUntilRevealed" :syllables="card.pinyin" :colored="settings.toneColors" size="22px" />
       </div>
 
-      <div v-if="revealed" class="answer">
+      <div v-if="revealed" class="answer" role="status" aria-live="polite" aria-atomic="true">
         <div v-if="item.dir === 'production'" class="hanzi answer-hanzi">{{ card.hanzi }}</div>
         <PinyinText :syllables="card.pinyin" :colored="settings.toneColors" size="28px" />
         <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
@@ -42,7 +42,7 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
 </template>
 
 <style scoped>
-.meta { display: flex; align-items: center; gap: 8px; }
+.meta { display: flex; align-items: center; gap: var(--gap-button); }
 .state { margin-left: auto; font: var(--font-normal-small); font-family: var(--font-family-code); color: var(--text-muted); }
 
 .face {
@@ -50,7 +50,7 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: var(--gap-card);
   padding: 48px 24px;
   min-height: 320px;
   text-align: center;

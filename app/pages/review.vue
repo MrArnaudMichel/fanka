@@ -113,8 +113,8 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 </template>
 
 <style scoped>
-.review { display: flex; flex-direction: column; gap: 20px; }
-.bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.review { display: flex; flex-direction: column; gap: var(--gap-card); }
+.bar { display: flex; align-items: center; gap: var(--gap-form); flex-wrap: wrap; }
 .progress { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
 .counts { display: flex; justify-content: space-between; font: var(--font-normal-small); color: var(--text-muted); }
 .mono { font-family: var(--font-family-code); }
