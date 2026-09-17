@@ -1,14 +1,16 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '~core/db/db';
 import { cards, items, reviews } from '~core/db/repositories';
 import { loadSession, saveSession } from '~core/db/session';
 import { saveSettings } from '~core/db/settings';
 import { seedIfNeeded } from '~core/seed/seed';
-import { useReviewSession } from '~/composables/useReviewSession';
+import { useDisposableSessions } from './disposableSessions';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 const DAY = 86_400_000;
+
+const createSession = useDisposableSessions();
 
 beforeEach(async () => {
   await db.delete();
@@ -16,9 +18,15 @@ beforeEach(async () => {
   await seedIfNeeded(NOW);
 });
 
+// Restores every spy here even when a test fails before reaching its end, so
+// a mocked rejection can never leak into the next test.
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('useReviewSession', () => {
   it('starts with a card and nothing revealed', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     expect(session.current.value).not.toBeNull();
     expect(session.revealed.value).toBe(false);
@@ -31,13 +39,13 @@ describe('useReviewSession', () => {
   });
 
   it('previews all four intervals before a grade is chosen', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     expect(Object.keys(session.previews.value).map(Number).sort()).toEqual([1, 2, 3, 4]);
   });
 
   it('advances to the next item after a grade', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     const first = session.current.value!.id;
     session.reveal();
@@ -47,7 +55,7 @@ describe('useReviewSession', () => {
   });
 
   it('writes a review row for every grade', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     session.reveal();
     await session.grade(3);
@@ -55,7 +63,7 @@ describe('useReviewSession', () => {
   });
 
   it('undo restores the previous item and its state exactly', async () => {
-    const started = useReviewSession();
+    const started = createSession();
     await started.start();
     const first = started.current.value!;
     const before = (await db.items.get(first.id))!;
@@ -70,7 +78,7 @@ describe('useReviewSession', () => {
     // overwrites it — checking only `.id` afterwards (as the original
     // version of this test did) would pass even with that line deleted,
     // since the id never changes either way.
-    const resumed = useReviewSession();
+    const resumed = createSession();
     await resumed.restore();
     await resumed.undo();
 
@@ -81,7 +89,7 @@ describe('useReviewSession', () => {
   });
 
   it('undo restores the previous item within a single instance — the page\'s normal flow', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     const first = session.current.value!;
     const before = (await db.items.get(first.id))!;
@@ -98,7 +106,7 @@ describe('useReviewSession', () => {
   });
 
   it('ends when the queue is exhausted', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     const total = session.total.value;
     for (let i = 0; i < total; i += 1) {
@@ -109,13 +117,13 @@ describe('useReviewSession', () => {
   });
 
   it('resumes a session that was interrupted', async () => {
-    const first = useReviewSession();
+    const first = createSession();
     await first.start();
     first.reveal();
     await first.grade(3);
     const positionBefore = first.position.value;
 
-    const resumed = useReviewSession();
+    const resumed = createSession();
     await resumed.restore();
     expect(resumed.position.value).toBe(positionBefore);
     expect(resumed.ended.value).toBe(false);
@@ -127,7 +135,7 @@ describe('useReviewSession — elapsed clock', () => {
     vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
     vi.setSystemTime(NOW);
     try {
-      const session = useReviewSession();
+      const session = createSession();
       await session.start();
       expect(session.elapsed.value).toBe(0);
 
@@ -188,7 +196,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
   // `expectedResumeId`.
 
   it('drops an item whose card was soft-deleted, from behind the cursor', async () => {
-    const first = useReviewSession();
+    const first = createSession();
     await first.start();
     const originalIds = first.queue.value.map((i) => i.id);
     const originalTotal = originalIds.length;
@@ -205,7 +213,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     await db.cards.put({ ...(await cards.get(droppedCardId))!, deletedAt: NOW });
     const expectedNextId = await expectedResumeId(originalIds, 2);
 
-    const resumed = useReviewSession();
+    const resumed = createSession();
     await resumed.restore();
 
     expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
@@ -214,7 +222,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
   });
 
   it('drops an item that was suspended, from behind the cursor', async () => {
-    const first = useReviewSession();
+    const first = createSession();
     await first.start();
     const originalIds = first.queue.value.map((i) => i.id);
     const originalTotal = originalIds.length;
@@ -230,7 +238,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     await items.put({ ...(await items.get(droppedId))!, suspended: true });
     const expectedNextId = await expectedResumeId(originalIds, 2);
 
-    const resumed = useReviewSession();
+    const resumed = createSession();
     await resumed.restore();
 
     expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
@@ -239,7 +247,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
   });
 
   it('drops the item the cursor would land on, and shows the next one instead', async () => {
-    const first = useReviewSession();
+    const first = createSession();
     await first.start();
     const originalIds = first.queue.value.map((i) => i.id);
     const originalTotal = originalIds.length;
@@ -259,7 +267,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     await items.put({ ...(await items.get(droppedId))!, suspended: true });
     const expectedNextId = await expectedResumeId(originalIds, 2);
 
-    const resumed = useReviewSession();
+    const resumed = createSession();
     await resumed.restore();
 
     expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
@@ -274,7 +282,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
 
 describe('useReviewSession — grade/undo/start/restore are serialised, not dropped', () => {
   it('drops a second grade() while one is already queued or in flight, so only one review is recorded', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     session.reveal();
 
@@ -290,7 +298,7 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
   });
 
   it('runs an undo fired the instant an unawaited grade lands, in order, rather than dropping it', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     session.reveal();
 
@@ -309,7 +317,7 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
   });
 
   it('re-arms grading once an undo is queued behind an unfinished grade, so grade-undo-grade records the correction', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     session.reveal();
 
@@ -332,7 +340,7 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
   it('never returns a dropped false from restore(): a second concurrent call gets the real answer too', async () => {
     // A prior session with real progress, stored the way a first instance
     // would leave it.
-    const priorSession = useReviewSession();
+    const priorSession = createSession();
     await priorSession.start();
     priorSession.reveal();
     await priorSession.grade(3);
@@ -353,7 +361,7 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
     // reliably land in, which would make a test built on it either
     // flaky or silently toothless. This is the guarantee whose violation
     // is what would let that corruption happen at all.
-    const session = useReviewSession();
+    const session = createSession();
     const [firstResult, secondResult] = await Promise.all([session.restore(), session.restore()]);
 
     expect(firstResult).toBe(true);
@@ -364,7 +372,7 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
   });
 
   it('exposes busy while something is queued or running, and clears it once idle', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     expect(session.busy.value).toBe(false);
 
@@ -376,11 +384,11 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
   });
 
   it('keeps busy true across multiple queued actions, clearing it only once the whole chain drains — even after one step rejects', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     session.reveal();
 
-    const recordSpy = vi.spyOn(reviews, 'record').mockRejectedValueOnce(new Error('simulated write failure'));
+    vi.spyOn(reviews, 'record').mockRejectedValueOnce(new Error('simulated write failure'));
 
     const failingGrade = session.grade(3).catch(() => undefined);
     expect(session.busy.value).toBe(true);
@@ -393,15 +401,14 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
     await Promise.all([failingGrade, undoCall]);
 
     expect(session.busy.value).toBe(false);
-    recordSpy.mockRestore();
   });
 
   it('does not let a rejected action stall whatever is queued behind it', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     session.reveal();
 
-    const recordSpy = vi.spyOn(reviews, 'record').mockRejectedValueOnce(new Error('simulated write failure'));
+    vi.spyOn(reviews, 'record').mockRejectedValueOnce(new Error('simulated write failure'));
 
     const failingGrade = session.grade(3).catch(() => undefined);
     // Queued behind the failing grade. If the chain stalled on the
@@ -415,14 +422,13 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
     // The grade never actually wrote anything before rejecting, so there
     // is nothing for undo() to undo — it runs as a safe no-op, not stuck.
     expect(await db.reviews.count()).toBe(0);
-    recordSpy.mockRestore();
   });
 });
 
 describe('useReviewSession — ended reflects an empty queue too', () => {
   it('reports ended, not a stuck mid-session, when start() finds nothing due or new', async () => {
     await saveSettings({ newPerDay: 0 });
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     expect(session.total.value).toBe(0);
     expect(session.current.value).toBeNull();
@@ -432,7 +438,7 @@ describe('useReviewSession — ended reflects an empty queue too', () => {
 
 describe('useReviewSession — restore refuses a session that cannot be resumed', () => {
   it('returns false and clears the stored session once every card has been graded', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     const total = session.total.value;
     for (let i = 0; i < total; i += 1) {
@@ -441,7 +447,7 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
     }
     expect(session.ended.value).toBe(true);
 
-    const resumed = useReviewSession();
+    const resumed = createSession();
     expect(await resumed.restore()).toBe(false);
     expect(await loadSession()).toBeNull();
   });
@@ -449,13 +455,13 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
   it('returns false and clears a session that was started before today', async () => {
     await saveSession({ queueIds: ['whatever-item-id'], index: 0, startedAt: NOW - DAY, log: [] });
 
-    const session = useReviewSession();
+    const session = createSession();
     expect(await session.restore(NOW)).toBe(false);
     expect(await loadSession()).toBeNull();
   });
 
   it('returns false and clears a session whose remaining cards were all hidden since it was stored', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     const originalIds = session.queue.value.map((i) => i.id);
     expect(originalIds.length).toBeGreaterThanOrEqual(2);
@@ -470,7 +476,7 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
       await items.put({ ...(await items.get(id))!, suspended: true });
     }
 
-    const resumed = useReviewSession();
+    const resumed = createSession();
     expect(await resumed.restore()).toBe(false);
     expect(await loadSession()).toBeNull();
   });
@@ -478,7 +484,7 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
 
 describe('useReviewSession — undo is inert without an item to restore onto', () => {
   it('does not move the cursor (or the log, or the review row) when the item to restore is gone', async () => {
-    const session = useReviewSession();
+    const session = createSession();
     await session.start();
     const first = session.current.value!;
     session.reveal();

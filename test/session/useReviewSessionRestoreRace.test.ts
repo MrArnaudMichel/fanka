@@ -1,9 +1,9 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '~core/db/db';
 import { loadSession } from '~core/db/session';
 import { seedIfNeeded } from '~core/seed/seed';
-import { useReviewSession } from '~/composables/useReviewSession';
+import { useDisposableSessions } from './disposableSessions';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 
@@ -53,6 +53,8 @@ vi.mock('~core/db/session', async (importOriginal) => {
   };
 });
 
+const createSession = useDisposableSessions();
+
 beforeEach(async () => {
   await db.delete();
   await db.open();
@@ -60,10 +62,19 @@ beforeEach(async () => {
   gateState.armed = false;
 });
 
+// Disarms and releases the gate even when a test fails before doing so
+// itself, so a blocked or still-armed loadSession() cannot leak into the
+// next test.
+afterEach(() => {
+  gateState.armed = false;
+  gateState.release();
+  vi.restoreAllMocks();
+});
+
 describe("useReviewSession — a restore()-then-start() fallback does not clobber a slower, real restore()", () => {
   it('leaves the restored progress intact when a duplicate restore-or-start attempt is only evaluated after the first one unblocks', async () => {
     // A prior session with real, resumable progress.
-    const priorSession = useReviewSession();
+    const priorSession = createSession();
     await priorSession.start();
     priorSession.reveal();
     await priorSession.grade(3);
@@ -71,7 +82,7 @@ describe("useReviewSession — a restore()-then-start() fallback does not clobbe
     await priorSession.grade(3);
     expect(priorSession.index.value).toBe(2);
 
-    const session = useReviewSession();
+    const session = createSession();
 
     // Flow A: the page's own restore-or-start pattern. Its restore()'s
     // loadSession() read is gated — it will not resolve until released.
