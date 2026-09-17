@@ -16,21 +16,6 @@ beforeEach(async () => {
   await seedIfNeeded(NOW);
 });
 
-/**
- * What a re-anchored cursor should resolve to once `queueIds` (in original
- * queue order) is filtered down to whatever `items.visible()` still
- * returns: the survivor sitting at the position equal to how many of the
- * ids *before* `cursor` survived. Mirrors the fix's own specification
- * rather than a hand-picked index, so a test using this stays correct
- * regardless of how many entries a given drop happens to remove.
- */
-async function expectedResumeId(queueIds: string[], cursor: number): Promise<string | undefined> {
-  const visibleIds = new Set((await items.visible(queueIds)).map((i) => i.id));
-  const survivors = queueIds.filter((id) => visibleIds.has(id));
-  const survivedBeforeCursor = queueIds.slice(0, cursor).filter((id) => visibleIds.has(id)).length;
-  return survivors[survivedBeforeCursor];
-}
-
 describe('useReviewSession', () => {
   it('starts with a card and nothing revealed', async () => {
     const session = useReviewSession();
@@ -95,6 +80,23 @@ describe('useReviewSession', () => {
     expect(await db.reviews.count()).toBe(0);
   });
 
+  it('undo restores the previous item within a single instance — the page\'s normal flow', async () => {
+    const session = useReviewSession();
+    await session.start();
+    const first = session.current.value!;
+    const before = (await db.items.get(first.id))!;
+    session.reveal();
+    await session.grade(3);
+    await session.undo();
+
+    expect(session.current.value!.id).toBe(first.id);
+    expect(await db.items.get(first.id)).toEqual(before);
+    expect(await db.reviews.count()).toBe(0);
+    // The card returns already revealed, since the learner was looking at
+    // its answer when they undid the grade.
+    expect(session.revealed.value).toBe(true);
+  });
+
   it('ends when the queue is exhausted', async () => {
     const session = useReviewSession();
     await session.start();
@@ -152,16 +154,24 @@ describe('useReviewSession — elapsed clock', () => {
 describe('useReviewSession — restore respects visibility, not mere row existence', () => {
   // This app only ever soft-deletes (Card/Deck `deletedAt`) or suspends (an
   // Item flag); it never removes an Item row. A restore that only checks
-  // "does the row still exist" (a bare bulkGet + drop the misses) is
-  // therefore unreachable dead code in production — these two cases are the
-  // ones that actually happen when a learner deletes a deck, or a card is
-  // suspended, mid-session.
+  // "does the row still exist" (a bare bulkGet + drop the misses) can never
+  // actually exclude anything a learner did mid-session, since the row is
+  // always still there — regardless of *where* in the queue the affected
+  // item happens to land. That is why these assert on `queue.value`/
+  // `total.value` rather than a hand-picked `current.id`: an id-only
+  // assertion only fails against the old row-existence check when the
+  // dropped item happens to sit exactly at the re-anchored cursor, which is
+  // a detail of seed order and buildQueue's interleaving, not of what the
+  // fix is supposed to guarantee. The membership/count assertions below
+  // fail against the old check unconditionally, because it never drops
+  // anything a soft-delete or a suspend produces, full stop.
 
-  it('drops an item whose card was soft-deleted while the session was interrupted', async () => {
+  it('drops an item whose card was soft-deleted, from behind the cursor', async () => {
     const first = useReviewSession();
     await first.start();
     const originalIds = first.queue.value.map((i) => i.id);
-    expect(originalIds.length).toBeGreaterThanOrEqual(3);
+    const originalTotal = originalIds.length;
+    expect(originalTotal).toBeGreaterThanOrEqual(3);
 
     first.reveal();
     await first.grade(3);
@@ -169,28 +179,23 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     await first.grade(3);
     expect(first.index.value).toBe(2);
 
-    // Every seeded card has both a recognition and a production item, and
-    // both commonly land in the same session — so soft-deleting the card
-    // behind `originalIds[0]` can drop *two* queue entries, not one, if its
-    // other direction is elsewhere in the queue too. The expectation is
-    // computed the same way the fix is specified (survivors before the
-    // cursor), rather than assumed to be "index 2", so the test holds
-    // regardless of how many entries that one card removes.
-    const droppedCardId = (await db.items.get(originalIds[0]!))!.cardId;
+    const droppedId = originalIds[0]!; // already graded — behind the cursor
+    const droppedCardId = (await db.items.get(droppedId))!.cardId;
     await db.cards.put({ ...(await cards.get(droppedCardId))!, deletedAt: NOW });
-    const expectedNextId = await expectedResumeId(originalIds, 2);
 
     const resumed = useReviewSession();
     await resumed.restore();
 
-    expect(resumed.current.value?.id).toBe(expectedNextId);
+    expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
+    expect(resumed.total.value).toBeLessThan(originalTotal);
   });
 
-  it('drops an item that was suspended while the session was interrupted', async () => {
+  it('drops an item that was suspended, from behind the cursor', async () => {
     const first = useReviewSession();
     await first.start();
     const originalIds = first.queue.value.map((i) => i.id);
-    expect(originalIds.length).toBeGreaterThanOrEqual(3);
+    const originalTotal = originalIds.length;
+    expect(originalTotal).toBeGreaterThanOrEqual(3);
 
     first.reveal();
     await first.grade(3);
@@ -198,30 +203,125 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     await first.grade(3);
     expect(first.index.value).toBe(2);
 
-    await items.put({ ...(await items.get(originalIds[0]!))!, suspended: true });
-    const expectedNextId = await expectedResumeId(originalIds, 2);
+    const droppedId = originalIds[0]!; // already graded — behind the cursor
+    await items.put({ ...(await items.get(droppedId))!, suspended: true });
 
     const resumed = useReviewSession();
     await resumed.restore();
 
-    expect(resumed.current.value?.id).toBe(expectedNextId);
+    expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
+    expect(resumed.total.value).toBeLessThan(originalTotal);
+  });
+
+  it('drops the item the cursor would land on, and shows the next one instead', async () => {
+    const first = useReviewSession();
+    await first.start();
+    const originalIds = first.queue.value.map((i) => i.id);
+    const originalTotal = originalIds.length;
+    expect(originalTotal).toBeGreaterThanOrEqual(3);
+
+    first.reveal();
+    await first.grade(3);
+    first.reveal();
+    await first.grade(3);
+    expect(first.index.value).toBe(2);
+
+    // Unlike the two cases above, this one hides the item *at* the cursor —
+    // the one the old row-existence check "resuming" onto would actually
+    // show the learner, past-graded state and all, and the one a
+    // seed-order-dependent id assertion could accidentally pass against.
+    const droppedId = originalIds[2]!;
+    await items.put({ ...(await items.get(droppedId))!, suspended: true });
+
+    const resumed = useReviewSession();
+    await resumed.restore();
+
+    expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
+    expect(resumed.total.value).toBeLessThan(originalTotal);
+    expect(resumed.current.value?.id).not.toBe(droppedId);
   });
 });
 
-describe('useReviewSession — grade() is re-entrant safe', () => {
-  it('serialises a double-tap so only one review is recorded and the cursor advances once', async () => {
+describe('useReviewSession — grade/undo/start/restore are serialised, not dropped', () => {
+  it('drops a second grade() while one is already queued or in flight, so only one review is recorded', async () => {
     const session = useReviewSession();
     await session.start();
     session.reveal();
 
     // Fired without awaiting the first — an ordinary mis-tap on a grade
-    // button while the first tap's write is still in flight.
+    // button while the first tap's write is still in flight. This is the
+    // one case that *should* be dropped: the second tap is the bug.
     const firstCall = session.grade(3);
     const secondCall = session.grade(3);
     await Promise.all([firstCall, secondCall]);
 
     expect(await db.reviews.count()).toBe(1);
     expect(session.index.value).toBe(1);
+  });
+
+  it('runs an undo fired the instant an unawaited grade lands, in order, rather than dropping it', async () => {
+    const session = useReviewSession();
+    await session.start();
+    session.reveal();
+
+    // Neither call is awaited before the next fires — undo() must not be
+    // silently swallowed just because a grade() is still writing.
+    const gradeCall = session.grade(3);
+    const undoCall = session.undo();
+    await Promise.all([gradeCall, undoCall]);
+
+    // The review was written by grade(), then removed by undo(): net zero,
+    // not "the undo never ran" (which would also leave 0 by coincidence,
+    // but with the cursor stuck one card ahead instead of back where it
+    // started — the position check catches that).
+    expect(await db.reviews.count()).toBe(0);
+    expect(session.index.value).toBe(0);
+  });
+
+  it('never returns a dropped false from restore(): a second concurrent call gets the real answer too', async () => {
+    // A prior session with real progress, stored the way a first instance
+    // would leave it.
+    const priorSession = useReviewSession();
+    await priorSession.start();
+    priorSession.reveal();
+    await priorSession.grade(3);
+    const storedPosition = priorSession.position.value;
+    const storedTotal = priorSession.total.value;
+
+    // Task 12's page pattern is `if (!(await restore())) await start()` —
+    // safe only if restore() never lies about what it found. Fired twice
+    // on the same instance without awaiting either call first, simulating
+    // whatever double-invokes a page's own mount logic (a duplicate
+    // effect, hot-reload, a re-entered async setup): a guard that could
+    // drop a second call while the first was still in flight would report
+    // a genuine restore as a miss, and the page's own fallback would then
+    // call start(), clobbering it. Asserted directly on both return
+    // values, rather than by also racing a start() call after — that
+    // second race only actually corrupts anything in a narrow timing
+    // window this environment's real Dexie/IndexedDB scheduling does not
+    // reliably land in, which would make a test built on it either
+    // flaky or silently toothless. This is the guarantee whose violation
+    // is what would let that corruption happen at all.
+    const session = useReviewSession();
+    const [firstResult, secondResult] = await Promise.all([session.restore(), session.restore()]);
+
+    expect(firstResult).toBe(true);
+    expect(secondResult).toBe(true);
+    expect(session.position.value).toBe(storedPosition);
+    expect(session.total.value).toBe(storedTotal);
+    expect(await loadSession()).not.toBeNull();
+  });
+
+  it('exposes busy while something is queued or running, and clears it once idle', async () => {
+    const session = useReviewSession();
+    await session.start();
+    expect(session.busy.value).toBe(false);
+
+    session.reveal();
+    const gradeCall = session.grade(3);
+    expect(session.busy.value).toBe(true);
+    await gradeCall;
+    expect(session.busy.value).toBe(false);
   });
 });
 
@@ -257,6 +357,27 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
 
     const session = useReviewSession();
     expect(await session.restore(NOW)).toBe(false);
+    expect(await loadSession()).toBeNull();
+  });
+
+  it('returns false and clears a session whose remaining cards were all hidden since it was stored', async () => {
+    const session = useReviewSession();
+    await session.start();
+    const originalIds = session.queue.value.map((i) => i.id);
+    expect(originalIds.length).toBeGreaterThanOrEqual(2);
+
+    session.reveal();
+    await session.grade(3); // stored index is now 1 — well short of queueIds.length
+
+    // Everything still ahead of the cursor is suspended. The stored index
+    // itself never reaches the stored queue's length, so a "finished"
+    // check against the raw numbers alone would miss this entirely.
+    for (const id of originalIds.slice(1)) {
+      await items.put({ ...(await items.get(id))!, suspended: true });
+    }
+
+    const resumed = useReviewSession();
+    expect(await resumed.restore()).toBe(false);
     expect(await loadSession()).toBeNull();
   });
 });

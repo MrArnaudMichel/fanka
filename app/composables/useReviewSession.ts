@@ -47,13 +47,52 @@ export function useReviewSession() {
   const clock = ref(Date.now());
   let timer: ReturnType<typeof setInterval> | null = null;
 
-  // A second call into `grade`/`undo`/`start`/`restore` while one is still
-  // in flight (an ordinary mobile mis-tap on a grade bar mid-write) would
-  // otherwise race: both read the same `current` item, both record a
-  // review, the cursor advances twice, and whichever `persist()` finishes
-  // last wins regardless of which grade the learner meant to land on. This
-  // guard makes the second call a no-op instead.
+  /**
+   * `grade`/`undo`/`start`/`restore` are serialised through this one FIFO
+   * chain rather than each guarding itself independently: an undo tapped
+   * the instant an unawaited grade lands, or a page's own `if (!(await
+   * restore())) await start()` re-entered by a duplicate mount, must both
+   * still run — in the order they were issued — not race over `queue`/
+   * `index`/the persisted record. Dropping either (an earlier version of
+   * this guard did) let a `restore()` return a synthetic `false` while a
+   * real one was still in flight, which is exactly what let a page's own
+   * `start()` clobber a restore that was about to succeed. `busy` is
+   * exposed read-only so a page can disable its buttons while anything is
+   * queued or running.
+   */
   const busy = ref(false);
+  let pendingCount = 0;
+  let chainTail: Promise<unknown> = Promise.resolve();
+
+  function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    pendingCount += 1;
+    busy.value = true;
+    const run = chainTail.then(fn, fn);
+    // Keeps the chain alive even if this step rejected, so a failure in one
+    // queued action does not stall everything queued behind it.
+    chainTail = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    run
+      .finally(() => {
+        pendingCount -= 1;
+        if (pendingCount === 0) busy.value = false;
+      })
+      // `run`'s own rejection is the caller's to handle via the returned
+      // promise; this second handler exists only so the bookkeeping above
+      // does not itself produce an unhandled rejection.
+      .catch(() => undefined);
+    return run;
+  }
+
+  // grade() additionally drops a call made while another grade is already
+  // queued or in flight — the actual double-tap case, where the second
+  // call is the bug (a duplicate review of the same card). undo/start/
+  // restore are never dropped: every call the page makes has to actually
+  // run, in order, or restore()'s return value would lie about whether it
+  // found a session.
+  let gradeInFlight = false;
 
   const current = computed<Item | null>(() => queue.value[index.value] ?? null);
   const total = computed(() => queue.value.length);
@@ -113,11 +152,22 @@ export function useReviewSession() {
    * where re-running it would hide an already-revealed answer again and
    * restart the duration a grade is about to record from the moment of
    * unlocking rather than from when the card first appeared.
+   *
+   * Deliberately runs outside `enqueue`'s chain — waiting behind whatever
+   * is currently queued would delay redisplaying a stale preview for no
+   * reason — so it is not itself serialised against a `grade()`/`undo()`
+   * that moves the cursor while this is in flight. `refreshPreview()` is
+   * what guards against that: it discards its own result rather than
+   * writing it over a card that is no longer current by the time its
+   * (awaited) work resolves.
    */
   function onVisibilityChange(): void {
     if (document.visibilityState !== 'visible') return;
     const item = current.value;
-    if (item) void refreshPreview(item);
+    if (!item) return;
+    refreshPreview(item).catch((err: unknown) => {
+      console.error('useReviewSession: failed to refresh the preview on visibilitychange', err);
+    });
   }
 
   /** Starts the tick while a session is in progress, stops it once it ends. */
@@ -143,31 +193,30 @@ export function useReviewSession() {
   // case rather than forcing every caller to wrap itself in an effectScope.
   onScopeDispose(stopTimer, true);
 
-  /** Serialises the four mutating actions; a call made while one is already in flight is dropped. */
-  async function guarded<T>(fn: () => Promise<T>, whenBusy: T): Promise<T> {
-    if (busy.value) return whenBusy;
-    busy.value = true;
-    try {
-      return await fn();
-    } finally {
-      busy.value = false;
-    }
-  }
-
   /**
    * The scheduling half of `refreshCurrent()`, pulled out so it exists in
    * exactly one place: both a genuinely new current item and a
    * `visibilitychange` re-anchor of the *same* item need to recompute
    * `previews`/`previewAnchor` the same way, but only the former should
    * also touch `card`, `revealed` and `shownAt` — see `onVisibilityChange`.
+   *
+   * Re-checks that `item` is still `current.value` after its own awaited
+   * work, and discards the result if not. This call runs outside the
+   * `enqueue` chain (see `onVisibilityChange`), so a `grade()`/`undo()`
+   * queued or running concurrently can move the cursor to a different item
+   * while this is still waiting on `loadSettings()` — without the check,
+   * the *new* card would end up showing the *old* card's previews once
+   * this stale computation finally resolves and assigns over it.
    */
   async function refreshPreview(item: Item): Promise<void> {
     const settings = await loadSettings();
     const anchor = Date.now();
-    previews.value = schedulerFor(settings.algorithm).preview(item, anchor, {
+    const result = schedulerFor(settings.algorithm).preview(item, anchor, {
       desiredRetention: settings.desiredRetention,
       maxInterval: settings.maxInterval,
     });
+    if (current.value?.id !== item.id) return;
+    previews.value = result;
     previewAnchor.value = anchor;
   }
 
@@ -205,7 +254,7 @@ export function useReviewSession() {
   }
 
   async function start(now = Date.now()): Promise<void> {
-    await guarded(() => startCore(now), undefined);
+    await enqueue(() => startCore(now));
   }
 
   /**
@@ -217,10 +266,15 @@ export function useReviewSession() {
    * anything a learner did mid-session.
    *
    * Also refuses to resume — and clears the stored record — a session that
-   * is already finished (cursor at or past the end) or was started before
-   * today (`startedAt` earlier than `startOfDay(now)`): otherwise a session
-   * finished yesterday is resumed forever, since nothing else ever clears
-   * it, and a fresh `start()` can never run.
+   * was started before today (`startedAt` earlier than `startOfDay(now)`),
+   * or one with nothing left to show *after* filtering. That second check
+   * is deliberately against the re-anchored cursor and the *visible* queue,
+   * not the raw stored `index`/`queueIds`: a session with cards still
+   * genuinely unanswered can have every one of them hidden since (a deck
+   * deleted, a batch suspended) without its stored index ever reaching the
+   * stored queue's length — checking the raw numbers would resume it
+   * anyway, with nothing to show and `ended` already true, and — like the
+   * finished-yesterday case this also covers — nothing would ever clear it.
    *
    * The stored cursor is a position in the *original* queue. Reusing it
    * as-is against the filtered array (e.g. `min(stored.index, queue.length)`)
@@ -236,17 +290,22 @@ export function useReviewSession() {
     const stored = await loadSession();
     if (!stored) return false;
 
-    const finished = stored.index >= stored.queueIds.length;
-    const stale = stored.startedAt < startOfDay(now);
-    if (finished || stale) {
+    if (stored.startedAt < startOfDay(now)) {
       await clearSession();
       return false;
     }
 
     const visible = await items.visible(stored.queueIds);
     const visibleIds = new Set(visible.map((i) => i.id));
+    const reanchoredIndex = stored.queueIds.slice(0, stored.index).filter((id) => visibleIds.has(id)).length;
+
+    if (reanchoredIndex >= visible.length) {
+      await clearSession();
+      return false;
+    }
+
     queue.value = visible;
-    index.value = stored.queueIds.slice(0, stored.index).filter((id) => visibleIds.has(id)).length;
+    index.value = reanchoredIndex;
     startedAt.value = stored.startedAt;
     log.value = stored.log;
     started.value = true;
@@ -256,7 +315,7 @@ export function useReviewSession() {
   }
 
   async function restore(now = Date.now()): Promise<boolean> {
-    return guarded(() => restoreCore(now), false);
+    return enqueue(() => restoreCore(now));
   }
 
   function reveal(): void {
@@ -290,7 +349,13 @@ export function useReviewSession() {
   }
 
   async function grade(value: Grade): Promise<void> {
-    await guarded(() => gradeCore(value), undefined);
+    if (gradeInFlight) return;
+    gradeInFlight = true;
+    try {
+      await enqueue(() => gradeCore(value));
+    } finally {
+      gradeInFlight = false;
+    }
   }
 
   /**
@@ -320,7 +385,7 @@ export function useReviewSession() {
   }
 
   async function undo(): Promise<void> {
-    await guarded(() => undoCore(), undefined);
+    await enqueue(() => undoCore());
   }
 
   return {
@@ -335,6 +400,7 @@ export function useReviewSession() {
     total,
     ended,
     elapsed,
+    busy: readonly(busy),
     log,
     start,
     restore,
