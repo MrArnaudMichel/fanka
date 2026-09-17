@@ -7,31 +7,34 @@
  * Those two mounts must behave differently. `GradeButtons` never has this
  * problem (it never renders on a page's first paint — the first thing shown
  * is always this button), but this component does, so `autofocus` is a prop
- * rather than an unconditional `.focus()` call: `review.vue` only sets it
+ * rather than an unconditional focus attempt: `review.vue` only sets it
  * once the learner has graded at least one card *in this page instance*, so
  * the very first render — including a reload that resumes mid-session on an
  * unrevealed card — never grabs focus on load. A later render, caused by a
  * grade the learner just made, does.
+ *
+ * `busy`, like `GradeButtons`, disables the button while a grade or undo is
+ * still in flight — and is folded into the same "should this take focus"
+ * gate as `autofocus`, via `useFocusWhenEnabled`, rather than handled
+ * separately: this button can mount already `busy` (`gradeCore` sets
+ * `revealed` — what mounts this — before its own `persist()` settles, the
+ * same ordering `GradeButtons` deals with after an undo), and without the
+ * composable's retry-on-enabled, adding `disabled` here would silently
+ * reintroduce the exact focus-stranding bug being fixed.
  */
-const props = defineProps<{ autofocus: boolean }>();
+const props = defineProps<{ autofocus: boolean; busy: boolean }>();
 const emit = defineEmits<{ reveal: [] }>();
 
 const button = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
 
-onMounted(async () => {
-  if (!props.autofocus) return;
-  // `kt-button` is a Lit element: `connectedCallback` runs synchronously
-  // when Vue inserts it, but Lit paints the shadow DOM (and so the actual
-  // focusable native `<button>` `focus()` delegates to) on its own
-  // microtask afterwards. Calling `.focus()` immediately in `onMounted` —
-  // before that first render — finds nothing inside the shadow root to
-  // focus and silently no-ops. `updateComplete` is Lit's own signal that
-  // the first render has landed.
-  await button.value?.updateComplete;
-  button.value?.focus();
-});
+useFocusWhenEnabled(
+  () => button.value,
+  () => props.busy || !props.autofocus,
+);
 </script>
 
 <template>
-  <kt-button ref="button" variant="primary" size="large" full-width @click="emit('reveal')">Show answer</kt-button>
+  <kt-button ref="button" variant="primary" size="large" full-width :disabled="busy" @click="emit('reveal')">
+    Show answer
+  </kt-button>
 </template>

@@ -27,10 +27,17 @@ const gradeButtons = ref<HTMLButtonElement[]>([]);
  * `ReviewCard`'s `role="status"` answer region, so the live-region
  * announcement and this focus-driven announcement never read the same text
  * twice.
+ *
+ * `useFocusWhenEnabled`, not a plain `onMounted(() => ...focus())`: after an
+ * undo, this component can mount while `busy` is still `true` (`undoCore`
+ * sets `revealed` — what mounts this — before its own `persist()` settles),
+ * and a disabled button cannot take focus. The composable retries once
+ * `busy` flips back to `false`.
  */
-onMounted(() => {
-  gradeButtons.value[0]?.focus();
-});
+useFocusWhenEnabled(
+  () => gradeButtons.value[0],
+  () => props.busy,
+);
 
 /**
  * Tone follows meaning: Again is danger, Easy is info. The interval sits on

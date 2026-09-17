@@ -119,7 +119,12 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
         :revealed="session.revealed.value"
         :settings="settings"
       />
-      <ShowAnswerButton v-if="!session.revealed.value" :autofocus="hasGraded" @reveal="session.reveal()" />
+      <ShowAnswerButton
+        v-if="!session.revealed.value"
+        :autofocus="hasGraded"
+        :busy="session.busy.value"
+        @reveal="session.reveal()"
+      />
       <GradeButtons v-else :intervals="session.intervals.value" :busy="session.busy.value" @grade="grade" />
     </template>
 
