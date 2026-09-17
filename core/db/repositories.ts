@@ -120,6 +120,28 @@ export const items = {
       .sort((a, b) => (cardsById.get(a.cardId)?.createdAt ?? 0) - (cardsById.get(b.cardId)?.createdAt ?? 0))
       .slice(0, limit);
   },
+
+  /**
+   * The given ids, in the same order, filtered down to items that are still
+   * visible: the row exists, is not suspended, and its card and deck are
+   * both still live — the same rules `due()`/`fresh()` already apply, built
+   * on the same helpers so a new exclusion rule can't silently diverge
+   * between them.
+   *
+   * This app only ever soft-deletes (`deletedAt` on Card/Deck) or suspends
+   * (a flag on Item) — it has no code path that removes an Item row itself
+   * — so a caller checking "does this id still resolve to a row" alone (a
+   * bare `bulkGet` + drop the misses) would never actually exclude anything
+   * in practice. `visible()` is what a persisted id list (a review session's
+   * queue) must be re-checked against to still mean what it meant when it
+   * was written down.
+   */
+  async visible(ids: string[]): Promise<Item[]> {
+    const found = (await db.items.bulkGet(ids)).filter((i): i is Item => Boolean(i));
+    const cardsById = byId(await db.cards.bulkGet(found.map((i) => i.cardId)));
+    const decksById = await decksByIdFor(cardsById);
+    return found.filter((i) => !i.suspended && cardVisible(cardsById.get(i.cardId), decksById));
+  },
 };
 
 export interface RecordedReview {

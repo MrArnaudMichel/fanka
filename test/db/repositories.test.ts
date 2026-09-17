@@ -115,6 +115,33 @@ describe('items', () => {
     await decks.put({ ...(await decks.get('d1'))!, deletedAt: NOW });
     expect(await items.fresh(10)).toEqual([]);
   });
+
+  it('visible() preserves the given order and drops suspended items and items whose card or deck is soft-deleted', async () => {
+    await decks.put(aDeck());
+    await decks.put(aDeck({ id: 'd2' }));
+    await cards.create(aCard(), ['recognition'], NOW); // c1, deck d1, stays visible
+    await cards.create(aCard({ id: 'c2', deckId: 'd2' }), ['recognition'], NOW); // suspended
+    await cards.create(aCard({ id: 'c3' }), ['recognition'], NOW); // card soft-deleted
+    await cards.create(aCard({ id: 'c4', deckId: 'd2' }), ['recognition'], NOW); // deck soft-deleted
+    await cards.create(aCard({ id: 'c5' }), ['recognition'], NOW); // deck d1, stays visible
+    const id1 = itemId('c1', 'recognition');
+    const id2 = itemId('c2', 'recognition');
+    const id3 = itemId('c3', 'recognition');
+    const id4 = itemId('c4', 'recognition');
+    const id5 = itemId('c5', 'recognition');
+
+    await items.put({ ...(await items.get(id2))!, suspended: true });
+    await db.cards.put({ ...(await cards.get('c3'))!, deletedAt: NOW });
+    await decks.put({ ...(await decks.get('d2'))!, deletedAt: NOW });
+
+    // Deliberately not in creation order, and includes an id that never
+    // existed at all, to prove both the ordering and the "row missing"
+    // case, not just the visibility rules. The two survivors (id5, id1)
+    // must come back in this given order, not creation order, to prove
+    // ordering is actually preserved rather than coincidental.
+    const result = await items.visible([id4, id5, id3, 'no-such-item', id2, id1]);
+    expect(result.map((i) => i.id)).toEqual([id5, id1]);
+  });
 });
 
 describe('reviews', () => {
