@@ -80,7 +80,7 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
 .answer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--gap-form);
   align-items: center;
   width: 100%;
   border-top: var(--border-width) solid var(--border-subtle);

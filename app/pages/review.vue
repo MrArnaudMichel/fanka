@@ -17,6 +17,16 @@ const { refresh } = useDueCounts();
  */
 const loading = ref(true);
 
+/**
+ * Whether the learner has graded at least one card in this page instance.
+ * `ShowAnswerButton` uses this to tell "the very first card of a page load
+ * (including a reload that resumes mid-session on an unrevealed card)" —
+ * where it must not steal focus — from "a new card just replaced the one
+ * the learner graded" — where it should, the same way `GradeButtons`
+ * already does for the reveal direction.
+ */
+const hasGraded = ref(false);
+
 onMounted(async () => {
   // Resume rather than restart: the learner may have locked their phone.
   if (!(await session.restore())) await session.start();
@@ -26,6 +36,13 @@ onMounted(async () => {
 onUnmounted(() => window.removeEventListener('keydown', onKey));
 
 async function grade(value: Grade) {
+  // Set *before* awaiting, not after: `session.grade()` flips `revealed` to
+  // `false` deep inside its own async chain (after an IndexedDB read), well
+  // before this call resolves. Vue can flush that change — mounting
+  // `ShowAnswerButton` with whatever `hasGraded` was at that moment — before
+  // this function ever gets to a line after the `await`. Setting it first
+  // guarantees it is already `true` by the time any of that happens.
+  hasGraded.value = true;
   await session.grade(value);
   await refresh();
 }
@@ -102,9 +119,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
         :revealed="session.revealed.value"
         :settings="settings"
       />
-      <kt-button v-if="!session.revealed.value" variant="primary" size="large" full-width @click="session.reveal()">
-        Show answer
-      </kt-button>
+      <ShowAnswerButton v-if="!session.revealed.value" :autofocus="hasGraded" @reveal="session.reveal()" />
       <GradeButtons v-else :intervals="session.intervals.value" :busy="session.busy.value" @grade="grade" />
     </template>
 
