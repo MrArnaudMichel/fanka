@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '~core/db/db';
-import { cards, items } from '~core/db/repositories';
+import { cards, items, reviews } from '~core/db/repositories';
 import { loadSession, saveSession } from '~core/db/session';
 import { saveSettings } from '~core/db/settings';
 import { seedIfNeeded } from '~core/seed/seed';
@@ -151,6 +151,23 @@ describe('useReviewSession — elapsed clock', () => {
   });
 });
 
+/**
+ * What a re-anchored cursor should resolve to once `queueIds` (in original
+ * queue order) is filtered down to whatever `items.visible()` still
+ * returns: the survivor sitting at the position equal to how many of the
+ * ids *before* `cursor` survived. Mirrors the fix's own specification
+ * (count survivors before the cursor) rather than a hand-picked index, so
+ * it stays correct regardless of how many entries a given drop removes —
+ * soft-deleting a card can remove both of its directions from the queue,
+ * not just the one a test happens to look at.
+ */
+async function expectedResumeId(queueIds: string[], cursor: number): Promise<string | undefined> {
+  const visibleIds = new Set((await items.visible(queueIds)).map((i) => i.id));
+  const survivors = queueIds.filter((id) => visibleIds.has(id));
+  const survivedBeforeCursor = queueIds.slice(0, cursor).filter((id) => visibleIds.has(id)).length;
+  return survivors[survivedBeforeCursor];
+}
+
 describe('useReviewSession — restore respects visibility, not mere row existence', () => {
   // This app only ever soft-deletes (Card/Deck `deletedAt`) or suspends (an
   // Item flag); it never removes an Item row. A restore that only checks
@@ -158,13 +175,17 @@ describe('useReviewSession — restore respects visibility, not mere row existen
   // actually exclude anything a learner did mid-session, since the row is
   // always still there — regardless of *where* in the queue the affected
   // item happens to land. That is why these assert on `queue.value`/
-  // `total.value` rather than a hand-picked `current.id`: an id-only
+  // `total.value` rather than only a hand-picked `current.id`: an id-only
   // assertion only fails against the old row-existence check when the
   // dropped item happens to sit exactly at the re-anchored cursor, which is
   // a detail of seed order and buildQueue's interleaving, not of what the
-  // fix is supposed to guarantee. The membership/count assertions below
-  // fail against the old check unconditionally, because it never drops
-  // anything a soft-delete or a suspend produces, full stop.
+  // fix is supposed to guarantee. The membership/count assertions fail
+  // against the old check unconditionally, because it never drops anything
+  // a soft-delete or a suspend produces, full stop — but they alone do not
+  // pin down *which* card the cursor should land on, which is what the
+  // re-anchoring logic (as opposed to mere filtering) is actually for; the
+  // two "behind the cursor" cases also assert the exact expected id via
+  // `expectedResumeId`.
 
   it('drops an item whose card was soft-deleted, from behind the cursor', async () => {
     const first = useReviewSession();
@@ -182,12 +203,14 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     const droppedId = originalIds[0]!; // already graded — behind the cursor
     const droppedCardId = (await db.items.get(droppedId))!.cardId;
     await db.cards.put({ ...(await cards.get(droppedCardId))!, deletedAt: NOW });
+    const expectedNextId = await expectedResumeId(originalIds, 2);
 
     const resumed = useReviewSession();
     await resumed.restore();
 
     expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
     expect(resumed.total.value).toBeLessThan(originalTotal);
+    expect(resumed.current.value?.id).toBe(expectedNextId);
   });
 
   it('drops an item that was suspended, from behind the cursor', async () => {
@@ -205,12 +228,14 @@ describe('useReviewSession — restore respects visibility, not mere row existen
 
     const droppedId = originalIds[0]!; // already graded — behind the cursor
     await items.put({ ...(await items.get(droppedId))!, suspended: true });
+    const expectedNextId = await expectedResumeId(originalIds, 2);
 
     const resumed = useReviewSession();
     await resumed.restore();
 
     expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
     expect(resumed.total.value).toBeLessThan(originalTotal);
+    expect(resumed.current.value?.id).toBe(expectedNextId);
   });
 
   it('drops the item the cursor would land on, and shows the next one instead', async () => {
@@ -232,6 +257,7 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     // seed-order-dependent id assertion could accidentally pass against.
     const droppedId = originalIds[2]!;
     await items.put({ ...(await items.get(droppedId))!, suspended: true });
+    const expectedNextId = await expectedResumeId(originalIds, 2);
 
     const resumed = useReviewSession();
     await resumed.restore();
@@ -239,6 +265,10 @@ describe('useReviewSession — restore respects visibility, not mere row existen
     expect(resumed.queue.value.map((i) => i.id)).not.toContain(droppedId);
     expect(resumed.total.value).toBeLessThan(originalTotal);
     expect(resumed.current.value?.id).not.toBe(droppedId);
+    // The title's claim ("shows the next one instead") — not merely that
+    // it isn't the dropped id, but that it is specifically the one the
+    // re-anchor logic says it should be.
+    expect(resumed.current.value?.id).toBe(expectedNextId);
   });
 });
 
@@ -270,12 +300,33 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
     const undoCall = session.undo();
     await Promise.all([gradeCall, undoCall]);
 
-    // The review was written by grade(), then removed by undo(): net zero,
-    // not "the undo never ran" (which would also leave 0 by coincidence,
-    // but with the cursor stuck one card ahead instead of back where it
-    // started — the position check catches that).
+    // The review was written by grade(), then removed by undo(): net zero.
+    // If undo() were dropped instead of queued (the a1f71fc bug this
+    // guards against), the review from grade() would stay written and the
+    // cursor would stay one card ahead — 1 review and index 1, not 0 and 0.
     expect(await db.reviews.count()).toBe(0);
     expect(session.index.value).toBe(0);
+  });
+
+  it('re-arms grading once an undo is queued behind an unfinished grade, so grade-undo-grade records the correction', async () => {
+    const session = useReviewSession();
+    await session.start();
+    session.reveal();
+
+    // All three fired without awaiting any of the previous ones. A plain
+    // "is a grade in flight anywhere" guard cannot tell this apart from a
+    // double-tap and would drop the corrected grade — silently losing the
+    // learner's second answer, the same kind of loss this guard exists to
+    // prevent, just reached via a different call order.
+    const wrongGrade = session.grade(3);
+    const undoCall = session.undo();
+    const correctionGrade = session.grade(4);
+    await Promise.all([wrongGrade, undoCall, correctionGrade]);
+
+    expect(await db.reviews.count()).toBe(1);
+    const [review] = await db.reviews.toArray();
+    expect(review!.grade).toBe(4);
+    expect(session.index.value).toBe(1);
   });
 
   it('never returns a dropped false from restore(): a second concurrent call gets the real answer too', async () => {
@@ -322,6 +373,49 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
     expect(session.busy.value).toBe(true);
     await gradeCall;
     expect(session.busy.value).toBe(false);
+  });
+
+  it('keeps busy true across multiple queued actions, clearing it only once the whole chain drains — even after one step rejects', async () => {
+    const session = useReviewSession();
+    await session.start();
+    session.reveal();
+
+    const recordSpy = vi.spyOn(reviews, 'record').mockRejectedValueOnce(new Error('simulated write failure'));
+
+    const failingGrade = session.grade(3).catch(() => undefined);
+    expect(session.busy.value).toBe(true);
+
+    // Queued behind the failing grade — busy must still read true, since
+    // the chain has not drained yet.
+    const undoCall = session.undo();
+    expect(session.busy.value).toBe(true);
+
+    await Promise.all([failingGrade, undoCall]);
+
+    expect(session.busy.value).toBe(false);
+    recordSpy.mockRestore();
+  });
+
+  it('does not let a rejected action stall whatever is queued behind it', async () => {
+    const session = useReviewSession();
+    await session.start();
+    session.reveal();
+
+    const recordSpy = vi.spyOn(reviews, 'record').mockRejectedValueOnce(new Error('simulated write failure'));
+
+    const failingGrade = session.grade(3).catch(() => undefined);
+    // Queued behind the failing grade. If the chain stalled on the
+    // rejection instead of moving on, this would never resolve and the
+    // test would time out rather than fail cleanly.
+    const undoCall = session.undo();
+
+    await failingGrade;
+    await undoCall;
+
+    // The grade never actually wrote anything before rejecting, so there
+    // is nothing for undo() to undo — it runs as a safe no-op, not stuck.
+    expect(await db.reviews.count()).toBe(0);
+    recordSpy.mockRestore();
   });
 });
 

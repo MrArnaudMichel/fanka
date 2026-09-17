@@ -64,9 +64,27 @@ export function useReviewSession() {
   let pendingCount = 0;
   let chainTail: Promise<unknown> = Promise.resolve();
 
-  function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  // Tracks the kind of whatever is currently the *tail* of the chain — the
+  // most recently enqueued action that has not yet finished — so grade()
+  // can tell a genuine double-tap (another grade queued right behind an
+  // unfinished grade) from a grade that follows something else, most
+  // importantly an undo. A plain "is any grade in flight anywhere" flag
+  // cannot make that distinction: a grade queued behind an undo is a
+  // correction, not a duplicate, and dropping it would silently lose the
+  // learner's second (corrected) answer — the same kind of loss this whole
+  // guard exists to prevent, just reached from a different call order.
+  // `tailSeq` disambiguates *which* enqueue a given call belongs to, so a
+  // step that finishes only resets `tailKind` back to idle if nothing else
+  // was enqueued after it in the meantime.
+  let tailKind: 'grade' | 'other' | null = null;
+  let tailSeq = 0;
+
+  function enqueue<T>(fn: () => Promise<T>, kind: 'grade' | 'other'): Promise<T> {
     pendingCount += 1;
     busy.value = true;
+    tailSeq += 1;
+    const mySeq = tailSeq;
+    tailKind = kind;
     const run = chainTail.then(fn, fn);
     // Keeps the chain alive even if this step rejected, so a failure in one
     // queued action does not stall everything queued behind it.
@@ -78,6 +96,9 @@ export function useReviewSession() {
       .finally(() => {
         pendingCount -= 1;
         if (pendingCount === 0) busy.value = false;
+        // Only clear back to idle if nothing newer has been enqueued since
+        // — otherwise this would wrongly erase the *newer* tail's kind.
+        if (tailSeq === mySeq) tailKind = null;
       })
       // `run`'s own rejection is the caller's to handle via the returned
       // promise; this second handler exists only so the bookkeeping above
@@ -85,14 +106,6 @@ export function useReviewSession() {
       .catch(() => undefined);
     return run;
   }
-
-  // grade() additionally drops a call made while another grade is already
-  // queued or in flight — the actual double-tap case, where the second
-  // call is the bug (a duplicate review of the same card). undo/start/
-  // restore are never dropped: every call the page makes has to actually
-  // run, in order, or restore()'s return value would lie about whether it
-  // found a session.
-  let gradeInFlight = false;
 
   const current = computed<Item | null>(() => queue.value[index.value] ?? null);
   const total = computed(() => queue.value.length);
@@ -254,7 +267,7 @@ export function useReviewSession() {
   }
 
   async function start(now = Date.now()): Promise<void> {
-    await enqueue(() => startCore(now));
+    await enqueue(() => startCore(now), 'other');
   }
 
   /**
@@ -315,7 +328,7 @@ export function useReviewSession() {
   }
 
   async function restore(now = Date.now()): Promise<boolean> {
-    return enqueue(() => restoreCore(now));
+    return enqueue(() => restoreCore(now), 'other');
   }
 
   function reveal(): void {
@@ -349,13 +362,13 @@ export function useReviewSession() {
   }
 
   async function grade(value: Grade): Promise<void> {
-    if (gradeInFlight) return;
-    gradeInFlight = true;
-    try {
-      await enqueue(() => gradeCore(value));
-    } finally {
-      gradeInFlight = false;
-    }
+    // Dropped only when the tail of the chain is itself an unfinished
+    // grade — a genuine double-tap. If anything else (an undo, most
+    // usefully) has been queued since, this grade is a new intent, not a
+    // duplicate, and must go through even while the original grade is
+    // still ahead of it in the chain.
+    if (tailKind === 'grade') return;
+    await enqueue(() => gradeCore(value), 'grade');
   }
 
   /**
@@ -385,7 +398,7 @@ export function useReviewSession() {
   }
 
   async function undo(): Promise<void> {
-    await enqueue(() => undoCore());
+    await enqueue(() => undoCore(), 'other');
   }
 
   return {
