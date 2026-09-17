@@ -24,12 +24,14 @@ beforeEach(async () => {
 // since wiped. Isolating the one test that dispatches the event keeps that
 // cross-test leakage from ever mattering.
 describe('useReviewSession — intervals survive backgrounding', () => {
-  it('does not let displayed intervals decay while backgrounded, and refreshes the preview on visibilitychange', async () => {
+  it('refreshes intervals on visibilitychange without decaying them, hiding a revealed answer again, or resetting the duration clock', async () => {
     vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
     vi.setSystemTime(NOW);
     try {
       const session = useReviewSession();
       await session.start();
+      session.reveal();
+      expect(session.revealed.value).toBe(true);
 
       const intervalAtStart = session.intervals.value[3];
       const dueAtStart = session.previews.value[3]!.due;
@@ -45,7 +47,7 @@ describe('useReviewSession — intervals survive backgrounding', () => {
       // The page becomes visible again.
       vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
       document.dispatchEvent(new Event('visibilitychange'));
-      // refreshCurrent() is fired but not awaited by the listener; let its
+      // The listener fires refreshPreview() but does not await it; let its
       // chained Dexie/settings reads settle on the real microtask/macrotask
       // queue (only Date/setInterval/clearInterval are faked above).
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -57,6 +59,18 @@ describe('useReviewSession — intervals survive backgrounding', () => {
       const dueAfter = session.previews.value[3]!.due;
       expect(dueAfter - dueAtStart).toBeGreaterThan(39 * 60_000);
       expect(dueAfter - dueAtStart).toBeLessThan(41 * 60_000);
+
+      // The answer the learner had already revealed before backgrounding
+      // must still be revealed — refreshing the preview on visibilitychange
+      // must not hide it again.
+      expect(session.revealed.value).toBe(true);
+
+      // Grading now must still measure the duration from when the card was
+      // first shown, before backgrounding, not from when the phone was
+      // unlocked 40 minutes later.
+      await session.grade(3);
+      const [review] = await db.reviews.toArray();
+      expect(review!.durationMs).toBeGreaterThanOrEqual(40 * 60_000);
     } finally {
       vi.useRealTimers();
     }

@@ -104,9 +104,20 @@ export function useReviewSession() {
    * *offered* schedule itself (what "Hard" vs "Good" actually computes) can
    * legitimately depend on how much time has really passed since the
    * item's last review, so it is worth recomputing, not just redisplaying.
+   *
+   * Calls `refreshPreview()`, not `refreshCurrent()`: the card the learner
+   * was looking at, whether they had already revealed its answer, and when
+   * it was shown must not change just because the phone was unlocked.
+   * `refreshCurrent()` resets all three (`card`, `revealed`, `shownAt`) —
+   * appropriate when a grade genuinely moves to a new card, wrong here,
+   * where re-running it would hide an already-revealed answer again and
+   * restart the duration a grade is about to record from the moment of
+   * unlocking rather than from when the card first appeared.
    */
   function onVisibilityChange(): void {
-    if (document.visibilityState === 'visible') void refreshCurrent();
+    if (document.visibilityState !== 'visible') return;
+    const item = current.value;
+    if (item) void refreshPreview(item);
   }
 
   /** Starts the tick while a session is in progress, stops it once it ends. */
@@ -143,6 +154,23 @@ export function useReviewSession() {
     }
   }
 
+  /**
+   * The scheduling half of `refreshCurrent()`, pulled out so it exists in
+   * exactly one place: both a genuinely new current item and a
+   * `visibilitychange` re-anchor of the *same* item need to recompute
+   * `previews`/`previewAnchor` the same way, but only the former should
+   * also touch `card`, `revealed` and `shownAt` — see `onVisibilityChange`.
+   */
+  async function refreshPreview(item: Item): Promise<void> {
+    const settings = await loadSettings();
+    const anchor = Date.now();
+    previews.value = schedulerFor(settings.algorithm).preview(item, anchor, {
+      desiredRetention: settings.desiredRetention,
+      maxInterval: settings.maxInterval,
+    });
+    previewAnchor.value = anchor;
+  }
+
   async function refreshCurrent(): Promise<void> {
     const item = current.value;
     if (!item) {
@@ -151,13 +179,7 @@ export function useReviewSession() {
       return;
     }
     card.value = (await cards.get(item.cardId)) ?? null;
-    const settings = await loadSettings();
-    const anchor = Date.now();
-    previews.value = schedulerFor(settings.algorithm).preview(item, anchor, {
-      desiredRetention: settings.desiredRetention,
-      maxInterval: settings.maxInterval,
-    });
-    previewAnchor.value = anchor;
+    await refreshPreview(item);
     revealed.value = false;
     shownAt.value = Date.now();
   }
