@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { decks as deckRepo } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';
-import { seedIfNeeded } from '~core/seed/seed';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useSeedStatus } from '~/composables/useSeedStatus';
 
 const { total, byState, refresh } = useDueCounts();
-const { failed: seedFailed, markFailed: markSeedFailed, clear: clearSeedFailed } = useSeedStatus();
+const { failed: seedFailed, retry: retrySeedStatus } = useSeedStatus();
 
 const decks = ref<Deck[]>([]);
 
@@ -42,47 +41,58 @@ async function loadToday(): Promise<void> {
   }
 }
 
-/** Retries the seed itself, not just the read — a seed failure needs redoing, not just re-reading the same empty tables. */
-async function retrySeed(): Promise<void> {
-  try {
-    await seedIfNeeded(Date.now());
-    clearSeedFailed();
-  } catch (err) {
-    console.error('index: retry seed failed', err);
-    markSeedFailed();
-    return;
-  }
-  await loadToday();
-}
-
 onMounted(loadToday);
 
 /** Roughly eight seconds a card, which is what a steady session averages. */
 const minutes = computed(() => Math.round((total.value * 8) / 60));
 
 /**
- * `kt-button` has no `described-by` property — it sets `aria-label` on its
- * own shadow-internal `<button>` from a `label` property, but nothing
- * forwards an arbitrary host attribute across the shadow boundary (an
- * `aria-describedby` set on the `<kt-button>` host itself would not reach
- * the actual interactive element; Kanto's own `kt-tooltip` documents this
- * same constraint). Reaching into the shadow root directly is the same
- * technique `kt-button.focus()` uses internally, and the `updateComplete`
- * await mirrors `useFocusWhenEnabled`: a Lit element paints its shadow DOM
- * on its own microtask after connection, not synchronously within it.
+ * Both Retry buttons below unmount the instant their state resolves — the
+ * v-else-if branch that rendered them stops matching, Vue removes the
+ * button that had focus, and focus falls to `<body>` with nothing
+ * announced, the same stranding class `useFocusWhenEnabled` exists to close
+ * for the review page.
+ *
+ * That composable doesn't fit this shape, though: it moves focus onto one
+ * *persistent* element as a `disabled` flag on it flips false, and this is
+ * the opposite — the focused element itself is destroyed, and a different,
+ * already-mounted element (this heading) should pick focus up in its place.
+ * So this borrows only its "don't steal focus the learner already moved
+ * elsewhere" half, inline, and skips the `updateComplete` half entirely: a
+ * native `<h1>` has no shadow DOM to paint asynchronously, unlike a
+ * `kt-button`.
  */
-const startButton = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
-onMounted(async () => {
-  await startButton.value?.updateComplete;
-  startButton.value?.shadowRoot?.querySelector('button')?.setAttribute('aria-describedby', 'today-eta');
-});
+const pageHeading = ref<HTMLElement>();
+function focusHeadingIfUnclaimed(): void {
+  const active = document.activeElement;
+  if (!active || active === document.body) pageHeading.value?.focus();
+}
+
+async function retryLoad(): Promise<void> {
+  const hadError = loadError.value;
+  await loadToday();
+  if (hadError && !loadError.value) {
+    await nextTick();
+    focusHeadingIfUnclaimed();
+  }
+}
+
+async function retrySeed(): Promise<void> {
+  // `retrySeedStatus` self-guards against an overlapping call, so a fast
+  // double click on this button starts at most one `seedIfNeeded`.
+  const ok = await retrySeedStatus();
+  if (!ok) return;
+  await loadToday();
+  await nextTick();
+  focusHeadingIfUnclaimed();
+}
 </script>
 
 <template>
   <div class="today">
     <header class="head">
       <p class="overline">Dashboard</p>
-      <h1>Today</h1>
+      <h1 ref="pageHeading" tabindex="-1">Today</h1>
     </header>
 
     <kt-card>
@@ -92,17 +102,26 @@ onMounted(async () => {
           <kt-stat label="Learning" :value="String(byState.learning)" size="small" />
           <kt-stat label="To review" :value="String(byState.review)" size="small" />
         </div>
-        <p id="today-eta" class="eta">
+        <p class="eta">
           <template v-if="total > 0">{{ total }} card{{ total === 1 ? '' : 's' }} due · about {{ minutes }} min</template>
           <template v-else>Nothing due right now</template>
         </p>
+        <!--
+          No aria-describedby here: it cannot reach across kt-button's shadow
+          boundary onto its internal <button> (Kanto's own kt-tooltip
+          documents this same limitation for the same reason, in the other
+          direction). Instead, when the button is disabled, `label` replaces
+          its accessible name outright with the reason — kt-button forwards
+          `label` straight to `aria-label` on that internal <button>, so this
+          reaches the one place aria-describedby couldn't.
+        -->
         <kt-button
-          ref="startButton"
           variant="primary"
           size="large"
           icon="play"
           full-width
           :disabled="total === 0"
+          :label="total === 0 ? 'Start session — nothing due right now' : ''"
           @click="navigateTo('/review')"
         >
           Start session
@@ -118,7 +137,7 @@ onMounted(async () => {
       heading="Couldn't load today's data"
       description="Something went wrong reading the database. Try again."
     >
-      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="loadToday">Retry</kt-button>
+      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retryLoad">Retry</kt-button>
     </kt-empty-state>
 
     <kt-empty-state
