@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:app": "nuxt generate",
-    "typecheck": "tsc --noEmit -p tsconfig.check.json && nuxt typecheck"
+    "typecheck": "tsc --noEmit -p tsconfig.check.json && nuxt typecheck",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "dexie": "^4.4.6",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@nuxt/test-utils": "^3.23.0",
+    "@playwright/test": "^1.63.0",
     "@vue/test-utils": "^2.5.0",
     "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.14.5",
