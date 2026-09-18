@@ -1,4 +1,5 @@
 import { seedIfNeeded } from '~core/seed/seed';
+import { useSeedStatus } from '~/composables/useSeedStatus';
 
 /**
  * Runs before the first paint on the client. Nuxt awaits every non-parallel
@@ -15,6 +16,9 @@ export default defineNuxtPlugin(async () => {
   } catch (err) {
     // A failed seed must not block the app from mounting — the page still
     // renders (with an empty deck list) rather than leaving a blank screen.
+    // `markFailed` lets the Today page tell this apart from a fresh,
+    // legitimately-empty database and offer a retry instead of "reload".
     console.error('seed.client: seedIfNeeded failed', err);
+    useSeedStatus().markFailed();
   }
 });
