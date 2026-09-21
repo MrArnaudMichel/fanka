@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 
 /**
  * Each test gets its own browser context and so its own IndexedDB — the
- * seed plugin re-runs fresh every time. Neither test depends on the other,
- * and neither leaves anything behind that would change the other's result.
+ * seed plugin re-runs fresh every time. No test depends on another, and
+ * none leaves anything behind that would change another's result.
  */
 
 // The card's own prompt (hanzi for recognition, the translation prompt for
@@ -171,4 +171,53 @@ test('a card that cannot be read offers Retry instead of a skeleton', async ({ p
   await expect(face).toBeVisible();
   await expect(pos).toHaveText(/^2 \/ \d+$/);
   expect((await face.innerText()).trim()).not.toBe(firstCard);
+});
+
+test('a learner can finish a session and return to Today', async ({ page }) => {
+  await page.goto('/');
+  const startButton = page.getByRole('button', { name: 'Start session', exact: true });
+  await expect(startButton).toBeEnabled();
+
+  // A two-card day keeps the loop short: the queue is built from settings
+  // when the session starts, so writing them before clicking is enough.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open('fanka');
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction('settings', 'readwrite');
+          tx.objectStore('settings').put({ key: 'settings', value: { newPerDay: 2 } });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+  );
+  await startButton.click();
+  await expect(page).toHaveURL(/\/review$/);
+
+  const pos = position(page);
+  const answer = page.locator('.answer .meaning');
+  await expect(pos).toHaveText('1 / 2');
+  for (const step of [1, 2]) {
+    await expect(pos).toHaveText(`${step} / 2`);
+    await page.keyboard.press('Space');
+    await expect(answer).toHaveText(/\S+/);
+    // Easy, so neither card comes due again today.
+    await page.keyboard.press('4');
+  }
+
+  await expect(page.getByRole('heading', { name: 'Session complete' })).toBeVisible();
+  await expect(page.getByText('2 cards graded.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Back to today' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
+  await expect(page.getByText('Nothing due right now')).toBeVisible();
+  // With nothing left, the sidebar's session button is disabled and says why.
+  await expect(page.getByRole('button', { name: "Today's session — nothing due right now" })).toBeDisabled();
 });
