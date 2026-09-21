@@ -14,7 +14,3 @@ export function newSrsState(now: number): SrsState {
     lastReview: null,
   };
 }
-
-export function isDue(state: SrsState, now: number): boolean {
-  return state.due <= now;
-}

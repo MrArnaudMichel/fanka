@@ -44,6 +44,11 @@ export function useReviewSession() {
   // freezing the on-screen timer. This ref is instead advanced by a ticking
   // interval, started/stopped by `syncTimer` below, so `elapsed` actually
   // moves.
+  //
+  // No page shows `elapsed` yet, but the timer is not dead weight to strip:
+  // `syncTimer`/`stopTimer` also add and remove the `visibilitychange`
+  // listener, keyed on this same `timer`, so that listener's lifecycle
+  // lives here too. Removing the interval means re-homing the listener.
   const clock = ref(Date.now());
   let timer: ReturnType<typeof setInterval> | null = null;
 
