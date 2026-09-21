@@ -58,48 +58,55 @@ const minutes = computed(() => Math.max(1, Math.round((total.value * 8) / 60)));
  * announced, the same stranding class `useFocusWhenEnabled` exists to close
  * for the review page.
  *
- * That composable doesn't fit this shape, though: it moves focus onto one
- * *persistent* element as a `disabled` flag on it flips false, and this is
- * the opposite — the focused element itself is destroyed, and a different,
- * already-mounted element (this heading) should pick focus up in its place.
- * So this borrows only its "don't steal focus the learner already moved
- * elsewhere" half, inline, and skips the `updateComplete` half entirely: a
- * native `<h1>` has no shadow DOM to paint asynchronously, unlike a
- * `kt-button`.
+ * The natural target is the page heading, but it cannot take one:
+ * `kt-page-header` renders its `<h1>` inside its shadow root with no
+ * `tabindex` and no `focus()` override (unlike `kt-button`, which delegates
+ * `focus()` to its internal `<button>` — see kt-page-header.ts), and the
+ * host itself has no `tabindex` either. Calling `.focus()` on the
+ * `kt-page-header` element was verified in a real browser (Chromium, via
+ * `npx playwright`) to silently no-op: forcing the day's load to fail and
+ * clicking Retry left `document.activeElement` on `<body>`, not the
+ * heading. Start session is the next control the learner needs anyway, so
+ * it takes focus instead.
+ *
+ * `useFocusWhenEnabled`, not a plain call: Start session is a `kt-button`,
+ * which paints its shadow DOM asynchronously, and disables itself when
+ * nothing is due (`total === 0`) — focusing it in that state would be the
+ * same silent no-op via a different door. `awaitingRetryRecovery` is the
+ * composable's "disabled" gate: it starts `true` so a normal page load
+ * never steals focus, a retry sets it `true` again (idempotent, so a second
+ * failure can still trigger the watcher) and only a *successful* retry sets
+ * it `false`, which is what the composable is watching for.
  */
-const pageHeading = ref<HTMLElement>();
-function focusHeadingIfUnclaimed(): void {
-  const active = document.activeElement;
-  if (!active || active === document.body) pageHeading.value?.focus();
-}
+const startButton = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
+const awaitingRetryRecovery = ref(true);
+
+useFocusWhenEnabled(
+  () => startButton.value,
+  () => awaitingRetryRecovery.value || total.value === 0,
+);
 
 async function retryLoad(): Promise<void> {
-  const hadError = loadError.value;
+  awaitingRetryRecovery.value = true;
   await loadToday();
-  if (hadError && !loadError.value) {
-    await nextTick();
-    focusHeadingIfUnclaimed();
-  }
+  if (!loadError.value) awaitingRetryRecovery.value = false;
 }
 
 async function retrySeed(): Promise<void> {
   // `retrySeedStatus` serialises overlapping calls, so a fast double click
   // on this button never runs two `seedIfNeeded` at once, and `false`
   // always means the attempt failed.
+  awaitingRetryRecovery.value = true;
   const ok = await retrySeedStatus();
   if (!ok) return;
   await loadToday();
-  await nextTick();
-  focusHeadingIfUnclaimed();
+  awaitingRetryRecovery.value = false;
 }
 </script>
 
 <template>
   <div class="today">
-    <header class="head">
-      <p class="overline">Dashboard</p>
-      <h1 ref="pageHeading" tabindex="-1">Today</h1>
-    </header>
+    <kt-page-header eyebrow="Dashboard" heading="Today" />
 
     <kt-card>
       <div class="summary">
@@ -122,6 +129,7 @@ async function retrySeed(): Promise<void> {
           reaches the one place aria-describedby couldn't.
         -->
         <kt-button
+          ref="startButton"
           variant="primary"
           size="large"
           icon="play"
@@ -164,13 +172,9 @@ async function retrySeed(): Promise<void> {
 
     <kt-card v-else>
       <p class="overline" slot="header">Decks</p>
-      <ul class="decks">
-        <li v-for="deck in decks" :key="deck.id">
-          <span class="swatch" :style="{ background: deck.colorToken }" />
-          <span class="name">{{ deck.name }}</span>
-          <kt-badge variant="category" tone="neutral" size="small" :label="deck.tag" />
-        </li>
-      </ul>
+      <div class="decks">
+        <DeckCard v-for="deck in decks" :key="deck.id" :deck="deck" />
+      </div>
     </kt-card>
   </div>
 </template>
@@ -181,17 +185,12 @@ async function retrySeed(): Promise<void> {
    .done-body) already treats this outer page gap as a literal rather than
    reaching for it. */
 .today { display: flex; flex-direction: column; gap: 24px; }
-.head { display: flex; flex-direction: column; gap: 2px; }
 .overline { margin: 0; font: var(--font-title-overline); letter-spacing: var(--letter-spacing-overline); text-transform: uppercase; color: var(--text-muted); }
-.head h1 { margin: 0; font: var(--font-title-h4); color: var(--text-body); }
 .summary { display: flex; flex-direction: column; gap: var(--gap-form); }
 /* 12px matches --gap-drag-drop by value only — that token names an
    interaction this grid has nothing to do with, so a literal is the
    honest choice (name-plus-value match wins over value alone). */
 .counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
 .eta { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
-.decks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap-button); }
-.decks li { display: flex; align-items: center; gap: 10px; padding: 12px; border: var(--border-width) solid var(--border-subtle); border-radius: var(--border-radius); }
-.swatch { width: 4px; height: 26px; border-radius: var(--radius-full); }
-.name { flex: 1; min-width: 0; font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.decks { display: flex; flex-direction: column; gap: var(--gap-button); }
 </style>

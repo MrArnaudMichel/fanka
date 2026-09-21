@@ -15,12 +15,4 @@ export interface AllowlistEntry {
  * element not listed, and on any entry that no longer matches, so the list
  * cannot rot.
  */
-export const ALLOWLIST: AllowlistEntry[] = [
-  {
-    file: 'app/components/AppSidebar.vue',
-    tag: 'aside',
-    reason: 'Page landmark wrapping kt-sub-menu-navigation; Kanto has no sidebar container.',
-  },
-  { file: 'app/components/GradeButtons.vue', tag: 'button', reason: 'Hand-built grade buttons from phase 1.', removeIn: 'Task 3' },
-  { file: 'app/pages/index.vue', tag: 'ul', reason: 'Hand-built deck list from phase 1.', removeIn: 'Task 3' },
-];
+export const ALLOWLIST: AllowlistEntry[] = [];

@@ -108,15 +108,9 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 
 <template>
   <div class="review">
-    <header class="bar">
-      <div class="progress">
-        <div class="counts">
-          <span>Session</span>
-          <span class="mono">{{ session.position.value }} / {{ session.total.value }}</span>
-        </div>
-        <kt-progress-bar :value="progress" label="Session progress" />
-      </div>
+    <kt-page-header eyebrow="Session" heading="Review">
       <kt-button
+        slot="actions"
         variant="secondary-no-bg"
         size="small"
         icon="undo-2"
@@ -124,8 +118,20 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
         :disabled="session.busy.value || session.log.value.length === 0"
         @click="session.undo()"
       />
-      <kt-button variant="secondary-no-bg" size="small" icon="x" label="Leave session" @click="navigateTo('/')" />
-    </header>
+      <kt-button
+        slot="actions"
+        variant="secondary-no-bg"
+        size="small"
+        icon="x"
+        label="Leave session"
+        @click="navigateTo('/')"
+      />
+    </kt-page-header>
+
+    <div class="progress">
+      <span class="mono">{{ session.position.value }} / {{ session.total.value }}</span>
+      <kt-progress-bar :value="progress" label="Session progress" />
+    </div>
 
     <kt-skeleton v-if="loading" height="320px" />
 
@@ -178,10 +184,8 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 
 <style scoped>
 .review { display: flex; flex-direction: column; gap: var(--gap-card); }
-.bar { display: flex; align-items: center; gap: var(--gap-form); flex-wrap: wrap; }
-.progress { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
-.counts { display: flex; justify-content: space-between; font: var(--font-normal-small); color: var(--text-muted); }
-.mono { font-family: var(--font-family-code); }
+.progress { display: flex; flex-direction: column; gap: 6px; }
+.mono { font: var(--font-normal-small); font-family: var(--font-family-code); color: var(--text-muted); }
 .done-body { display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
 .seal { font-family: var(--fk-font-hanzi-serif); font-size: 56px; color: var(--color-primary-base); }
 .done-body h2 { margin: 0; font: var(--font-title-h1); color: var(--text-body); }

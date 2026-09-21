@@ -13,7 +13,7 @@ import { expect, test } from '@playwright/test';
 // moved to a genuinely different card, not just that a counter changed.
 const cardIdentity = (page: import('@playwright/test').Page) => page.locator('.face > .hanzi, .face > .prompt').first();
 
-const position = (page: import('@playwright/test').Page) => page.locator('.bar').getByText(/^\d+ \/ \d+$/);
+const position = (page: import('@playwright/test').Page) => page.locator('.progress').getByText(/^\d+ \/ \d+$/);
 
 test('a learner can start, reveal, grade and resume a session after a reload', async ({ page }) => {
   await page.goto('/');
