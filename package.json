@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "build:app": "nuxt generate",
     "typecheck": "tsc --noEmit -p tsconfig.check.json && nuxt typecheck",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:chinese-data": "node scripts/build-simplified-set.mjs"
   },
   "dependencies": {
     "dexie": "^4.4.6",
@@ -33,6 +34,7 @@
     "@vue/test-utils": "^2.5.0",
     "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.14.5",
+    "opencc-data": "^1.4.2",
     "typescript": "^5.9.3",
     "unplugin-auto-import": "^21.1.0",
     "vitest": "^3.2.7",

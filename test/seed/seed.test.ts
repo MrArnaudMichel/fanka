@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { simplifiedCharactersIn } from '~core/chinese/script';
 import { db } from '~core/db/db';
 import { cards, decks } from '~core/db/repositories';
 import { SEED_VERSION, seedIfNeeded } from '~core/seed/seed';
@@ -48,16 +49,14 @@ describe('seedIfNeeded', () => {
 
   it('seeds traditional characters only', async () => {
     await seedIfNeeded(NOW);
-    // Built from the simplified spelling of each deck word's compound, minus
-    // 迎/忙/程 — those three are identical in traditional and simplified
-    // script (歡迎/幫忙/課程 keep them unchanged), so including them made the
-    // class false-positive on correct traditional data.
-    const simplifiedOnly = /[习学问题时间开电话认识欢压这个买两点课给号码]/;
     for (const card of await db.cards.toArray()) {
       // A learner memorises the example sentence exactly as much as the
       // headword, so a simplified character hiding in `example` is just as
-      // much a defect as one in `hanzi` — check both.
-      expect(card.hanzi + card.example).not.toMatch(simplifiedOnly);
+      // much a defect as one in `hanzi` — check both. Uses the same
+      // OpenCC-derived detection as the importer, rather than a hand-picked
+      // character class, so the seed and any imported deck share one
+      // definition of "traditional only".
+      expect(simplifiedCharactersIn(card.hanzi + card.example)).toEqual([]);
     }
   });
 
