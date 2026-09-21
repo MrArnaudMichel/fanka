@@ -71,7 +71,16 @@ describe('Kanto first', () => {
 
   it('keeps pages away from the database layer', () => {
     const pages = files.filter((f) => f.path.startsWith('app/pages/'));
-    const leaking = pages.filter((f) => /from\s+['"]~core\/db/.test(stripsTypeOnlyImports(f.source))).map((f) => f.path);
+    const leaking = pages
+      .filter(
+        (f) =>
+          /from\s+['"]~core\/db/.test(stripsTypeOnlyImports(f.source)) ||
+          // A dynamic `import('~core/db/...')` has no `from` clause, so it
+          // would slip past the static-import check above, and there is no
+          // type-only form of it to strip.
+          /import\s*\(\s*['"]~core\/db/.test(f.source),
+      )
+      .map((f) => f.path);
     expect(leaking).toEqual([]);
   });
 });
