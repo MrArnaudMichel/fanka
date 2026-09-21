@@ -85,6 +85,18 @@ function instanceFor(settings: SchedulerSettings, cache: Map<string, FSRS>): FSR
  * or Easy can land a day or two beyond the cap. `maxInterval` is a promise
  * Fanka makes to the caller, so it is re-enforced here rather than trusted
  * to the library's internal ordering pass.
+ *
+ * Only `due` and `scheduledDays` are capped; `stability` is deliberately
+ * left as ts-fsrs computed it. FSRS stability is a function of the grade,
+ * difficulty and retrievability, never of the interval actually assigned,
+ * and ts-fsrs already decouples the two itself for Hard. Shrinking it to
+ * match the cap would understate memory strength and skew every later
+ * interval.
+ *
+ * Scoped to `repeat()` output only — the ordering-pass overshoot described
+ * above is what it was verified against. A future `reschedule()` (e.g.
+ * after a settings change) must re-verify the library's behaviour there
+ * before reusing this.
  */
 function capToMaxInterval(state: SrsState, now: number, settings: SchedulerSettings): SrsState {
   const maxDue = now + settings.maxInterval * 86_400_000;

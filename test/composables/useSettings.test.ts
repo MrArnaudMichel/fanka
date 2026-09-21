@@ -22,6 +22,10 @@ vi.mock('~core/db/settings', async (importOriginal) => {
   };
 });
 
+// `useSettings` keeps its state at module scope, and nothing here resets it
+// (or the one-shot deferred above) between tests. A second race test in this
+// file would find the initial load already settled and pass vacuously; give
+// it its own file, with its own deferred.
 describe('useSettings — initial load vs. a concurrent update', () => {
   it('keeps a patch applied while the initial load is still in flight', async () => {
     const { useSettings } = await import('~/composables/useSettings');
