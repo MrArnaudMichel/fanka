@@ -52,11 +52,21 @@ describe('useReviewSession — intervals survive backgrounding', () => {
       const dueAtStart = session.previews.value[3]!.due;
       expect(intervalAtStart).toBeGreaterThan(0);
 
-      // 40 minutes pass while the WebView is backgrounded; nothing runs.
+      // 40 minutes pass while the WebView is backgrounded; only the
+      // session's one-second tick runs.
       vi.advanceTimersByTime(40 * 60_000);
 
-      // Anchored to preview time, not to a live `due - Date.now()`
-      // subtraction, so this must not have decayed toward "1 min".
+      // What this does verify: nothing that runs while the page sits in the
+      // background — above all the one-second tick advancing `clock` 2,400
+      // times — changes the interval shown. An `intervals` derived from
+      // `clock` would decay here and fail.
+      //
+      // What it cannot verify: that `intervals` is anchored to preview time
+      // rather than to a live `due - Date.now()`. `intervals` is a computed
+      // and `Date.now()` is not reactive, so a live subtraction would be
+      // cached from the read above and return the same stale value here —
+      // this assertion passes either way, and nothing else in this file
+      // covers it (verified: swapping in `due - Date.now()` leaves it green).
       expect(session.intervals.value[3]).toBe(intervalAtStart);
 
       // The page becomes visible again.
