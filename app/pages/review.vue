@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { toaster } from 'kanto';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
@@ -35,6 +36,18 @@ const hasGraded = ref(false);
  */
 const loadError = ref(false);
 
+/**
+ * Whether the Retry button (not the initial `onMounted` load) is what most
+ * recently triggered `load()`. Set *before* awaiting, same reasoning as
+ * `hasGraded` above: it only needs to be true by the time `load()`'s
+ * success re-renders the page into the unrevealed-card branch, mounting a
+ * fresh `ShowAnswerButton` — never checked, or reset, on its own.
+ * `ShowAnswerButton`'s own mount, unmounting the Retry button that had
+ * focus, is what actually calls `useFocusWhenEnabled`; this just tells it
+ * to claim focus the same way a post-grade mount already does.
+ */
+const retried = ref(false);
+
 async function load(): Promise<void> {
   loading.value = true;
   loadError.value = false;
@@ -47,6 +60,11 @@ async function load(): Promise<void> {
   } finally {
     loading.value = false;
   }
+}
+
+async function retry(): Promise<void> {
+  retried.value = true;
+  await load();
 }
 
 /**
@@ -70,6 +88,16 @@ onMounted(async () => {
 });
 onUnmounted(() => window.removeEventListener('keydown', onKey));
 
+/**
+ * `grade()`/`undo()` run through `useReviewSession`'s one serialising chain
+ * and can reject — most realistically IndexedDB connection loss after the
+ * Android app is backgrounded. Both `gradeCore` and `undoCore` write inside
+ * a single Dexie transaction *before* touching any reactive state (`log`,
+ * `index`, `card`), so a rejection there leaves every ref exactly as it was
+ * and the card genuinely stays on screen — nothing more to undo here, only
+ * to report. See the task report for the narrower case where a rejection
+ * lands *after* that transaction (inside `refreshCurrent`/`persist`).
+ */
 async function grade(value: Grade) {
   // Set *before* awaiting, not after: `session.grade()` flips `revealed` to
   // `false` deep inside its own async chain (after an IndexedDB read), well
@@ -78,8 +106,23 @@ async function grade(value: Grade) {
   // this function ever gets to a line after the `await`. Setting it first
   // guarantees it is already `true` by the time any of that happens.
   hasGraded.value = true;
-  await session.grade(value);
+  try {
+    await session.grade(value);
+  } catch (err) {
+    console.error('review: failed to save the grade', err);
+    toaster.error("Couldn't save that answer", { description: 'Try again.' });
+    return;
+  }
   await refresh();
+}
+
+async function undo() {
+  try {
+    await session.undo();
+  } catch (err) {
+    console.error('review: failed to undo', err);
+    toaster.error("Couldn't undo that grade", { description: 'Try again.' });
+  }
 }
 
 function onKey(event: KeyboardEvent) {
@@ -99,7 +142,7 @@ function onKey(event: KeyboardEvent) {
     void grade(Number(event.key) as Grade);
   } else if (event.key.toLowerCase() === 'u') {
     event.preventDefault();
-    void session.undo();
+    void undo();
   }
 }
 
@@ -116,7 +159,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
         icon="undo-2"
         label="Undo"
         :disabled="session.busy.value || session.log.value.length === 0"
-        @click="session.undo()"
+        @click="undo"
       />
       <kt-button
         slot="actions"
@@ -141,7 +184,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
       heading="Couldn't load this session"
       description="Something went wrong reading the database. Try again."
     >
-      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="load">Retry</kt-button>
+      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retry">Retry</kt-button>
     </kt-empty-state>
 
     <kt-empty-state
@@ -171,7 +214,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
       />
       <ShowAnswerButton
         v-if="!session.revealed.value"
-        :autofocus="hasGraded"
+        :autofocus="hasGraded || retried"
         :busy="session.busy.value"
         @reveal="session.reveal()"
       />

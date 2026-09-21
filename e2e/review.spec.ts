@@ -100,31 +100,63 @@ test('the keyboard drives the review loop: space reveals, a digit grades, u undo
 });
 
 /**
- * Installs a hook on IndexedDB reads before any app code runs, so a test
- * can make one specific read fail (or come back empty) on demand, the way a
- * quota error, a blocked `versionchange` or a vanished row would. Armed and
- * disarmed through `window.__fankaFaults` from `page.evaluate`.
+ * Installs a hook on IndexedDB reads and writes before any app code runs, so
+ * a test can make one specific operation fail (or come back empty) on
+ * demand, the way a quota error, a blocked `versionchange`, a vanished row,
+ * or IndexedDB connection loss after the Android app is backgrounded would.
+ * Armed and disarmed through `window.__fankaFaults` from `page.evaluate`.
  *
  * - `failSessionReads`: how many reads of the persisted session to reject.
  *   Only `restore()` reads that key, so seeding and the Today page's counts
  *   are unaffected.
  * - `missingCards`: while true, every read of the `cards` store resolves to
  *   nothing, as if the row were gone.
+ * - `failReviewPuts`: how many writes to the `reviews` store to reject.
+ *   `reviews.record()`'s transaction is the only writer, so this fails a
+ *   grade before anything in it is written (the `items` write inside the
+ *   same transaction precedes it, but the transaction only commits once
+ *   every write in it succeeds).
+ * - `failItemPuts`: how many writes to the `items` store to reject. Both
+ *   `reviews.record()` and `reviews.undo()` write `items` — arm this only
+ *   once the state under test (e.g. a card already graded) is in place, so
+ *   it fails the operation actually being tested rather than an earlier one.
  */
-async function installReadFaults(page: import('@playwright/test').Page, initial: { failSessionReads?: number }) {
-  await page.addInitScript((failSessionReads) => {
-    const faults = { failSessionReads, missingCards: false };
-    (window as unknown as { __fankaFaults: typeof faults }).__fankaFaults = faults;
-    const get = IDBObjectStore.prototype.get;
-    IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey | IDBKeyRange) {
-      if (this.name === 'settings' && key === 'session' && faults.failSessionReads > 0) {
-        faults.failSessionReads -= 1;
-        throw new DOMException('Injected read failure', 'UnknownError');
-      }
-      if (this.name === 'cards' && faults.missingCards) return get.call(this, '￿-no-such-card');
-      return get.call(this, key);
-    };
-  }, initial.failSessionReads ?? 0);
+async function installReadFaults(
+  page: import('@playwright/test').Page,
+  initial: { failSessionReads?: number; failReviewPuts?: number; failItemPuts?: number },
+) {
+  await page.addInitScript(
+    (init) => {
+      const faults = { ...init, missingCards: false };
+      (window as unknown as { __fankaFaults: typeof faults }).__fankaFaults = faults;
+      const get = IDBObjectStore.prototype.get;
+      IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey | IDBKeyRange) {
+        if (this.name === 'settings' && key === 'session' && faults.failSessionReads > 0) {
+          faults.failSessionReads -= 1;
+          throw new DOMException('Injected read failure', 'UnknownError');
+        }
+        if (this.name === 'cards' && faults.missingCards) return get.call(this, '￿-no-such-card');
+        return get.call(this, key);
+      };
+      const put = IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put = function (this: IDBObjectStore, value: unknown, key?: IDBValidKey) {
+        if (this.name === 'reviews' && faults.failReviewPuts > 0) {
+          faults.failReviewPuts -= 1;
+          throw new DOMException('Injected write failure', 'UnknownError');
+        }
+        if (this.name === 'items' && faults.failItemPuts > 0) {
+          faults.failItemPuts -= 1;
+          throw new DOMException('Injected write failure', 'UnknownError');
+        }
+        return put.call(this, value, key);
+      };
+    },
+    {
+      failSessionReads: initial.failSessionReads ?? 0,
+      failReviewPuts: initial.failReviewPuts ?? 0,
+      failItemPuts: initial.failItemPuts ?? 0,
+    },
+  );
 }
 
 test('a failed load offers Retry, and the keyboard works once it succeeds', async ({ page }) => {
@@ -139,9 +171,77 @@ test('a failed load offers Retry, and the keyboard works once it succeeds', asyn
   await expect(face).toBeVisible();
   await expect(position(page)).toHaveText(/^1 \/ \d+$/);
 
+  // Retry's success unmounts the Retry button that had focus; the Show
+  // answer button claims it, the same way it does after a grade.
+  const showAnswer = page.getByRole('button', { name: 'Show answer', exact: true });
+  await expect(showAnswer).toBeFocused();
+
   // The shortcuts were registered even though the first load failed.
   await page.keyboard.press('Space');
   await expect(page.locator('.answer .meaning')).toHaveText(/\S+/);
+});
+
+test('a failed grade shows an error toast and keeps the card on screen', async ({ page }) => {
+  await installReadFaults(page, { failReviewPuts: 1 });
+  await page.goto('/review');
+
+  const face = cardIdentity(page);
+  const pos = position(page);
+  await expect(face).toBeVisible();
+  await expect(pos).toHaveText(/^1 \/ \d+$/);
+  const firstCard = (await face.innerText()).trim();
+
+  await page.keyboard.press('Space');
+  const answer = page.locator('.answer .meaning');
+  await expect(answer).toHaveText(/\S+/);
+  await page.keyboard.press('3');
+
+  // The write to the `reviews` store rejected inside gradeCore's one Dexie
+  // transaction, so nothing was written — the card, position and revealed
+  // answer must all be exactly as before the failed grade.
+  await expect(page.getByText("Couldn't save that answer")).toBeVisible();
+  await expect(pos).toHaveText(/^1 \/ \d+$/);
+  expect((await face.innerText()).trim()).toBe(firstCard);
+  await expect(answer).toHaveText(/\S+/);
+
+  // The queue was not corrupted by the failed write: grading now succeeds.
+  await page.keyboard.press('3');
+  await expect(pos).toHaveText(/^2 \/ \d+$/);
+});
+
+test('a failed undo shows an error toast and keeps the card on screen', async ({ page }) => {
+  await installReadFaults(page, {});
+  await page.goto('/review');
+
+  const face = cardIdentity(page);
+  const pos = position(page);
+  await expect(face).toBeVisible();
+  const firstCard = (await face.innerText()).trim();
+
+  await page.keyboard.press('Space');
+  await page.keyboard.press('3');
+  await expect(pos).toHaveText(/^2 \/ \d+$/);
+  const secondCard = (await face.innerText()).trim();
+  expect(secondCard).not.toBe(firstCard);
+
+  // Armed only now, after the grade this undo targets has already
+  // succeeded — so it fails the undo under test, not an earlier write.
+  await page.evaluate(() => {
+    (window as unknown as { __fankaFaults: { failItemPuts: number } }).__fankaFaults.failItemPuts = 1;
+  });
+  await page.keyboard.press('u');
+
+  // The write to the `items` store rejected inside undoCore's one Dexie
+  // transaction, before the in-memory log/index/queue were touched — still
+  // the second card, at the same position.
+  await expect(page.getByText("Couldn't undo that grade")).toBeVisible();
+  await expect(pos).toHaveText(/^2 \/ \d+$/);
+  expect((await face.innerText()).trim()).toBe(secondCard);
+
+  // The queue was not corrupted by the failed write: undo now succeeds.
+  await page.keyboard.press('u');
+  await expect(pos).toHaveText(/^1 \/ \d+$/);
+  expect((await face.innerText()).trim()).toBe(firstCard);
 });
 
 test('a card that cannot be read offers Retry instead of a skeleton', async ({ page }) => {
