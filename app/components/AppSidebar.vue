@@ -15,7 +15,21 @@ const route = useRoute();
       </span>
     </div>
 
-    <kt-button variant="primary" size="medium" icon="play" full-width @click="navigateTo('/review')">
+    <!--
+      Secondary, not primary: every page already carries its own primary
+      action (Start session, Show answer, Back to today), and a screen gets
+      exactly one. Disabled with its reason as the accessible name when
+      nothing is due, the same treatment as the Today page's Start session.
+    -->
+    <kt-button
+      variant="secondary"
+      size="medium"
+      icon="play"
+      full-width
+      :disabled="dueTotal === 0"
+      :label="dueTotal === 0 ? 'Today\'s session — nothing due right now' : ''"
+      @click="navigateTo('/review')"
+    >
       Today's session · {{ dueTotal }}
     </kt-button>
 
