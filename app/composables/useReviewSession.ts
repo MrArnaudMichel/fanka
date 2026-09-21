@@ -374,20 +374,34 @@ export function useReviewSession() {
   }
 
   /**
-   * Checks the item still exists *before* touching anything else, and bails
-   * out — leaving the cursor, log and review row all untouched — if it is
-   * gone. Moving the cursor back without a real item to put in its place
-   * would show the learner whatever the queue already held there, i.e. the
-   * very card they just graded, past tense — inviting a second, duplicate
-   * review of it. The item is re-fetched *after* `reviews.undo()` runs,
-   * not reused from this existence check: `reviews.undo()` is what writes
-   * the restored (pre-review) fields onto the row, so fetching beforehand
-   * would put the still-graded state into the queue instead.
+   * Checks the item is still visible *before* touching anything else, and
+   * bails out — leaving the queue and cursor untouched, and the review row
+   * standing — if it is not. This app never removes an Item row (it only
+   * soft-deletes cards/decks and suspends items), so a bare row-existence
+   * check is always true and cannot catch this: `restore()` re-anchors the
+   * cursor past a now-invisible item while the log still names it, and
+   * writing that item back in would land on whatever unanswered card the
+   * re-anchored cursor now points at, silently dropping it from the queue
+   * while `total` keeps counting it. `items.visible()` applies the same
+   * rules the due queue itself does, so it catches both cases. The item is
+   * re-fetched *after* `reviews.undo()` runs, not reused from this
+   * visibility check: `reviews.undo()` is what writes the restored
+   * (pre-review) fields onto the row, so fetching beforehand would put the
+   * still-graded state into the queue instead.
    */
   async function undoCore(): Promise<void> {
     const last = log.value.at(-1);
     if (!last) return;
-    if (!(await items.get(last.itemId))) return;
+
+    const [visible] = await items.visible([last.itemId]);
+    if (!visible) {
+      // The graded card was deleted or suspended since. Restoring it would
+      // write an invisible item over whatever now sits at the cursor, so the
+      // undo is dropped instead and the grade stands.
+      log.value = log.value.slice(0, -1);
+      await persist();
+      return;
+    }
 
     await reviews.undo(last.reviewId);
     log.value = log.value.slice(0, -1);

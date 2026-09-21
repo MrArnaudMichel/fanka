@@ -527,3 +527,72 @@ describe('useReviewSession — undo is inert without an item to restore onto', (
     expect(await db.reviews.count()).toBe(1);
   });
 });
+
+describe('useReviewSession — undo after a soft delete must not corrupt the queue', () => {
+  // Reproduces the phase 1 final review's finding: this app never removes an
+  // Item row, so a check that the row still *exists* (`items.get`) is always
+  // true — the graded card's item row is still there even after its card is
+  // soft-deleted or the item itself is suspended. `restore()` re-anchors the
+  // cursor past the now-invisible item and the log still names it, so a
+  // plain existence check lets undo through, writing the (now hidden) item
+  // straight over whatever unanswered card the re-anchored cursor points at
+  // — that unanswered card silently disappears from the queue while `total`
+  // still counts it.
+
+  it('drops the undo instead of overwriting the queue, when the graded card was soft-deleted since', async () => {
+    const first = createSession();
+    await first.start();
+    const originalIds = first.queue.value.map((i) => i.id);
+    expect(originalIds.length).toBeGreaterThanOrEqual(3);
+
+    const gradedId = originalIds[0]!;
+    first.reveal();
+    await first.grade(3);
+
+    // Soft-delete the graded card — not the item row, which this app never
+    // removes.
+    const gradedCardId = (await db.items.get(gradedId))!.cardId;
+    await db.cards.put({ ...(await cards.get(gradedCardId))!, deletedAt: NOW });
+
+    const resumed = createSession();
+    await resumed.restore();
+    const queueBeforeUndo = resumed.queue.value.map((i) => i.id);
+    const totalBeforeUndo = resumed.total.value;
+    const indexBeforeUndo = resumed.index.value;
+
+    await resumed.undo();
+
+    expect(resumed.queue.value.map((i) => i.id)).toEqual(queueBeforeUndo);
+    expect(resumed.total.value).toBe(totalBeforeUndo);
+    expect(resumed.index.value).toBe(indexBeforeUndo);
+    expect(resumed.log.value).toEqual([]);
+  });
+
+  it('drops the undo instead of overwriting the queue, when the graded item was suspended since', async () => {
+    const first = createSession();
+    await first.start();
+    const originalIds = first.queue.value.map((i) => i.id);
+    expect(originalIds.length).toBeGreaterThanOrEqual(3);
+
+    const gradedId = originalIds[0]!;
+    first.reveal();
+    await first.grade(3);
+
+    // Suspend the graded item itself, rather than soft-deleting its card —
+    // the other way an item becomes invisible without its row disappearing.
+    await items.put({ ...(await items.get(gradedId))!, suspended: true });
+
+    const resumed = createSession();
+    await resumed.restore();
+    const queueBeforeUndo = resumed.queue.value.map((i) => i.id);
+    const totalBeforeUndo = resumed.total.value;
+    const indexBeforeUndo = resumed.index.value;
+
+    await resumed.undo();
+
+    expect(resumed.queue.value.map((i) => i.id)).toEqual(queueBeforeUndo);
+    expect(resumed.total.value).toBe(totalBeforeUndo);
+    expect(resumed.index.value).toBe(indexBeforeUndo);
+    expect(resumed.log.value).toEqual([]);
+  });
+});
