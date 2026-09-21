@@ -44,8 +44,12 @@ async function loadToday(): Promise<void> {
 
 onMounted(loadToday);
 
-/** Roughly eight seconds a card, which is what a steady session averages. */
-const minutes = computed(() => Math.round((total.value * 8) / 60));
+/**
+ * Roughly eight seconds a card, which is what a steady session averages.
+ * Never below one, as `formatInterval` does: only shown while something is
+ * due, and one to three cards would otherwise round to "about 0 min".
+ */
+const minutes = computed(() => Math.max(1, Math.round((total.value * 8) / 60)));
 
 /**
  * Both Retry buttons below unmount the instant their state resolves — the

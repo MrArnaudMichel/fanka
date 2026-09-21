@@ -197,6 +197,10 @@ test('a learner can finish a session and return to Today', async ({ page }) => {
         };
       }),
   );
+  // Reloaded so Today recounts under the new setting. Two cards at eight
+  // seconds each round to zero minutes; the estimate never says less than one.
+  await page.reload();
+  await expect(page.getByText('2 cards due · about 1 min')).toBeVisible();
   await startButton.click();
   await expect(page).toHaveURL(/\/review$/);
 
