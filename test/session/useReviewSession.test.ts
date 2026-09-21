@@ -6,6 +6,7 @@ import { loadSession, saveSession } from '~core/db/session';
 import { saveSettings } from '~core/db/settings';
 import { seedIfNeeded } from '~core/seed/seed';
 import { useDisposableSessions } from './disposableSessions';
+import { startOfDay } from '~/composables/useDueCounts';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 const DAY = 86_400_000;
@@ -426,6 +427,14 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
 });
 
 describe('useReviewSession — ended reflects an empty queue too', () => {
+  it('is not ended before start() or restore() has run', () => {
+    // An empty queue before anything loaded is "not started yet", not
+    // "finished" — the page would otherwise flash Session complete.
+    const session = createSession();
+    expect(session.total.value).toBe(0);
+    expect(session.ended.value).toBe(false);
+  });
+
   it('reports ended, not a stuck mid-session, when start() finds nothing due or new', async () => {
     await saveSettings({ newPerDay: 0 });
     const session = createSession();
@@ -453,11 +462,27 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
   });
 
   it('returns false and clears a session that was started before today', async () => {
-    await saveSession({ queueIds: ['whatever-item-id'], index: 0, startedAt: NOW - DAY, log: [] });
+    // Real, visible ids with the cursor short of the end: everything about
+    // this session is resumable except its date, so only the start-of-day
+    // check can be what refuses it.
+    const queueIds = (await items.fresh(3)).map((i) => i.id);
+    expect(queueIds).toHaveLength(3);
+    await saveSession({ queueIds, index: 1, startedAt: NOW - DAY, log: [] });
 
     const session = createSession();
     expect(await session.restore(NOW)).toBe(false);
     expect(await loadSession()).toBeNull();
+  });
+
+  it('resumes the same session when it was started today', async () => {
+    // The control for the test above: same queue and cursor, started at
+    // the very first instant of today instead.
+    const queueIds = (await items.fresh(3)).map((i) => i.id);
+    await saveSession({ queueIds, index: 1, startedAt: startOfDay(NOW), log: [] });
+
+    const session = createSession();
+    expect(await session.restore(NOW)).toBe(true);
+    expect(session.current.value?.id).toBe(queueIds[1]);
   });
 
   it('returns false and clears a session whose remaining cards were all hidden since it was stored', async () => {
