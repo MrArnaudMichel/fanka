@@ -98,3 +98,77 @@ test('the keyboard drives the review loop: space reveals, a digit grades, u undo
   await expect(answer).toHaveText(/\S+/);
   await expect(page.getByRole('button', { name: 'Good' })).toBeVisible();
 });
+
+/**
+ * Installs a hook on IndexedDB reads before any app code runs, so a test
+ * can make one specific read fail (or come back empty) on demand, the way a
+ * quota error, a blocked `versionchange` or a vanished row would. Armed and
+ * disarmed through `window.__fankaFaults` from `page.evaluate`.
+ *
+ * - `failSessionReads`: how many reads of the persisted session to reject.
+ *   Only `restore()` reads that key, so seeding and the Today page's counts
+ *   are unaffected.
+ * - `missingCards`: while true, every read of the `cards` store resolves to
+ *   nothing, as if the row were gone.
+ */
+async function installReadFaults(page: import('@playwright/test').Page, initial: { failSessionReads?: number }) {
+  await page.addInitScript((failSessionReads) => {
+    const faults = { failSessionReads, missingCards: false };
+    (window as unknown as { __fankaFaults: typeof faults }).__fankaFaults = faults;
+    const get = IDBObjectStore.prototype.get;
+    IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey | IDBKeyRange) {
+      if (this.name === 'settings' && key === 'session' && faults.failSessionReads > 0) {
+        faults.failSessionReads -= 1;
+        throw new DOMException('Injected read failure', 'UnknownError');
+      }
+      if (this.name === 'cards' && faults.missingCards) return get.call(this, '￿-no-such-card');
+      return get.call(this, key);
+    };
+  }, initial.failSessionReads ?? 0);
+}
+
+test('a failed load offers Retry, and the keyboard works once it succeeds', async ({ page }) => {
+  await installReadFaults(page, { failSessionReads: 1 });
+  await page.goto('/review');
+
+  // Not a permanent skeleton: the failure is shown, with a way out.
+  await expect(page.getByText("Couldn't load this session")).toBeVisible();
+  await page.getByRole('button', { name: 'Retry' }).click();
+
+  const face = cardIdentity(page);
+  await expect(face).toBeVisible();
+  await expect(position(page)).toHaveText(/^1 \/ \d+$/);
+
+  // The shortcuts were registered even though the first load failed.
+  await page.keyboard.press('Space');
+  await expect(page.locator('.answer .meaning')).toHaveText(/\S+/);
+});
+
+test('a card that cannot be read offers Retry instead of a skeleton', async ({ page }) => {
+  await installReadFaults(page, {});
+  await page.goto('/review');
+
+  const face = cardIdentity(page);
+  const pos = position(page);
+  await expect(face).toBeVisible();
+  await expect(pos).toHaveText(/^1 \/ \d+$/);
+  const firstCard = (await face.innerText()).trim();
+
+  // The next card's row reads back as missing when the grade moves to it.
+  await page.evaluate(() => {
+    (window as unknown as { __fankaFaults: { missingCards: boolean } }).__fankaFaults.missingCards = true;
+  });
+  await page.keyboard.press('Space');
+  await page.keyboard.press('3');
+  await expect(page.getByText("Couldn't load this session")).toBeVisible();
+
+  await page.evaluate(() => {
+    (window as unknown as { __fankaFaults: { missingCards: boolean } }).__fankaFaults.missingCards = false;
+  });
+  await page.getByRole('button', { name: 'Retry' }).click();
+
+  // Resumed where the grade left it, on a real card.
+  await expect(face).toBeVisible();
+  await expect(pos).toHaveText(/^2 \/ \d+$/);
+  expect((await face.innerText()).trim()).not.toBe(firstCard);
+});

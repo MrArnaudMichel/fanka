@@ -27,11 +27,46 @@ const loading = ref(true);
  */
 const hasGraded = ref(false);
 
+/**
+ * `restore()` or `start()` can genuinely reject — quota exceeded, Safari
+ * private browsing, a blocked `versionchange` — the same failures the Today
+ * page's `loadToday` handles. `loading` is cleared in `finally` so a
+ * rejection can never leave the skeleton showing forever with no way out.
+ */
+const loadError = ref(false);
+
+async function load(): Promise<void> {
+  loading.value = true;
+  loadError.value = false;
+  try {
+    // Resume rather than restart: the learner may have locked their phone.
+    if (!(await session.restore())) await session.start();
+  } catch (err) {
+    console.error('review: failed to load the session', err);
+    loadError.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
+
+/**
+ * A current item whose card came back missing once nothing is in flight.
+ * `refreshCurrent()` sets `card` to `null` rather than throwing when the
+ * card row cannot be read, so without this the page would fall through to
+ * its trailing skeleton and sit there with no error and no retry. A retry
+ * re-runs `restore()`, which drops any item whose card is no longer visible.
+ */
+const cardMissing = computed(
+  () => !session.busy.value && session.current.value !== null && session.card.value === null,
+);
+
 onMounted(async () => {
-  // Resume rather than restart: the learner may have locked their phone.
-  if (!(await session.restore())) await session.start();
-  loading.value = false;
+  // Registered before loading, not after, so a failed load still leaves the
+  // shortcuts wired for when Retry succeeds. Nothing fires early: `onKey`
+  // ignores every key while the session is busy, which it is for the whole
+  // of `restore()`/`start()`.
   window.addEventListener('keydown', onKey);
+  await load();
 });
 onUnmounted(() => window.removeEventListener('keydown', onKey));
 
@@ -93,6 +128,15 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
     </header>
 
     <kt-skeleton v-if="loading" height="320px" />
+
+    <kt-empty-state
+      v-else-if="loadError || cardMissing"
+      icon="triangle-alert"
+      heading="Couldn't load this session"
+      description="Something went wrong reading the database. Try again."
+    >
+      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="load">Retry</kt-button>
+    </kt-empty-state>
 
     <kt-empty-state
       v-else-if="session.total.value === 0"
