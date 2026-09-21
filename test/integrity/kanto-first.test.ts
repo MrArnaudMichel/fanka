@@ -10,8 +10,12 @@ const APP = join(ROOT, 'app');
  * Native elements that Kanto has a component for, or that make a structure
  * Kanto owns. `a` is included because navigation goes through NuxtLink or a
  * Kanto navigation element; a raw anchor is almost always a recreation.
+ * `aside` is included because a sidebar is exactly the kind of structural
+ * chrome this rule exists to catch — Kanto just has no container element for
+ * it, which is why the one instance is a listed, permanent exception rather
+ * than an absence from this list.
  */
-const WATCHED = ['button', 'a', 'nav', 'table', 'input', 'select', 'textarea', 'dialog', 'ul', 'ol'];
+const WATCHED = ['button', 'a', 'nav', 'table', 'input', 'select', 'textarea', 'dialog', 'ul', 'ol', 'aside'];
 
 function vueFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

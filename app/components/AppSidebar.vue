@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import type { NavEntry } from '~/composables/useNavigation';
+import type { KtNavItem, KtNavSection } from 'kanto';
 
-defineProps<{ main: NavEntry[]; library: NavEntry[]; dueTotal: number }>();
+defineProps<{ sections: KtNavSection[]; dueTotal: number }>();
 const route = useRoute();
+
+/**
+ * `kt-navigate` is cancelable specifically so a host can take over routing —
+ * without `preventDefault()` the element's own `<a href>` would perform a
+ * full page navigation.
+ */
+function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
+  event.preventDefault();
+  if (event.detail.item.href) navigateTo(event.detail.item.href);
+}
 </script>
 
 <template>
@@ -33,22 +43,7 @@ const route = useRoute();
       Today's session · {{ dueTotal }}
     </kt-button>
 
-    <nav aria-label="Primary">
-      <p class="overline">Learn</p>
-      <NuxtLink v-for="entry in main" :key="entry.to" :to="entry.to" class="entry" :class="{ active: route.path === entry.to }">
-        <kt-icon :name="entry.icon" size="16" />
-        <span class="label">{{ entry.label }}</span>
-        <span v-if="entry.badge" class="badge">{{ entry.badge }}</span>
-      </NuxtLink>
-
-      <template v-if="library.length">
-        <p class="overline">Collection</p>
-        <NuxtLink v-for="entry in library" :key="entry.to" :to="entry.to" class="entry" :class="{ active: route.path === entry.to }">
-          <kt-icon :name="entry.icon" size="16" />
-          <span class="label">{{ entry.label }}</span>
-        </NuxtLink>
-      </template>
-    </nav>
+    <kt-sub-menu-navigation flush :sections="sections" :active-href="route.path" @kt-navigate="onNavigate" />
   </aside>
 </template>
 
@@ -65,6 +60,14 @@ const route = useRoute();
   position: sticky;
   top: 0;
   height: 100vh;
+}
+
+/* kt-header takes over below its own breakpoint (900px); the two are never
+   shown at once. */
+@media (max-width: 899px) {
+  .sidebar {
+    display: none;
+  }
 }
 
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
@@ -84,34 +87,4 @@ const route = useRoute();
 .wordmark { display: flex; flex-direction: column; }
 .name { font: var(--font-title-h6); letter-spacing: 4px; color: var(--text-body); }
 .tagline { font: var(--font-normal-small); color: var(--text-muted); }
-
-nav { display: flex; flex-direction: column; gap: 2px; }
-
-.overline {
-  margin: 16px 8px 4px;
-  font: var(--font-title-overline);
-  letter-spacing: var(--letter-spacing-overline);
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.overline:first-child { margin-top: 8px; }
-
-.entry {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 36px;
-  padding: 0 8px;
-  border-radius: var(--border-radius);
-  text-decoration: none;
-  font: var(--font-normal-medium);
-  color: var(--text-muted);
-  background: transparent;
-}
-
-.entry:hover { background: var(--surface-hover); color: var(--text-body); }
-.entry.active { background: var(--color-primary-soft); color: var(--text-body); }
-.label { flex: 1; }
-.badge { font: var(--font-normal-small); font-family: var(--font-family-code); color: var(--color-primary-base); }
 </style>

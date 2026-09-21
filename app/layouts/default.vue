@@ -1,36 +1,91 @@
 <script setup lang="ts">
+import type { KtHeader, KtNavItem } from 'kanto';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useNavigation } from '~/composables/useNavigation';
 
 const { total } = useDueCounts();
-const { main, library, bar } = useNavigation(total);
+const { sections } = useNavigation(total);
+const route = useRoute();
 
-// The mockup's breakpoint. Above it the sidebar; below it the bottom bar.
-const wide = ref(true);
-function measure() {
-  wide.value = window.innerWidth >= 900;
+const header = ref<KtHeader>();
+
+/**
+ * `kt-navigate` is cancelable specifically so a host can take over routing —
+ * without `preventDefault()` the element's own `<a href>` would perform a
+ * full page navigation. The collapsed menu panel then closes itself, the
+ * same way choosing a link in any mobile nav does.
+ */
+function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
+  event.preventDefault();
+  if (event.detail.item.href) navigateTo(event.detail.item.href);
+  header.value?.closeMenu();
 }
-onMounted(() => {
-  measure();
-  window.addEventListener('resize', measure);
-});
-onUnmounted(() => window.removeEventListener('resize', measure));
 </script>
 
 <template>
   <div class="shell">
-    <AppSidebar v-if="wide" :main="main" :library="library" :due-total="total" />
+    <AppSidebar :sections="sections" :due-total="total" />
+
+    <kt-header ref="header" class="mobile-header" sticky label="Fanka">
+      <span slot="brand" class="brand">
+        <span class="mark" aria-hidden="true">繁</span>
+        <span class="name">FANKA</span>
+      </span>
+
+      <!--
+        Same button, same behaviour, as the sidebar's: secondary, not
+        primary, disabled with its reason as the accessible name when
+        nothing is due. Only the container around it changes.
+      -->
+      <kt-button
+        slot="actions"
+        variant="secondary"
+        size="medium"
+        icon="play"
+        full-width
+        :disabled="total === 0"
+        :label="total === 0 ? 'Today\'s session — nothing due right now' : ''"
+        @click="navigateTo('/review')"
+      >
+        Today's session · {{ total }}
+      </kt-button>
+
+      <kt-sub-menu-navigation slot="menu" flush :sections="sections" :active-href="route.path" @kt-navigate="onNavigate" />
+    </kt-header>
+
     <main class="main">
       <div class="page">
         <slot />
       </div>
-      <AppBottomNav v-if="!wide" :entries="bar" />
     </main>
+
+    <kt-toast-container></kt-toast-container>
   </div>
 </template>
 
 <style scoped>
 .shell { display: flex; min-height: 100vh; background: var(--surface-page); color: var(--text-body); }
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.page { flex: 1; min-width: 0; padding: 24px; padding-bottom: 96px; max-width: 1240px; width: 100%; margin: 0 auto; }
+.page { flex: 1; min-width: 0; padding: 24px; max-width: 1240px; width: 100%; margin: 0 auto; }
+
+/* AppSidebar takes over above kt-header's own collapse breakpoint (900px);
+   the two are never shown at once. */
+.mobile-header { display: none; }
+@media (max-width: 899px) {
+  .mobile-header { display: block; }
+}
+
+.brand { display: flex; align-items: center; gap: 8px; font: var(--font-title-h6); letter-spacing: 4px; color: var(--text-body); }
+
+.mark {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius);
+  background: var(--color-primary-base);
+  display: grid;
+  place-items: center;
+  font-family: var(--fk-font-hanzi-serif);
+  font-size: 14px;
+  color: var(--color-white);
+}
 </style>

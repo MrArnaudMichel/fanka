@@ -1,27 +1,20 @@
-export interface NavEntry {
-  to: string;
-  label: string;
-  icon: string;
-  badge?: string;
-}
+import type { KtNavSection } from 'kanto';
 
 /**
- * The routes for phase 1. Entries whose page arrives in a later phase are
- * added when that phase lands, so the sidebar never offers a dead link.
+ * Kanto's sidebar sections for phase 1. Phase 2 screens are added to the
+ * Collection section by the task that creates each screen — never before
+ * the page exists, so the sidebar never offers a dead link.
  */
 export function useNavigation(dueTotal: Readonly<Ref<number>>) {
-  const main = computed<NavEntry[]>(() => [
-    { to: '/', label: 'Today', icon: 'house', badge: dueTotal.value > 0 ? String(dueTotal.value) : undefined },
-    { to: '/review', label: 'Review', icon: 'play' },
+  const sections = computed<KtNavSection[]>(() => [
+    {
+      title: 'Learn',
+      items: [
+        { label: 'Today', href: '/', icon: 'house', badge: dueTotal.value > 0 ? String(dueTotal.value) : undefined },
+        { label: 'Review', href: '/review', icon: 'play' },
+      ],
+    },
   ]);
 
-  // Settings has no page until phase 3. Nothing lists it until then.
-  const library = computed<NavEntry[]>(() => []);
-
-  const bar = computed<NavEntry[]>(() => [
-    { to: '/', label: 'Home', icon: 'house' },
-    { to: '/review', label: 'Review', icon: 'play' },
-  ]);
-
-  return { main, library, bar };
+  return { sections };
 }

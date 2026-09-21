@@ -16,8 +16,11 @@ export interface AllowlistEntry {
  * cannot rot.
  */
 export const ALLOWLIST: AllowlistEntry[] = [
-  { file: 'app/components/AppSidebar.vue', tag: 'nav', reason: 'Hand-built sidebar from phase 1.', removeIn: 'Task 2' },
-  { file: 'app/components/AppBottomNav.vue', tag: 'nav', reason: 'Hand-built bottom bar from phase 1.', removeIn: 'Task 2' },
+  {
+    file: 'app/components/AppSidebar.vue',
+    tag: 'aside',
+    reason: 'Page landmark wrapping kt-sub-menu-navigation; Kanto has no sidebar container.',
+  },
   { file: 'app/components/GradeButtons.vue', tag: 'button', reason: 'Hand-built grade buttons from phase 1.', removeIn: 'Task 3' },
   { file: 'app/pages/index.vue', tag: 'ul', reason: 'Hand-built deck list from phase 1.', removeIn: 'Task 3' },
 ];
