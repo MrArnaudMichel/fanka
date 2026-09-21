@@ -4,6 +4,8 @@ import { toZhuyin } from '~core/chinese/zhuyin';
 import { db } from '~core/db/db';
 import { cards, decks } from '~core/db/repositories';
 import type { Card, Deck, PartOfSpeech } from '~core/db/schema';
+import { validateCard } from '~core/import/validate';
+import type { CardDraft } from '~core/import/validate';
 
 /** Bump when decks are added. Existing cards are never rewritten. */
 export const SEED_VERSION = 1;
@@ -43,9 +45,47 @@ function seedCardId(deckId: string, entryId: string): string {
   return `${deckId}:${entryId}`;
 }
 
+/**
+ * Runs every entry in every seed deck through the shared validator before
+ * `seedIfNeeded` writes anything — a bad `hsk1.json` (or any future seed
+ * file) must never leave a deck half-written. `existingHanzi` is rebuilt
+ * per deck as entries are checked, so a duplicate hanzi *within* one seed
+ * file is caught the same way a duplicate against a learner's own deck
+ * would be during import.
+ */
+function validateSeeds(seeds: SeedDeck[]): void {
+  for (const seed of seeds) {
+    const existingHanzi = new Set<string>();
+    for (const entry of seed.cards) {
+      const draft: CardDraft = {
+        hanzi: entry.hanzi,
+        pinyin: entry.pinyin,
+        translation: entry.translation,
+        example: entry.example,
+        examplePinyin: entry.examplePinyin,
+        exampleTranslation: entry.exampleTranslation,
+        tags: entry.tags,
+      };
+      const validated = validateCard(draft, existingHanzi);
+      if (!validated.ok) {
+        const messages = validated.issues
+          .filter((issue) => issue.severity === 'error')
+          .map((issue) => issue.message)
+          .join('; ');
+        throw new Error(
+          `Seed "${seed.name}" (${seed.id}) entry "${entry.id}" is invalid: ${messages}`,
+        );
+      }
+      existingHanzi.add(validated.draft.hanzi);
+    }
+  }
+}
+
 export async function seedIfNeeded(now: number): Promise<{ seeded: boolean; deckCount: number }> {
   const recorded = (await db.settings.get('seedVersion'))?.value;
   if (recorded === SEED_VERSION) return { seeded: false, deckCount: SEEDS.length };
+
+  validateSeeds(SEEDS);
 
   for (const seed of SEEDS) {
     const deck: Deck = {
