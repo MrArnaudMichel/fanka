@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { decks as deckRepo } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';
+import { useDecks } from '~/composables/useDecks';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useSeedStatus } from '~/composables/useSeedStatus';
 
 const { total, byState, refresh } = useDueCounts();
 const { failed: seedFailed, retry: retrySeedStatus } = useSeedStatus();
+const { listAll: listDecks } = useDecks();
 
 const decks = ref<Deck[]>([]);
 
@@ -32,7 +33,7 @@ async function loadToday(): Promise<void> {
   loadError.value = false;
   try {
     await refresh();
-    decks.value = await deckRepo.listAll();
+    decks.value = await listDecks();
   } catch (err) {
     console.error('index: failed to load today’s data', err);
     loadError.value = true;
