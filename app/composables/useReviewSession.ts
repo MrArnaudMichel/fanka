@@ -4,7 +4,7 @@ import { type LogEntry, clearSession, loadSession, saveSession } from '~core/db/
 import { loadSettings } from '~core/db/settings';
 import { GRADES, type Grade, type SrsState, schedulerFor } from '~core/srs';
 import { buildQueue } from '~core/srs/queue';
-import { introducedSince, startOfDay } from '~/composables/useDueCounts';
+import { dueToday, startOfDay } from '~/composables/useDueCounts';
 
 /**
  * A session is a queue plus a cursor, both persisted after every grade.
@@ -251,10 +251,7 @@ export function useReviewSession() {
   }
 
   async function startCore(now: number): Promise<void> {
-    const settings = await loadSettings();
-    const due = await items.due(now);
-    const introducedToday = await introducedSince(startOfDay(now));
-    const fresh = await items.fresh(Math.max(0, settings.newPerDay - introducedToday));
+    const { due, fresh, introducedToday, settings } = await dueToday(now);
 
     queue.value = buildQueue({ due, fresh, newPerDay: settings.newPerDay, introducedToday });
     index.value = 0;

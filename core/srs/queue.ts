@@ -35,6 +35,11 @@ export interface QueueInput {
  * would be redundant with the repository layer, so it does not.
  */
 export function buildQueue({ due, fresh, newPerDay, introducedToday }: QueueInput): Item[] {
+  // The app's only caller passes `fresh` from `dueToday()`, which already
+  // limited it to this same allowance, so this slice is a no-op there. It is
+  // kept so `buildQueue` holds the daily cap on its own as a pure function —
+  // given any `fresh`, it never introduces more than the allowance — rather
+  // than silently depending on a caller in `app/` having trimmed it first.
   const allowance = Math.max(0, newPerDay - introducedToday);
   const introducing = fresh.slice(0, allowance);
   const reviewing = due;
