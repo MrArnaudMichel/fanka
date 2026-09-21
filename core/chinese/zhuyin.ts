@@ -57,27 +57,41 @@ function syllableToZhuyin(syllable: PinyinSyllable): string | null {
   }
 
   // The three retroflex-plus-empty-rime syllables have no separate final.
-  if (['zhi', 'chi', 'shi', 'ri', 'zi', 'ci', 'si'].includes(bare)) {
+  const isEmptyRime = ['zhi', 'chi', 'shi', 'ri', 'zi', 'ci', 'si'].includes(bare);
+  if (isEmptyRime) {
     bare = bare.slice(0, -1);
   }
 
   let out = '';
+  let matchedInitial = false;
   for (const [pinyin, bopomofo] of INITIALS) {
     if (bare.startsWith(pinyin)) {
       out += bopomofo;
       bare = bare.slice(pinyin.length);
+      matchedInitial = true;
       break;
     }
   }
+  let matchedFinal = false;
   for (const [pinyin, bopomofo] of FINALS) {
     if (bare === pinyin) {
       out += bopomofo;
       bare = '';
+      matchedFinal = true;
       break;
     }
   }
 
   if (bare.length > 0) {
+    return null;
+  }
+
+  // A syllabic nasal (n2, ng2, hm1, ...) matches an initial and consumes the
+  // whole syllable, leaving `bare` empty without ever matching a final. That
+  // would otherwise slip past the guard above. The empty-rime syllables
+  // (zhi, chi, ...) are the one legitimate case of an initial with no
+  // separate final, already handled above.
+  if (matchedInitial && !matchedFinal && !isEmptyRime) {
     return null;
   }
 

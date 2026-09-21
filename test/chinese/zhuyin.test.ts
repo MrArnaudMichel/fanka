@@ -38,4 +38,16 @@ describe('toZhuyin', () => {
   it('returns an empty string for the whole input, rather than a bare tone mark, when a syllable\'s final has no table entry', () => {
     expect(toZhuyin(parsePinyin('bue1'))).toBe('');
   });
+
+  it('returns an empty string for the syllabic nasal "n", rather than just its initial, when it has no final', () => {
+    expect(toZhuyin(parsePinyin('n2'))).toBe('');
+  });
+
+  it('returns an empty string for the syllabic nasal "ng", rather than just its initial, when it has no final', () => {
+    expect(toZhuyin(parsePinyin('ng2'))).toBe('');
+  });
+
+  it('returns an empty string for the syllabic nasal "hm", rather than just its initial, when it has no final', () => {
+    expect(toZhuyin(parsePinyin('hm1'))).toBe('');
+  });
 });
