@@ -83,8 +83,9 @@ async function retryLoad(): Promise<void> {
 }
 
 async function retrySeed(): Promise<void> {
-  // `retrySeedStatus` self-guards against an overlapping call, so a fast
-  // double click on this button starts at most one `seedIfNeeded`.
+  // `retrySeedStatus` serialises overlapping calls, so a fast double click
+  // on this button never runs two `seedIfNeeded` at once, and `false`
+  // always means the attempt failed.
   const ok = await retrySeedStatus();
   if (!ok) return;
   await loadToday();
