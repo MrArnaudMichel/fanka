@@ -596,3 +596,72 @@ describe('useReviewSession — undo after a soft delete must not corrupt the que
     expect(resumed.log.value).toEqual([]);
   });
 });
+
+describe('useReviewSession — a read failing right after a grade or undo commits must not strand the page', () => {
+  // Fix round 1 of the final review: `reviews.record()`/`reviews.undo()` can
+  // succeed (the write genuinely committed) while the very next read —
+  // `refreshCurrent()`'s `cards.get`, or undo's own re-fetch via
+  // `items.get` — rejects on the same IndexedDB connection loss. Before this
+  // fix, `card` was left pointing at the *previous* item while `current` had
+  // already moved on, a mismatch the page's template does not recognise —
+  // it falls through to a bare, Retry-less skeleton forever. `card.value`
+  // must be `null` instead, so the page's existing `cardMissing` guard
+  // catches it, and the stored session must already reflect the position
+  // the grade/undo actually reached, so a fresh instance (what the page's
+  // Retry button drives, via `restore()`) resumes correctly rather than
+  // replaying the grade or the undo.
+
+  it('nulls card rather than leaving it stale when the read right after a grade fails, and Retry resumes on the next card', async () => {
+    const session = createSession();
+    await session.start();
+    const gradedId = session.current.value!.id;
+    session.reveal();
+
+    vi.spyOn(cards, 'get').mockRejectedValueOnce(new Error('simulated read failure'));
+
+    await expect(session.grade(3)).rejects.toThrow('simulated read failure');
+
+    // The review committed — this is not the "nothing was written" case,
+    // it is a failure one read *after* that.
+    expect(await db.reviews.count()).toBe(1);
+    expect(session.card.value).toBeNull();
+    expect(session.current.value?.id).not.toBe(gradedId);
+
+    // A fresh instance is exactly what the page's Retry button drives
+    // through `restore()`. It must land on the next unanswered card, not
+    // replay the one just graded.
+    const resumed = createSession();
+    expect(await resumed.restore()).toBe(true);
+    expect(resumed.current.value?.id).not.toBe(gradedId);
+    expect(resumed.card.value).not.toBeNull();
+    expect(resumed.log.value).toHaveLength(1);
+    expect(resumed.log.value[0]!.itemId).toBe(gradedId);
+  });
+
+  it('nulls card rather than leaving it stale when the read right after an undo fails, and Retry resumes on the reverted card', async () => {
+    const session = createSession();
+    await session.start();
+    const gradedId = session.current.value!.id;
+    session.reveal();
+    await session.grade(3);
+    expect(session.current.value?.id).not.toBe(gradedId);
+
+    vi.spyOn(items, 'get').mockRejectedValueOnce(new Error('simulated read failure'));
+
+    await expect(session.undo()).rejects.toThrow('simulated read failure');
+
+    // `reviews.undo()` had already committed by the time the mocked read
+    // rejects — the review row is genuinely gone, not merely queued to go.
+    expect(await db.reviews.count()).toBe(0);
+    expect(session.card.value).toBeNull();
+
+    // A fresh instance must resume on the reverted card, with the log
+    // already reflecting the undo — not replay a grade whose review row no
+    // longer exists.
+    const resumed = createSession();
+    expect(await resumed.restore()).toBe(true);
+    expect(resumed.current.value?.id).toBe(gradedId);
+    expect(resumed.card.value).not.toBeNull();
+    expect(resumed.log.value).toHaveLength(0);
+  });
+});

@@ -245,7 +245,19 @@ export function useReviewSession() {
       previews.value = {} as Record<Grade, SrsState>;
       return;
     }
-    card.value = (await cards.get(item.cardId)) ?? null;
+    try {
+      card.value = (await cards.get(item.cardId)) ?? null;
+    } catch (err) {
+      // `index`/`current` have already moved on by the time this runs (both
+      // `gradeCore` and `undoCore` advance the cursor before calling this),
+      // so leaving `card` at whatever it was would mismatch `current` in a
+      // way neither of the page's render branches recognises — the page
+      // falls through to a bare, Retry-less skeleton forever. Nulling it
+      // first, then rethrowing, routes this into the same `cardMissing`
+      // guard that already handles a genuinely deleted card.
+      card.value = null;
+      throw err;
+    }
     await refreshPreview(item);
     revealed.value = false;
     shownAt.value = Date.now();
@@ -358,8 +370,18 @@ export function useReviewSession() {
 
     log.value = [...log.value, { reviewId, itemId: item.id, grade: value }];
     index.value += 1;
-    await refreshCurrent();
+    // Persisted *before* `refreshCurrent()`, not after: the review above is
+    // already durably written, and `refreshCurrent()` can still reject on
+    // its own read (the same IndexedDB connection loss this whole grade
+    // could have hit one call earlier). Nothing between here and the end of
+    // this function changes what `persist()` saves (`refreshCurrent()` only
+    // touches `card`/`previews`/`revealed`/`shownAt`, none of them
+    // persisted), so moving it earlier is free on the success path and, on
+    // a failure, leaves the stored session at the position this grade
+    // actually reached — a later Retry resumes on the next unanswered card
+    // instead of re-showing the one just graded.
     await persist();
+    await refreshCurrent();
     syncTimer();
   }
 
@@ -406,10 +428,25 @@ export function useReviewSession() {
     await reviews.undo(last.reviewId);
     log.value = log.value.slice(0, -1);
     index.value = Math.max(0, index.value - 1);
-    queue.value[index.value] = (await items.get(last.itemId))!;
+    // Persisted here, before the re-fetch and refresh below, for the same
+    // reason `gradeCore` does: `reviews.undo()` above has already
+    // committed, so the undo is real regardless of what happens next, and
+    // nothing remaining in this function changes what `persist()` saves. A
+    // failure below then leaves the stored session at the position the
+    // undo actually reached, so a later Retry resumes on the reverted card
+    // instead of replaying a grade whose review row no longer exists.
+    await persist();
+    try {
+      queue.value[index.value] = (await items.get(last.itemId))!;
+    } catch (err) {
+      // See `refreshCurrent()`'s own catch: `index` has already moved back,
+      // so a stale `card` would mismatch `current` and strand the page on a
+      // bare skeleton.
+      card.value = null;
+      throw err;
+    }
     await refreshCurrent();
     revealed.value = true;
-    await persist();
     syncTimer();
   }
 
