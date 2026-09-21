@@ -184,6 +184,15 @@ export const reviews = {
    * Undo is exact: the previous scheduling state, including the item's real
    * prior `updatedAt`, was captured in the review row by `record()`, so
    * restoring it is a copy rather than a recalculation or a heuristic.
+   *
+   * Sync hazard, for phase 5: the restored item carries the *older*
+   * `updatedAt` from `review.before`, while its outbox entry is stamped
+   * `Date.now()`. Spec §10 resolves conflicts last-write-wins on
+   * `updatedAt`, so pushed as a plain put the undo would lose to the
+   * server's copy of the graded state it is reverting — and a later pull
+   * would bring that graded state straight back. `SyncEngine.push` must
+   * treat an undo as a compensating operation rather than an ordinary
+   * record write.
    */
   async undo(reviewId: string): Promise<void> {
     await db.transaction('rw', db.items, db.reviews, db.outbox, async () => {
