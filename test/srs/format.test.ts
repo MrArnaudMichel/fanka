@@ -22,6 +22,12 @@ describe('formatInterval', () => {
     expect(formatInterval(12 * DAY)).toBe('12 d');
   });
 
+  it('still shows days at exactly 30 days', () => {
+    // The last whole day before the switch to months: pins the threshold
+    // itself, which the rounding tests below only approach from above.
+    expect(formatInterval(30 * DAY)).toBe('30 d');
+  });
+
   it('shows months below a year', () => {
     expect(formatInterval(90 * DAY)).toBe('3.0 mo');
   });
