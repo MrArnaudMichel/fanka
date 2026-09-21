@@ -665,3 +665,47 @@ describe('useReviewSession — a read failing right after a grade or undo commit
     expect(resumed.log.value).toHaveLength(0);
   });
 });
+
+describe('useReviewSession — persist() failing right after a grade or undo commits must not strand the page either', () => {
+  // Fix round 2 of the final review: round 1 moved `persist()` ahead of
+  // `refreshCurrent()`, but only wrapped the *later* read in a catch — an
+  // unguarded `persist()` was left sitting between the committed write and
+  // that read. A rejection there left `card` stale against the
+  // already-advanced `current` in exactly the same way the round 1 bug did,
+  // just one call earlier. `gradeCore`/`undoCore` now wrap their entire
+  // post-commit tail — `persist()`, the re-fetch, `refreshCurrent()` — in
+  // one try/catch, so it does not matter which read or write inside it
+  // rejects: `card` ends up `null` either way.
+
+  it('nulls card and clears busy when persist() rejects right after a grade commits', async () => {
+    const session = createSession();
+    await session.start();
+    session.reveal();
+
+    vi.spyOn(db.settings, 'put').mockRejectedValueOnce(new Error('simulated write failure'));
+
+    await expect(session.grade(3)).rejects.toThrow('simulated write failure');
+
+    // The review committed before the mocked persist() rejected.
+    expect(await db.reviews.count()).toBe(1);
+    expect(session.card.value).toBeNull();
+    expect(session.busy.value).toBe(false);
+  });
+
+  it('nulls card and clears busy when persist() rejects right after an undo commits', async () => {
+    const session = createSession();
+    await session.start();
+    session.reveal();
+    await session.grade(3);
+
+    vi.spyOn(db.settings, 'put').mockRejectedValueOnce(new Error('simulated write failure'));
+
+    await expect(session.undo()).rejects.toThrow('simulated write failure');
+
+    // reviews.undo() committed before the mocked persist() rejected — the
+    // review row is genuinely gone, not merely queued to go.
+    expect(await db.reviews.count()).toBe(0);
+    expect(session.card.value).toBeNull();
+    expect(session.busy.value).toBe(false);
+  });
+});
