@@ -141,17 +141,19 @@ function renderCell(row: KtTableRow, column: KtTableColumn): unknown {
   if (column.key === 'hanzi') {
     return html`<span style="font-family: var(--fk-font-hanzi)">${r.card.hanzi}</span>`;
   }
+  // Everything returned here renders inside kt-table's shadow root, where
+  // this component's scoped CSS never applies — so styling is inline, with
+  // tokens, and the syllables are separated by a real space in the markup.
   if (column.key === 'pinyin') {
-    return html`<span class="pinyin-cell"
-      >${r.card.pinyin.map((s) => html`<span style="color: ${toneColorToken(s.tone)}">${s.text}</span>`)}</span
-    >`;
+    const syllables = r.card.pinyin.map((s, i) => html`${i > 0 ? ' ' : ''}<span style="color: ${toneColorToken(s.tone)}">${s.text}</span>`);
+    return html`<span style="font-family: var(--font-family-code)">${syllables}</span>`;
   }
   if (column.key === 'state') {
     const meta = STATE_META[r.state];
     return html`<kt-badge variant="tag" tone="${meta.tone}" size="small">${meta.label}</kt-badge>`;
   }
   if (column.key === 'due') {
-    if (r.state === 'suspended' || r.due === null) return html`<span class="due-empty">—</span>`;
+    if (r.state === 'suspended' || r.due === null) return html`<span style="color: var(--text-muted)">—</span>`;
     const now = Date.now();
     return r.due <= now
       ? html`<kt-badge variant="tag" tone="danger" size="small">Due</kt-badge>`
@@ -469,6 +471,4 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
 }
 .bulk-count { font: var(--font-normal-small); color: var(--text-muted); margin-right: auto; }
 
-.pinyin-cell { display: inline-flex; gap: var(--gap-button); font-family: var(--font-family-code); }
-.due-empty { color: var(--text-muted); }
 </style>

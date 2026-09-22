@@ -51,3 +51,17 @@ test('a failed card load on Browse offers Retry, and Retry recovers', async ({ p
   await expect(page.locator('kt-table tr[part=row]').first()).toBeVisible();
   await expect(page.getByText("Couldn't load your cards")).toHaveCount(0);
 });
+
+/**
+ * Final review I5: the pinyin cell is rendered inside kt-table's shadow
+ * root, where CardTable's scoped CSS never reaches — the syllables have to
+ * be separated in the markup itself, not by a `gap` that never applies.
+ */
+test('the pinyin column separates syllables with a space', async ({ page }) => {
+  await page.goto('/browse');
+  await page.getByPlaceholder('Search hanzi, pinyin or translation').fill('study');
+  const row = page.locator('kt-table tr[part=row]', { hasText: '學習' });
+  await expect(row).toBeVisible();
+  const pinyinCell = row.locator('td').nth(2);
+  await expect(pinyinCell).toHaveText('xué xí');
+});
