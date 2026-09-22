@@ -52,7 +52,17 @@ const meterSegments = computed<KtMeterSegment[]>(() => {
       <span class="name">{{ deck.name }}</span>
       <kt-badge v-if="deck.tag" variant="category" tone="neutral" size="small" :label="deck.tag" />
 
-      <kt-dropdown v-if="mode === 'full'" class="menu" :options="dropdownOptions" @kt-select="onSelect">
+      <!--
+        align="end": the trigger sits at the row's right edge (`.menu`'s
+        `margin-left: auto` below), so the panel — 224px wide, per
+        kt-dropdown.ts — needs to hang off that edge leftward rather than
+        anchor from the trigger's left and extend rightward past it. Without
+        this, the closed panel (position: absolute, visibility: hidden, but
+        still sized and placed) pushed the page's own scrollWidth wider than
+        its viewport at narrow widths, even though nothing was ever opened —
+        see task-10-report.md, "Fix round 1".
+      -->
+      <kt-dropdown v-if="mode === 'full'" class="menu" align="end" :options="dropdownOptions" @kt-select="onSelect">
         <kt-button slot="trigger" variant="secondary-no-bg" size="small" icon="ellipsis" label="Deck actions" />
       </kt-dropdown>
     </div>

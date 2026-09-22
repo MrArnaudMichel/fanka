@@ -64,7 +64,22 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
 </template>
 
 <style scoped>
-.shell { display: flex; min-height: 100vh; background: var(--surface-page); color: var(--text-body); }
+/*
+ * Column by default: below the 900px breakpoint, AppSidebar is hidden and
+ * `kt-header` (full-width, on top) plus `main` (below it) are the only two
+ * children left, and they need to stack, not sit side by side. Row only
+ * from 900px up, where AppSidebar becomes the visible flex item beside
+ * `main` and `kt-header` contributes nothing (`display: none` below).
+ * `.shell` being a row at *every* width — the previous rule — is what let
+ * `kt-header` and `main` sit side by side under 900px, each squeezed into a
+ * sliver of the viewport and pushing the page wider than it (verified: `/`
+ * and `/decks` both overflowed at 360/500px, and their own `<h1>`s came out
+ * with a zero-size box — narrow enough to not register as "visible" at all).
+ */
+.shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--surface-page); color: var(--text-body); }
+@media (min-width: 900px) {
+  .shell { flex-direction: row; }
+}
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .page { flex: 1; min-width: 0; padding: 24px; max-width: 1240px; width: 100%; margin: 0 auto; }
 
