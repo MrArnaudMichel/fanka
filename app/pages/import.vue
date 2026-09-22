@@ -227,11 +227,6 @@ function onColumnTargetChange(index: number, event: CustomEvent<{ value: string 
   draftColumns.value = next;
 }
 
-/** A per-column `kt-change` handler, bound to its index — kt-select has no notion of "which row" on its own. */
-function columnTargetHandler(index: number): (event: CustomEvent<{ value: string | number | null }>) => void {
-  return (event) => onColumnTargetChange(index, event);
-}
-
 function onHasHeaderToggle(event: CustomEvent<{ checked: boolean }>): void {
   draftHasHeader.value = event.detail.checked;
 }
@@ -411,7 +406,7 @@ const stepDescription = computed(() => {
             :clearable="false"
             :options="TARGET_OPTIONS"
             :value="target"
-            @kt-change="columnTargetHandler(index)"
+            @kt-change="onColumnTargetChange(index, $event)"
           />
         </div>
       </div>

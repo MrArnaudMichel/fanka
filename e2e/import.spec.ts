@@ -40,3 +40,43 @@ test('importing a small CSV lands on the deck and shows its cards', async ({ pag
   await expect(page.getByText('朋友', { exact: true })).toBeVisible();
   await expect(page.getByText('老師', { exact: true })).toBeVisible();
 });
+
+/**
+ * Final review C1: step 2's per-column `kt-select` must actually feed the
+ * mapping that step 3 verifies — not just show the learner's choice while
+ * the guessed mapping is what gets checked and imported. Mapping the
+ * translation column to Ignore leaves every row without a translation, so
+ * every row turns into an error.
+ */
+test('changing a column mapping in step 2 changes the step-3 counts', async ({ page }) => {
+  const deckName = `Mapping test ${Date.now()}`;
+
+  await page.goto('/decks');
+  await page.getByRole('button', { name: 'New deck' }).click();
+  await page.getByRole('textbox', { name: 'Name' }).fill(deckName);
+  await page.getByRole('button', { name: 'Create deck' }).click();
+  await expect(page.getByRole('main').getByText(deckName)).toBeVisible();
+
+  await page.goto('/import');
+  await page.getByRole('combobox', { name: 'Destination deck' }).click();
+  await page.getByRole('option', { name: deckName }).click();
+
+  const csv = ['hanzi,pinyin,translation', '朋友,peng2 you5,friend', '老師,lao3 shi1,teacher'].join('\n');
+  await page
+    .locator('kt-drag-drop input[type="file"]')
+    .setInputFiles({ name: 'cards.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf-8') });
+
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText('Step 2 of 3 — Field mapping')).toBeVisible();
+
+  const translationTarget = page.getByRole('combobox', { name: 'Maps to, for translation' });
+  await translationTarget.click();
+  await page.getByRole('option', { name: 'Ignore' }).click();
+
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText('Step 3 of 3 — Review')).toBeVisible();
+
+  await expect(page.locator('kt-stat', { hasText: 'Valid' }).locator('[part=value]')).toHaveText('0');
+  await expect(page.locator('kt-stat', { hasText: 'Errors' }).locator('[part=value]')).toHaveText('2');
+  await expect(page.getByRole('button', { name: 'Import' })).toBeDisabled();
+});
