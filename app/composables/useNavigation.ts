@@ -14,6 +14,10 @@ export function useNavigation(dueTotal: Readonly<Ref<number>>) {
         { label: 'Review', href: '/review', icon: 'play' },
       ],
     },
+    {
+      title: 'Collection',
+      items: [{ label: 'Decks', href: '/decks', icon: 'layers' }],
+    },
   ]);
 
   return { sections };

@@ -1,22 +1,66 @@
 <script setup lang="ts">
+import type { KtMeterSegment, KtOption } from 'kanto';
+import { computed } from 'vue';
+import type { DeckSummary } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';
 
 /**
- * One deck, shown compactly: a colour swatch, the name and its tag. Used by
- * the Today deck list; Task 10 extends this same component for the Decks
- * screen, so it stays small and takes the whole deck as a single prop
- * rather than growing a parameter per field.
+ * One deck. Compact (the default) is a swatch, the name and its tag — the
+ * Today list from Task 3. Full is the /decks screen's version of the same
+ * card: it adds the study-composition meter, the due/new counts and an
+ * actions dropdown. One component, two modes, so the two screens can never
+ * quietly drift apart the way a second copy would let them.
+ *
+ * `summary` is required in full mode — the counts and the meter both read it
+ * — and ignored in compact mode, which only ever needed `deck`.
  */
-defineProps<{ deck: Deck }>();
+const props = withDefaults(defineProps<{ deck: Deck; mode?: 'compact' | 'full'; summary?: DeckSummary }>(), {
+  mode: 'compact',
+});
+
+const emit = defineEmits<{ edit: [deck: Deck]; delete: [deck: Deck] }>();
+
+const dropdownOptions: KtOption[] = [
+  { id: 'edit', label: 'Edit' },
+  { id: 'delete', label: 'Delete' },
+];
+
+function onSelect(event: CustomEvent<{ value: string | number | null }>): void {
+  if (event.detail.value === 'edit') emit('edit', props.deck);
+  else if (event.detail.value === 'delete') emit('delete', props.deck);
+}
+
+/**
+ * No `color` on any segment: `kt-meter` assigns `--chart-series-N` by
+ * position on its own, which is what keeps this from becoming a second place
+ * a colour gets hard-coded.
+ */
+const meterSegments = computed<KtMeterSegment[]>(() => {
+  if (!props.summary) return [];
+  return [
+    { label: 'Mature', value: props.summary.mature },
+    { label: 'Young', value: props.summary.young },
+    { label: 'New', value: props.summary.fresh },
+  ];
+});
 </script>
 
 <template>
   <kt-card>
-    <div class="row">
+    <div class="row" :class="{ full: mode === 'full' }" :slot="mode === 'full' ? 'header' : undefined">
       <span class="swatch" :style="{ background: deck.colorToken }" />
       <span class="name">{{ deck.name }}</span>
-      <kt-badge variant="category" tone="neutral" size="small" :label="deck.tag" />
+      <kt-badge v-if="deck.tag" variant="category" tone="neutral" size="small" :label="deck.tag" />
+
+      <kt-dropdown v-if="mode === 'full'" class="menu" :options="dropdownOptions" @kt-select="onSelect">
+        <kt-button slot="trigger" variant="secondary-no-bg" size="small" icon="ellipsis" label="Deck actions" />
+      </kt-dropdown>
     </div>
+
+    <template v-if="mode === 'full' && summary">
+      <kt-meter :segments="meterSegments" show-legend />
+      <p class="counts">{{ summary.due }} due · {{ summary.fresh }} new</p>
+    </template>
   </kt-card>
 </template>
 
@@ -26,5 +70,8 @@ defineProps<{ deck: Deck }>();
    --gap-drag-drop at 12px, and neither name describes this row), so it
    stays a literal — same precedent as index.vue's .counts gap. */
 .swatch { width: 4px; height: 26px; border-radius: var(--radius-full); flex: none; }
+.row.full .swatch { height: 20px; }
 .name { flex: 1; min-width: 0; font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu { flex: none; margin-left: auto; }
+.counts { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 </style>
