@@ -138,10 +138,22 @@ function onModalClose(event: CustomEvent): void {
           for `kt-page-header`, and listed as a deferred minor rather than
           restructured around, same reasoning.
         -->
+        <!--
+          `clearable="false"`: `kt-select`'s clear button fires `kt-change`
+          with `{ value: null, option: null }` (kt-select.ts's `clear()`),
+          which left `colorToken` holding the last real colour while the
+          field displayed empty — a stale colour was then what Save actually
+          wrote. A colour is always required (never optional, never free
+          text — see the task report), so there is no valid "cleared" state
+          for this field to begin with; not offering the clear control at
+          all removes the bad state rather than reacting to it after the
+          fact. `clear()` is `kt-select`'s only source of a null `kt-change`
+          (checked in kt-select.ts), so this closes the whole bug class.
+        -->
         <kt-label-input label="Colour" required>
           <div class="color-row">
             <span class="swatch" :style="{ background: colorToken }" />
-            <kt-select label="Colour" required :options="colorOptions" :value="colorToken" @kt-change="onColorChange" />
+            <kt-select label="Colour" required :clearable="false" :options="colorOptions" :value="colorToken" @kt-change="onColorChange" />
           </div>
         </kt-label-input>
 
