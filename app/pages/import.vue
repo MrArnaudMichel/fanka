@@ -332,6 +332,46 @@ async function onImport(): Promise<void> {
   }
 }
 
+// --- Focus across steps -------------------------------------------------
+
+type Focusable = HTMLElement & { updateComplete?: Promise<boolean> };
+const sourceControl = ref<Focusable | null>(null);
+const headerToggle = ref<Focusable | null>(null);
+const reviewBack = ref<Focusable | null>(null);
+
+/**
+ * kt-segmented-control has no `focus()` of its own (kt-toggle and kt-button
+ * delegate theirs to their inner `<button>`), so its tab stop — the
+ * selected segment, found through its public `option` part — is focused
+ * directly.
+ */
+function focusControl(el: Focusable): void {
+  if (el.tagName === 'KT-SEGMENTED-CONTROL') {
+    el.shadowRoot?.querySelector<HTMLElement>('[part="option"][tabindex="0"]')?.focus();
+  } else {
+    el.focus();
+  }
+}
+
+/**
+ * Each step swaps its whole `v-if` section out from under the button that
+ * moved to it, so focus would fall to `<body>`. The new step's first
+ * control takes it instead — once Lit has painted it, and only while focus
+ * is still unclaimed.
+ */
+watch(
+  step,
+  async (now) => {
+    const target = now === 1 ? sourceControl.value : now === 2 ? headerToggle.value : reviewBack.value;
+    if (!target) return;
+    await target.updateComplete;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    focusControl(target);
+  },
+  { flush: 'post' },
+);
+
 // --- Header ------------------------------------------------------------
 
 const stepDescription = computed(() => {
@@ -357,7 +397,7 @@ const stepDescription = computed(() => {
     </kt-empty-state>
 
     <section v-else-if="step === 1" class="step">
-      <kt-segmented-control label="Source" :options="SOURCE_OPTIONS" :value="source.mode" @kt-change="onSourceModeChange" />
+      <kt-segmented-control ref="sourceControl" label="Source" :options="SOURCE_OPTIONS" :value="source.mode" @kt-change="onSourceModeChange" />
 
       <!--
         No `recommended-size`: kt-drag-drop.ts hard-codes that hint's prefix
@@ -405,7 +445,7 @@ const stepDescription = computed(() => {
     </section>
 
     <section v-else-if="step === 2" class="step">
-      <kt-toggle :checked="draftHasHeader" label="First row is a header" @kt-change="onHasHeaderToggle" />
+      <kt-toggle ref="headerToggle" :checked="draftHasHeader" label="First row is a header" @kt-change="onHasHeaderToggle" />
 
       <div class="columns">
         <div v-for="(target, index) in draftColumns" :key="index" class="column-row">
@@ -453,7 +493,7 @@ const stepDescription = computed(() => {
       />
 
       <div class="actions">
-        <kt-button variant="dark" size="medium" :disabled="importing" @click="backToStep2">Back</kt-button>
+        <kt-button ref="reviewBack" variant="dark" size="medium" :disabled="importing" @click="backToStep2">Back</kt-button>
         <kt-button variant="primary" size="medium" icon="upload" :disabled="counts.valid === 0 || importing" @click="onImport">Import</kt-button>
       </div>
     </section>

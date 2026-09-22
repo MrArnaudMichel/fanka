@@ -8,6 +8,8 @@ const { sections } = useNavigation(total);
 const route = useRoute();
 
 const header = ref<KtHeader>();
+const menu = ref<HTMLElement | null>(null);
+const main = ref<HTMLElement | null>(null);
 
 // Same mapping as AppSidebar.vue's `activeHref` — kept here too so the
 // mobile menu's "Decks" entry stays highlighted on `/decks/:id` the same way
@@ -19,11 +21,23 @@ const activeHref = computed(() => (route.path.startsWith('/decks/') ? '/decks' :
  * without `preventDefault()` the element's own `<a href>` would perform a
  * full page navigation. The collapsed menu panel then closes itself, the
  * same way choosing a link in any mobile nav does.
+ *
+ * Closing it hides the link that had focus, so focus would fall to
+ * `<body>`. Once the navigation resolves, `main` takes it instead — but
+ * only while focus is still unclaimed (on `<body>`, on the header, or in
+ * the closed menu), the same rule `useFocusWhenEnabled` follows, so a page
+ * that moves focus itself on mount is never overridden.
  */
-function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
+async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void> {
   event.preventDefault();
-  if (event.detail.item.href) navigateTo(event.detail.item.href);
+  const href = event.detail.item.href;
   header.value?.closeMenu();
+  if (!href) return;
+  await navigateTo(href);
+  await nextTick();
+  const active = document.activeElement;
+  const unclaimed = !active || active === document.body || active === header.value || Boolean(menu.value?.contains(active));
+  if (unclaimed) main.value?.focus({ preventScroll: true });
 }
 </script>
 
@@ -55,10 +69,11 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
         Today's session · {{ total }}
       </kt-button>
 
-      <kt-sub-menu-navigation slot="menu" flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
+      <kt-sub-menu-navigation ref="menu" slot="menu" flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
     </kt-header>
 
-    <main class="main">
+    <!-- tabindex="-1": focusable by script only (see onNavigate), never a tab stop. -->
+    <main ref="main" class="main" tabindex="-1">
       <div class="page">
         <slot />
       </div>

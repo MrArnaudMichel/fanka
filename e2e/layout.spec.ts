@@ -25,3 +25,27 @@ for (const [path, heading] of [
     expect(overflow).toBeLessThanOrEqual(0);
   });
 }
+
+/**
+ * Final review I6: choosing a link in the mobile menu closes the menu,
+ * which hides the link that had focus. Focus must land on `main`, not fall
+ * to `<body>`, for every Collection destination.
+ */
+test('navigating through the mobile menu leaves focus on main, not body', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
+
+  for (const [label, heading] of [
+    ['Decks', 'Decks'],
+    ['Cards', 'Browse'],
+    ['Add', 'New card'],
+    ['Import', 'Import'],
+  ] as const) {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.locator('kt-header').getByRole('link', { name: label, exact: true }).click();
+    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+    await expect(page.getByRole('main')).toBeFocused();
+    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('MAIN');
+  }
+});
