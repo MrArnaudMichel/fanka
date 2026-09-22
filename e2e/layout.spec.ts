@@ -12,6 +12,7 @@ import { expect, test } from '@playwright/test';
 for (const [path, heading] of [
   ['/', 'Today'],
   ['/decks', 'Decks'],
+  ['/import', 'Import'],
 ] as const) {
   test(`${path} has no horizontal overflow at 360px`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });

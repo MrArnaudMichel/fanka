@@ -15,6 +15,7 @@ import {
   Trash2,
   TriangleAlert,
   Undo2,
+  Upload,
   X,
 } from 'lucide';
 import { registerIcons } from 'kanto/icons';
@@ -36,7 +37,9 @@ export default defineNuxtPlugin(async () => {
   // empty state; Pause/Play (Play already listed) are Browse's
   // suspend/unsuspend actions; Move is its bulk Move action; SquarePen is
   // the card detail panel's Edit action; Trash2 is Browse's delete actions.
-  // Settings returns with its page in phase 3.
+  // Upload is the Import nav entry, the Import empty-state action and the
+  // import page's own primary action (Task 14). Settings returns with its
+  // page in phase 3.
   registerIcons({
     Check,
     Ellipsis,
@@ -54,6 +57,7 @@ export default defineNuxtPlugin(async () => {
     Trash2,
     TriangleAlert,
     Undo2,
+    Upload,
     X,
   });
 });

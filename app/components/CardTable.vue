@@ -92,6 +92,12 @@ const addCardHref = computed(() => {
   return deckId ? `/cards/new?deck=${deckId}` : '/cards/new';
 });
 
+/** Task 14: the same `?deck=<id>` preset as `addCardHref`, once /import exists. */
+const importHref = computed(() => {
+  const deckId = props.scope?.deckId ?? filter.deckId;
+  return deckId ? `/import?deck=${deckId}` : '/import';
+});
+
 // --- Table -------------------------------------------------------------
 
 const columns = computed<KtTableColumn[]>(() => {
@@ -317,6 +323,7 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
       description="Add your first card to start building this collection."
     >
       <kt-button slot="actions" variant="primary" size="medium" icon="plus" @click="navigateTo(addCardHref)">Add a card</kt-button>
+      <kt-button slot="actions" variant="secondary" size="medium" icon="upload" @click="navigateTo(importHref)">Import</kt-button>
     </kt-empty-state>
 
     <kt-empty-state

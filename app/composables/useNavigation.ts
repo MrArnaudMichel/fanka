@@ -20,6 +20,7 @@ export function useNavigation(dueTotal: Readonly<Ref<number>>) {
         { label: 'Decks', href: '/decks', icon: 'layers' },
         { label: 'Cards', href: '/browse', icon: 'list' },
         { label: 'Add', href: '/cards/new', icon: 'plus' },
+        { label: 'Import', href: '/import', icon: 'upload' },
       ],
     },
   ]);
