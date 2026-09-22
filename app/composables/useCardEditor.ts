@@ -3,6 +3,7 @@ import { toZhuyin } from '~core/chinese/zhuyin';
 import { cards, decks as deckRepository, items } from '~core/db/repositories';
 import type { Card, Deck, Direction, PartOfSpeech } from '~core/db/schema';
 import { type CardDraft, type Issue, validateCard } from '~core/import/validate';
+import { refreshDueCounts } from '~/composables/useDueCounts';
 
 function uid(): string {
   return crypto.randomUUID();
@@ -221,6 +222,7 @@ export function useCardEditor(id?: string) {
         await cards.create(card, dirs, now);
         existingCard.value = card;
       }
+      await refreshDueCounts();
       return true;
     } finally {
       saving.value = false;

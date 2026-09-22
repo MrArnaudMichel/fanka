@@ -2,6 +2,7 @@ import type { KtSortDirection } from 'kanto';
 import { type CardRow, cards, items, reviews } from '~core/db/repositories';
 import type { Card, Direction, Item, Review } from '~core/db/schema';
 import type { ItemState } from '~core/srs';
+import { refreshDueCounts } from '~/composables/useDueCounts';
 
 export type BrowseState = ItemState | 'suspended';
 
@@ -175,18 +176,22 @@ export function useBrowse(scope?: { deckId: string }) {
 
   async function suspend(cardIds: string[]): Promise<void> {
     await items.setSuspended(itemIdsFor(cardIds), true, Date.now());
+    await refreshDueCounts();
   }
 
   async function unsuspend(cardIds: string[]): Promise<void> {
     await items.setSuspended(itemIdsFor(cardIds), false, Date.now());
+    await refreshDueCounts();
   }
 
   async function move(cardIds: string[], deckId: string): Promise<void> {
     await cards.move(cardIds, deckId, Date.now());
+    await refreshDueCounts();
   }
 
   async function remove(cardIds: string[]): Promise<void> {
     await cards.softDelete(cardIds, Date.now());
+    await refreshDueCounts();
   }
 
   function history(cardId: string): Promise<Review[]> {

@@ -1,5 +1,6 @@
 import { type DeckColor, type DeckSummary, decks } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';
+import { refreshDueCounts } from '~/composables/useDueCounts';
 
 export interface DeckInput {
   name: string;
@@ -20,7 +21,10 @@ export function useDecks() {
     summaries: (now = Date.now()): Promise<DeckSummary[]> => decks.summaries(now),
     create: (input: DeckInput, now = Date.now()): Promise<Deck> => decks.create(input, now),
     update: (id: string, patch: DeckPatch, now = Date.now()): Promise<void> => decks.update(id, patch, now),
-    /** Soft delete — the deck and its cards keep their review history. */
-    remove: (id: string, now = Date.now()): Promise<void> => decks.softDelete(id, now),
+    /** Soft delete — the deck and its cards keep their review history. Its cards leave the due count with it. */
+    async remove(id: string, now = Date.now()): Promise<void> {
+      await decks.softDelete(id, now);
+      await refreshDueCounts();
+    },
   };
 }

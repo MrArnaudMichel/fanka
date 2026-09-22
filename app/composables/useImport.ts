@@ -7,6 +7,7 @@ import { db } from '~core/db/db';
 import { cards } from '~core/db/repositories';
 import { type Card, type Direction, type Item, type OutboxEntry, itemId } from '~core/db/schema';
 import { newSrsState } from '~core/srs';
+import { refreshDueCounts } from '~/composables/useDueCounts';
 
 export type SourceMode = 'file' | 'paste';
 
@@ -252,10 +253,14 @@ export function useImport() {
         created += result.created;
         skipped += result.skipped;
       } catch (err) {
+        // Earlier batches did land — their cards count toward today's work
+        // even though this one failed.
+        if (created > 0) await refreshDueCounts();
         throw new ImportCommitError(created, err);
       }
     }
 
+    await refreshDueCounts();
     return { created, skipped };
   }
 

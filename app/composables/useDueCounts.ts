@@ -6,19 +6,35 @@ import { type Settings, loadSettings } from '~core/db/settings';
 const total = ref(0);
 const byState = ref({ fresh: 0, learning: 0, review: 0 });
 
+async function refresh(now = Date.now()): Promise<void> {
+  const { due, fresh } = await dueToday(now);
+
+  byState.value = {
+    fresh: fresh.length,
+    learning: due.filter((i) => i.state === 'learning' || i.state === 'relearning').length,
+    review: due.filter((i) => i.state === 'review').length,
+  };
+  total.value = due.length + fresh.length;
+}
+
+/**
+ * Called by every collection write (`useDecks`, `useBrowse`,
+ * `useCardEditor`, `useImport`) once it has landed, so the shell's
+ * "Today's session · n" never goes stale after a deck delete, a suspend or
+ * an import — pages never have to remember to do it themselves. Never
+ * throws: the write itself already succeeded, and a failed recount must not
+ * turn it into a reported failure.
+ */
+export async function refreshDueCounts(): Promise<void> {
+  try {
+    await refresh();
+  } catch (err) {
+    console.error('useDueCounts: refresh failed', err);
+  }
+}
+
 /** Shared across the shell and the Today page so both read one number. */
 export function useDueCounts() {
-  async function refresh(now = Date.now()): Promise<void> {
-    const { due, fresh } = await dueToday(now);
-
-    byState.value = {
-      fresh: fresh.length,
-      learning: due.filter((i) => i.state === 'learning' || i.state === 'relearning').length,
-      review: due.filter((i) => i.state === 'review').length,
-    };
-    total.value = due.length + fresh.length;
-  }
-
   // Fire-and-forget: nothing awaits the initial load, so a rejection would
   // otherwise vanish as an unhandled promise rejection and leave the counts
   // pinned at zero with no sign anything went wrong.
