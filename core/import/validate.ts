@@ -45,7 +45,7 @@ export interface Validated {
  * not parse, even though `parsePinyin` itself is lenient enough to turn any
  * token into *some* syllable.
  */
-const PINYIN_PATTERN =
+export const PINYIN_PATTERN =
   /^[\sa-zA-Zü1-5:'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+$/;
 
 function countHanCharacters(text: string): number {
