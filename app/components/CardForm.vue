@@ -150,6 +150,10 @@ function goBackOrDecks(): void {
 }
 
 async function onSubmit(): Promise<void> {
+  // A double Enter, or a fast double-click on Save while the first save is
+  // still in flight, must not fire a second `save()` — `saving` is already
+  // true for exactly that window.
+  if (saving.value) return;
   submitted.value = true;
   try {
     const ok = await save();
