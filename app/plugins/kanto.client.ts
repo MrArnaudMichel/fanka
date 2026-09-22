@@ -1,4 +1,22 @@
-import { Check, Ellipsis, FileQuestion, House, Layers, Play, Plus, RefreshCw, TriangleAlert, Undo2, X } from 'lucide';
+import {
+  Check,
+  Ellipsis,
+  FileQuestion,
+  House,
+  Layers,
+  List,
+  Move,
+  Pause,
+  Play,
+  Plus,
+  RefreshCw,
+  Search,
+  SquarePen,
+  Trash2,
+  TriangleAlert,
+  Undo2,
+  X,
+} from 'lucide';
 import { registerIcons } from 'kanto/icons';
 
 // Importing this module defines every kt-* custom element. It is a .client
@@ -13,7 +31,29 @@ export default defineNuxtPlugin(async () => {
   // page's New deck action, the Add nav entry and "go to decks" action;
   // Ellipsis is each deck card's actions dropdown trigger; TriangleAlert and
   // RefreshCw are load-failure states and their retry action; FileQuestion is
-  // the card editor's "card not found" empty state. Settings returns with
-  // its page in phase 3.
-  registerIcons({ Check, Ellipsis, FileQuestion, House, Layers, Play, Plus, RefreshCw, TriangleAlert, Undo2, X });
+  // the card editor's "card not found" empty state. List is the Browse
+  // ("Cards") nav entry; Search is Browse's filter field and its "no match"
+  // empty state; Pause/Play (Play already listed) are Browse's
+  // suspend/unsuspend actions; Move is its bulk Move action; SquarePen is
+  // the card detail panel's Edit action; Trash2 is Browse's delete actions.
+  // Settings returns with its page in phase 3.
+  registerIcons({
+    Check,
+    Ellipsis,
+    FileQuestion,
+    House,
+    Layers,
+    List,
+    Move,
+    Pause,
+    Play,
+    Plus,
+    RefreshCw,
+    Search,
+    SquarePen,
+    Trash2,
+    TriangleAlert,
+    Undo2,
+    X,
+  });
 });

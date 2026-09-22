@@ -21,12 +21,20 @@ const props = withDefaults(defineProps<{ deck: Deck; mode?: 'compact' | 'full'; 
 const emit = defineEmits<{ edit: [deck: Deck]; delete: [deck: Deck] }>();
 
 const dropdownOptions: KtOption[] = [
+  { id: 'browse', label: 'Browse cards' },
   { id: 'edit', label: 'Edit' },
   { id: 'delete', label: 'Delete' },
 ];
 
+/**
+ * "Browse cards" navigates directly rather than emitting — unlike Edit and
+ * Delete, it does not open anything on this page, so there is nothing for a
+ * parent to own. `?deck=<id>` only presets Browse's deck filter (ruling 1
+ * from task-12-report.md); it stays a filter the learner can change there.
+ */
 function onSelect(event: CustomEvent<{ value: string | number | null }>): void {
-  if (event.detail.value === 'edit') emit('edit', props.deck);
+  if (event.detail.value === 'browse') navigateTo(`/browse?deck=${props.deck.id}`);
+  else if (event.detail.value === 'edit') emit('edit', props.deck);
   else if (event.detail.value === 'delete') emit('delete', props.deck);
 }
 
