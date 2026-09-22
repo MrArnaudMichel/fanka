@@ -25,7 +25,7 @@ test('typing a tag and pressing Enter adds it', async ({ page }) => {
  * The pinyin preview is a conditional child of the form, so typing pinyin
  * used to re-enable direction toggles that must stay locked: the sole
  * remaining direction on a new card, and both toggles of a fully suspended
- * card. The toggles now live outside kt-form entirely.
+ * card. kt-form's direct children now never change (see CardForm.vue).
  */
 test('typing pinyin keeps the sole remaining direction locked on a new card', async ({ page }) => {
   await page.goto('/cards/new');
