@@ -319,10 +319,15 @@ export const cards = {
    *
    * `directions` must be non-empty — a card with no direction cannot be
    * reviewed at all, so that is a caller error, not a valid state to save.
+   * `null` means "leave the items alone": no item is created, suspended or
+   * un-suspended. That keeps an edit's content change separate from the
+   * card's suspension, which Browse's Suspend/Unsuspend own — an editor
+   * that re-sent the toggles it loaded would otherwise un-suspend (or fail
+   * to save) a card that Browse suspended.
    */
-  async update(id: string, patch: CardPatch, directions: Direction[], now: number): Promise<void> {
-    if (directions.length === 0) throw new Error('a card needs at least one direction');
-    const enabled = new Set(directions);
+  async update(id: string, patch: CardPatch, directions: Direction[] | null, now: number): Promise<void> {
+    if (directions !== null && directions.length === 0) throw new Error('a card needs at least one direction');
+    const enabled = directions === null ? null : new Set(directions);
 
     await db.transaction('rw', db.cards, db.items, db.decks, db.outbox, async () => {
       const card = await db.cards.get(id);
@@ -343,6 +348,7 @@ export const cards = {
       await db.cards.put(updated);
       await db.outbox.put(outboxEntry('card', id, 'put', now));
 
+      if (enabled === null) return;
       const existingByDir = byDir(await db.items.where('cardId').equals(id).toArray());
       for (const dir of ALL_DIRECTIONS) {
         const existing = existingByDir.get(dir);

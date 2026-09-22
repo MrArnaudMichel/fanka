@@ -203,4 +203,68 @@ describe('useCardEditor', () => {
     expect((await cards.get('c1'))?.zhuyin).not.toBe('custom-should-be-kept');
     expect((await cards.get('c1'))?.zhuyin.length).toBeGreaterThan(0);
   });
+
+  describe('a suspended card (final review I2)', () => {
+    async function suspendAll(): Promise<void> {
+      await items.setSuspended([itemId('c1', 'recognition'), itemId('c1', 'production')], true, NOW);
+    }
+
+    it('flags a fully suspended card, and its toggles show the directions it has', async () => {
+      await makeDeck();
+      await makeCard();
+      await suspendAll();
+      const editor = useCardEditor('c1');
+      await ready(editor);
+
+      expect(editor.suspended.value).toBe(true);
+      expect(editor.directions.recognition).toBe(true);
+      expect(editor.directions.production).toBe(true);
+    });
+
+    it('saves a fully suspended card unchanged: other fields update, it stays suspended', async () => {
+      await makeDeck();
+      await makeCard();
+      await suspendAll();
+      const editor = useCardEditor('c1');
+      await ready(editor);
+
+      editor.draft.translation = 'to learn';
+      expect(await editor.save()).toBe(true);
+
+      expect((await cards.get('c1'))?.translation).toBe('to learn');
+      expect((await items.get(itemId('c1', 'recognition')))?.suspended).toBe(true);
+      expect((await items.get(itemId('c1', 'production')))?.suspended).toBe(true);
+    });
+
+    it('does not flag a partly suspended card, and saving it unchanged keeps its items as they are', async () => {
+      await makeDeck();
+      await makeCard();
+      await items.setSuspended([itemId('c1', 'production')], true, NOW);
+      const editor = useCardEditor('c1');
+      await ready(editor);
+
+      expect(editor.suspended.value).toBe(false);
+      expect(editor.directions.recognition).toBe(true);
+      expect(editor.directions.production).toBe(false);
+
+      expect(await editor.save()).toBe(true);
+      expect((await items.get(itemId('c1', 'recognition')))?.suspended).toBe(false);
+      expect((await items.get(itemId('c1', 'production')))?.suspended).toBe(true);
+    });
+
+    it('refuses a save with every direction off, with a reason', async () => {
+      await makeDeck();
+      await makeCard();
+      const editor = useCardEditor('c1');
+      await ready(editor);
+
+      editor.directions.recognition = false;
+      editor.directions.production = false;
+      expect(await editor.save()).toBe(false);
+      expect(editor.directionsError.value).toBe('Turn on at least one direction.');
+
+      editor.directions.recognition = true;
+      expect(editor.directionsError.value).toBe('');
+    });
+  });
 });

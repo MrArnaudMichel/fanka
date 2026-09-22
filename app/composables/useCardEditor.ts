@@ -107,6 +107,27 @@ export function useCardEditor(id?: string) {
   const allTags = ref<string[]>([]);
   const existingHanzi = ref<Set<string>>(new Set());
   const existingCard = ref<Card | null>(null);
+  /**
+   * True when every one of the card's items is suspended — Browse's
+   * Suspend. Suspension is Browse's to change, not the editor's: the
+   * toggles then show the directions the card has items for (so they are
+   * never all off), and a save leaves the items alone entirely.
+   */
+  const suspended = ref(false);
+  /** The toggles as loaded, so `save()` can tell whether the learner actually changed a direction. */
+  const loadedDirections = ref<CardEditorDirections | null>(null);
+  /** Set by the first save attempt, so the "no direction" reason only shows once the learner has tried to save. */
+  const saveAttempted = ref(false);
+
+  const directionsError = computed(() =>
+    saveAttempted.value && directionList(directions).length === 0 ? 'Turn on at least one direction.' : '',
+  );
+
+  function directionsChanged(): boolean {
+    const loaded = loadedDirections.value;
+    if (!loaded) return true;
+    return loaded.recognition !== directions.recognition || loaded.production !== directions.production;
+  }
 
   const preview = computed<CardPreview>(() => {
     const syllables = parsePinyin(draft.pinyin);
@@ -161,8 +182,17 @@ export function useCardEditor(id?: string) {
 
         const cardItems = await items.forCard(id);
         const byDir = new Map(cardItems.map((item) => [item.dir, item]));
-        directions.recognition = Boolean(byDir.get('recognition') && !byDir.get('recognition')!.suspended);
-        directions.production = Boolean(byDir.get('production') && !byDir.get('production')!.suspended);
+        suspended.value = cardItems.length > 0 && cardItems.every((item) => item.suspended);
+        // A fully suspended card shows the directions it has items for;
+        // otherwise a toggle is on only while its item is live, and a
+        // direction disabled through the editor shows off.
+        const shows = (dir: Direction): boolean => {
+          const item = byDir.get(dir);
+          return Boolean(item && (suspended.value || !item.suspended));
+        };
+        directions.recognition = shows('recognition');
+        directions.production = shows('production');
+        loadedDirections.value = { recognition: directions.recognition, production: directions.production };
       } else {
         // Ruling 6: the deck defaults to the first one. `?deck=<id>` (when
         // present and live) overrides this from the page, once loaded — see
@@ -204,22 +234,27 @@ export function useCardEditor(id?: string) {
    */
   async function save(): Promise<boolean> {
     saving.value = true;
+    saveAttempted.value = true;
     try {
       await refreshExistingHanzi();
       const validated = validateCard(toCardDraft(draft), existingHanzi.value);
       if (!validated.ok) return false;
 
-      const dirs = directionList(directions);
-      if (dirs.length === 0) return false;
+      // `null` leaves the items untouched: an edit that did not change a
+      // toggle — and any edit of a fully suspended card — must never
+      // suspend, un-suspend or create an item as a side effect.
+      const dirs = existingCard.value && (suspended.value || !directionsChanged()) ? null : directionList(directions);
+      if (dirs !== null && dirs.length === 0) return false;
 
       const now = Date.now();
       const fields = buildFields(validated.draft);
 
       if (existingCard.value) {
         await cards.update(existingCard.value.id, fields, dirs, now);
+        if (dirs !== null) loadedDirections.value = { recognition: directions.recognition, production: directions.production };
       } else {
         const card: Card = { id: uid(), ...fields, zhuyin: toZhuyin(fields.pinyin), createdAt: now, updatedAt: now, deletedAt: null };
-        await cards.create(card, dirs, now);
+        await cards.create(card, dirs ?? [], now);
         existingCard.value = card;
       }
       await refreshDueCounts();
@@ -238,6 +273,8 @@ export function useCardEditor(id?: string) {
     loading,
     saving,
     notFound,
+    suspended,
+    directionsError,
     decks: deckList,
     allTags,
   };

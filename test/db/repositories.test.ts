@@ -358,6 +358,28 @@ describe('cards.update', () => {
     await expect(cards.update('c1', {}, [], NOW)).rejects.toThrow();
   });
 
+  it('leaves every item untouched when directions is null, suspended or not', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition', 'production'], NOW);
+    await items.setSuspended([itemId('c1', 'recognition'), itemId('c1', 'production')], true, NOW);
+    const itemsBefore = await db.items.toArray();
+
+    await cards.update('c1', { translation: 'to learn' }, null, NOW + 1);
+
+    expect((await cards.get('c1'))!.translation).toBe('to learn');
+    expect(await db.items.toArray()).toEqual(itemsBefore);
+    // Only the card's own outbox entry — no item was written.
+    const added = (await db.outbox.toArray()).filter((e) => e.at === NOW + 1);
+    expect(added.map((e) => e.entity)).toEqual(['card']);
+  });
+
+  it('creates no item for a missing direction when directions is null', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    await cards.update('c1', { note: 'x' }, null, NOW + 1);
+    expect(await items.get(itemId('c1', 'production'))).toBeUndefined();
+  });
+
   it('moves a card to a live deck via a deckId patch, with an outbox entry — proving db.decks is reachable inside the transaction', async () => {
     await decks.put(aDeck());
     await decks.put(aDeck({ id: 'd2', name: 'HSK 2' }));

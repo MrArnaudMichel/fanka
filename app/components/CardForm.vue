@@ -17,7 +17,9 @@ const props = defineProps<{ cardId?: string; defaultDeckId?: string }>();
 const editing = computed(() => Boolean(props.cardId));
 const router = useRouter();
 
-const { draft, directions, issues, preview, save, loading, saving, notFound, decks, allTags } = useCardEditor(props.cardId);
+const { draft, directions, issues, preview, save, loading, saving, notFound, suspended, directionsError, decks, allTags } = useCardEditor(
+  props.cardId,
+);
 
 /**
  * Ruling 6: the deck defaults to the first one (`useCardEditor`'s own
@@ -85,14 +87,39 @@ const unmappedIssues = computed(() => {
 const alertVariant = computed(() => (unmappedIssues.value.some((issue) => issue.severity === 'error') ? 'danger' : 'warning'));
 
 /** Ruling 5: the sole enabled direction is disabled, not just discouraged — a card needs at least one. */
-const recognitionDisabled = computed(() => directions.recognition && !directions.production);
-const productionDisabled = computed(() => directions.production && !directions.recognition);
+const recognitionSole = computed(() => directions.recognition && !directions.production);
+const productionSole = computed(() => directions.production && !directions.recognition);
+/**
+ * A fully suspended card's toggles are read-only: suspension belongs to
+ * Browse (final review I2), and changing a direction here would otherwise
+ * un-suspend the other one as a side effect.
+ */
+const recognitionDisabled = computed(() => suspended.value || recognitionSole.value);
+const productionDisabled = computed(() => suspended.value || productionSole.value);
 const recognitionLabel = computed(() =>
-  recognitionDisabled.value ? 'Recognition — required, keep at least one direction on' : 'Recognition',
+  !suspended.value && recognitionSole.value ? 'Recognition — required, keep at least one direction on' : 'Recognition',
 );
 const productionLabel = computed(() =>
-  productionDisabled.value ? 'Production — required, keep at least one direction on' : 'Production',
+  !suspended.value && productionSole.value ? 'Production — required, keep at least one direction on' : 'Production',
 );
+
+/**
+ * kt-form's `firstUpdated` pushes its own `disabled` (false) onto every
+ * slotted control and their descendants (kt-form.ts's `syncDisabled`), which
+ * silently clears a toggle Vue had already rendered disabled — verified in
+ * Chromium: a suspended card's toggles came out enabled. It only does that
+ * on its first render and when its own `disabled` changes, so the toggles
+ * are keyed on `formSettled` and remount, with their real `disabled`, once
+ * kt-form has settled.
+ */
+const formEl = ref<(HTMLElement & { updateComplete?: Promise<boolean> }) | null>(null);
+const formSettled = ref(false);
+watch(formEl, async (el) => {
+  formSettled.value = false;
+  if (!el) return;
+  await el.updateComplete;
+  if (formEl.value === el) formSettled.value = true;
+});
 
 function onHanziInput(event: CustomEvent<{ value: string }>): void {
   draft.hanzi = event.detail.value;
@@ -200,7 +227,7 @@ async function onSubmit(): Promise<void> {
       below does that validation instead, through `fieldError`/`kt-alert`.
     -->
     <form v-else novalidate @submit.prevent="onSubmit">
-      <kt-form>
+      <kt-form ref="formEl">
         <kt-label-input label="Hanzi" required>
           <kt-input
             name="hanzi"
@@ -300,7 +327,9 @@ async function onSubmit(): Promise<void> {
 
         <div class="directions">
           <p class="section-label">Study directions</p>
+          <kt-alert v-if="suspended" variant="warning" description="This card is suspended and won't be reviewed. Unsuspend it from Cards." />
           <kt-toggle
+            :key="`recognition-${formSettled}`"
             :checked="directions.recognition"
             :disabled="recognitionDisabled"
             :label="recognitionLabel"
@@ -309,6 +338,7 @@ async function onSubmit(): Promise<void> {
             Recognition
           </kt-toggle>
           <kt-toggle
+            :key="`production-${formSettled}`"
             :checked="directions.production"
             :disabled="productionDisabled"
             :label="productionLabel"
@@ -316,6 +346,7 @@ async function onSubmit(): Promise<void> {
           >
             Production
           </kt-toggle>
+          <kt-alert v-if="directionsError" variant="danger" :description="directionsError" />
         </div>
 
         <kt-alert v-if="unmappedIssues.length > 0" :variant="alertVariant" heading="Check this card">
