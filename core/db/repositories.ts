@@ -1,6 +1,7 @@
 import { db } from './db';
 import { type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, itemId } from './schema';
-import { type Grade, type SrsState, newSrsState } from '~core/srs';
+import { toZhuyin } from '~core/chinese/zhuyin';
+import { type Grade, type ItemState, type SrsState, newSrsState } from '~core/srs';
 
 function uid(): string {
   return crypto.randomUUID();
@@ -32,6 +33,116 @@ async function decksByIdFor(cardsById: Map<string, Card>): Promise<Map<string, D
   return byId(await db.decks.bulkGet(deckIds));
 }
 
+const ALL_DIRECTIONS: Direction[] = ['recognition', 'production'];
+
+/** Indexes a card's items by direction. A card has at most one item per direction. */
+function byDir(cardItems: Item[]): Map<Direction, Item> {
+  return new Map(cardItems.map((i) => [i.dir, i]));
+}
+
+/**
+ * The palette a deck's `colorToken` may be set to. It feeds a Kanto `style`
+ * binding directly, so an imported file (or any other untrusted input) must
+ * never be able to inject an arbitrary CSS value through it — every writer
+ * of `colorToken` checks against this set first.
+ */
+export const DECK_COLORS = [
+  'var(--chart-series-1)',
+  'var(--chart-series-2)',
+  'var(--chart-series-3)',
+  'var(--chart-series-4)',
+  'var(--chart-series-5)',
+  'var(--chart-series-6)',
+  'var(--chart-series-7)',
+  'var(--chart-series-8)',
+] as const;
+export type DeckColor = (typeof DECK_COLORS)[number];
+
+function assertDeckColor(colorToken: string): asserts colorToken is DeckColor {
+  if (!(DECK_COLORS as readonly string[]).includes(colorToken)) {
+    throw new Error(`not a deck colour: ${colorToken}`);
+  }
+}
+
+export interface DeckSummary {
+  deck: Deck;
+  total: number;
+  due: number;
+  fresh: number;
+  mature: number;
+  young: number;
+}
+
+/** A card's row `state` is its least-advanced unsuspended item's state; `new` < `learning` = `relearning` < `review`. */
+const STATE_RANK: Record<ItemState, number> = { new: 0, learning: 1, relearning: 1, review: 2 };
+
+/** The scheduling threshold above which a `review` item counts as mature rather than young. */
+const MATURE_SCHEDULED_DAYS = 21;
+
+export interface CardFilter {
+  deckId?: string;
+  state?: ItemState | 'suspended';
+  dir?: Direction;
+  query?: string;
+  now: number;
+}
+
+export interface CardRow {
+  card: Card;
+  deckName: string;
+  items: Item[];
+  state: ItemState | 'suspended';
+  due: number | null;
+}
+
+export type CardPatch = Partial<
+  Pick<
+    Card,
+    'hanzi' | 'pinyin' | 'zhuyin' | 'translation' | 'pos' | 'example' | 'examplePinyin' | 'exampleTranslation' | 'tags' | 'note' | 'deckId'
+  >
+>;
+
+/**
+ * A row's `state` ignores suspended items entirely, and is `suspended` only
+ * once every item is; `due` is the soonest unsuspended item's due, or null
+ * when none exists. Shared by `cards.list` and nowhere else yet, but kept
+ * standalone so a future caller (e.g. deck detail) computes the same thing
+ * rather than re-deriving its own rule.
+ */
+function rowStateAndDue(cardItems: Item[]): { state: ItemState | 'suspended'; due: number | null } {
+  const active = cardItems.filter((i) => !i.suspended);
+  if (active.length === 0) return { state: 'suspended', due: null };
+  let state = active[0]!.state;
+  let due = active[0]!.due;
+  for (const item of active) {
+    if (STATE_RANK[item.state] < STATE_RANK[state]) state = item.state;
+    if (item.due < due) due = item.due;
+  }
+  return { state, due };
+}
+
+const TONE_MARK_RE = new RegExp('[\u0300-\u036f]', 'g');
+
+/** Strips tone marks, tone digits and whitespace, and lowercases, so pinyin can be matched toneless. */
+function toneless(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(TONE_MARK_RE, '')
+    .replace(/[1-5]/g, '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+}
+
+function matchesQuery(card: Card, trimmedQuery: string): boolean {
+  const lower = trimmedQuery.toLowerCase();
+  if (card.hanzi.toLowerCase().includes(lower)) return true;
+  if (card.translation.toLowerCase().includes(lower)) return true;
+  const tonelessQuery = toneless(trimmedQuery);
+  if (tonelessQuery.length === 0) return false;
+  const pinyinText = card.pinyin.map((s) => s.text).join(' ');
+  return toneless(pinyinText).includes(tonelessQuery);
+}
+
 export const decks = {
   get: (id: string) => db.decks.get(id),
 
@@ -47,6 +158,104 @@ export const decks = {
   async listAll(): Promise<Deck[]> {
     const all = await db.decks.toArray();
     return all.filter((d) => d.deletedAt === null).sort((a, b) => a.name.localeCompare(b.name));
+  },
+
+  async create(input: { name: string; description: string; colorToken: DeckColor; tag: string }, now: number): Promise<Deck> {
+    assertDeckColor(input.colorToken);
+    const deck: Deck = {
+      id: uid(),
+      name: input.name,
+      description: input.description,
+      colorToken: input.colorToken,
+      tag: input.tag,
+      // Not part of the brief's input; every existing deck (seed included)
+      // is English, so this is the one sane default rather than a required
+      // field nothing in this task's UI collects yet.
+      translationLang: 'en',
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+    };
+    await db.transaction('rw', db.decks, db.outbox, async () => {
+      await db.decks.put(deck);
+      await db.outbox.put(outboxEntry('deck', deck.id, 'put', now));
+    });
+    return deck;
+  },
+
+  async update(id: string, patch: Partial<Pick<Deck, 'name' | 'description' | 'colorToken' | 'tag'>>, now: number): Promise<void> {
+    if (patch.colorToken !== undefined) assertDeckColor(patch.colorToken);
+    await db.transaction('rw', db.decks, db.outbox, async () => {
+      const deck = await db.decks.get(id);
+      if (!deck) throw new Error(`no such deck: ${id}`);
+      await db.decks.put({ ...deck, ...patch, updatedAt: now });
+      await db.outbox.put(outboxEntry('deck', id, 'put', now));
+    });
+  },
+
+  /**
+   * Marks only the deck. Its cards become invisible through the existing
+   * deck visibility that `cardVisible`/`decksByIdFor` already enforce for
+   * `items.due`/`fresh`/`visible` and for `cards.list` — nothing there needs
+   * to change to honour a soft-deleted deck.
+   */
+  async softDelete(id: string, now: number): Promise<void> {
+    await db.transaction('rw', db.decks, db.outbox, async () => {
+      const deck = await db.decks.get(id);
+      if (!deck) throw new Error(`no such deck: ${id}`);
+      await db.decks.put({ ...deck, deletedAt: now, updatedAt: now });
+      await db.outbox.put(outboxEntry('deck', id, 'put', now));
+    });
+  },
+
+  /**
+   * One summary per live deck, built from a single scan of cards and items
+   * rather than N+1 queries per deck. `total` counts visible cards, not
+   * items; `due`/`fresh`/`mature`/`young` count unsuspended items only, per
+   * the same visibility rule `cardVisible` applies everywhere else.
+   */
+  async summaries(now: number): Promise<DeckSummary[]> {
+    const allDecks = await db.decks.toArray();
+    const decksById = byId(allDecks);
+    const liveDecks = allDecks.filter((d) => d.deletedAt === null).sort((a, b) => a.name.localeCompare(b.name));
+
+    const visibleCards = (await db.cards.toArray()).filter((c) => cardVisible(c, decksById));
+    const cardsByDeck = new Map<string, Card[]>();
+    for (const card of visibleCards) {
+      const list = cardsByDeck.get(card.deckId) ?? [];
+      list.push(card);
+      cardsByDeck.set(card.deckId, list);
+    }
+
+    const visibleCardIds = new Set(visibleCards.map((c) => c.id));
+    const itemsByCard = new Map<string, Item[]>();
+    for (const item of await db.items.toArray()) {
+      if (!visibleCardIds.has(item.cardId)) continue;
+      const list = itemsByCard.get(item.cardId) ?? [];
+      list.push(item);
+      itemsByCard.set(item.cardId, list);
+    }
+
+    return liveDecks.map((deck) => {
+      const deckCards = cardsByDeck.get(deck.id) ?? [];
+      let due = 0;
+      let fresh = 0;
+      let mature = 0;
+      let young = 0;
+      for (const card of deckCards) {
+        for (const item of itemsByCard.get(card.id) ?? []) {
+          if (item.suspended) continue;
+          if (item.state === 'new') {
+            fresh += 1;
+            continue;
+          }
+          if (item.due <= now) due += 1;
+          if (item.state === 'review' && item.scheduledDays > MATURE_SCHEDULED_DAYS) mature += 1;
+          else young += 1;
+        }
+      }
+      return { deck, total: deckCards.length, due, fresh, mature, young };
+    });
   },
 };
 
@@ -75,6 +284,121 @@ export const cards = {
   async forDeck(deckId: string): Promise<Card[]> {
     const all = await db.cards.where('deckId').equals(deckId).toArray();
     return all.filter((c) => c.deletedAt === null);
+  },
+
+  /**
+   * Patches the card's content and reconciles its items against the given
+   * directions, all in one transaction:
+   * - a newly enabled direction with an existing (suspended) item is
+   *   un-suspended, never duplicated;
+   * - a newly enabled direction with no item gets a fresh one;
+   * - a disabled direction's item is suspended, never deleted, so its
+   *   review history survives a later re-enable.
+   *
+   * `directions` must be non-empty — a card with no direction cannot be
+   * reviewed at all, so that is a caller error, not a valid state to save.
+   */
+  async update(id: string, patch: CardPatch, directions: Direction[], now: number): Promise<void> {
+    if (directions.length === 0) throw new Error('a card needs at least one direction');
+    const enabled = new Set(directions);
+
+    await db.transaction('rw', db.cards, db.items, db.outbox, async () => {
+      const card = await db.cards.get(id);
+      if (!card) throw new Error(`no such card: ${id}`);
+
+      let deckId = card.deckId;
+      if (patch.deckId !== undefined && patch.deckId !== card.deckId) {
+        const targetDeck = await db.decks.get(patch.deckId);
+        if (!targetDeck || targetDeck.deletedAt !== null) throw new Error(`no such deck: ${patch.deckId}`);
+        deckId = patch.deckId;
+      }
+
+      const zhuyin = patch.pinyin !== undefined && patch.zhuyin === undefined ? toZhuyin(patch.pinyin) : patch.zhuyin;
+
+      const updated: Card = { ...card, ...patch, deckId, ...(zhuyin !== undefined ? { zhuyin } : {}), updatedAt: now };
+      await db.cards.put(updated);
+      await db.outbox.put(outboxEntry('card', id, 'put', now));
+
+      const existingByDir = byDir(await db.items.where('cardId').equals(id).toArray());
+      for (const dir of ALL_DIRECTIONS) {
+        const existing = existingByDir.get(dir);
+        if (enabled.has(dir)) {
+          if (!existing) {
+            const fresh: Item = { ...newSrsState(now), id: itemId(id, dir), cardId: id, dir, suspended: false, updatedAt: now };
+            await db.items.put(fresh);
+            await db.outbox.put(outboxEntry('item', fresh.id, 'put', now));
+          } else if (existing.suspended) {
+            const revived: Item = { ...existing, suspended: false, updatedAt: now };
+            await db.items.put(revived);
+            await db.outbox.put(outboxEntry('item', revived.id, 'put', now));
+          }
+        } else if (existing && !existing.suspended) {
+          const suspended: Item = { ...existing, suspended: true, updatedAt: now };
+          await db.items.put(suspended);
+          await db.outbox.put(outboxEntry('item', suspended.id, 'put', now));
+        }
+      }
+    });
+  },
+
+  /** One transaction for every id, so a bulk soft-delete either fully lands or fully doesn't. */
+  async softDelete(ids: string[], now: number): Promise<void> {
+    await db.transaction('rw', db.cards, db.outbox, async () => {
+      const found = (await db.cards.bulkGet(ids)).filter((c): c is Card => Boolean(c));
+      for (const card of found) {
+        await db.cards.put({ ...card, deletedAt: now, updatedAt: now });
+        await db.outbox.put(outboxEntry('card', card.id, 'put', now));
+      }
+    });
+  },
+
+  /** Throws, and moves nothing, if the target deck is unknown or soft-deleted — one transaction for every id. */
+  async move(ids: string[], deckId: string, now: number): Promise<void> {
+    await db.transaction('rw', db.cards, db.decks, db.outbox, async () => {
+      const targetDeck = await db.decks.get(deckId);
+      if (!targetDeck || targetDeck.deletedAt !== null) throw new Error(`no such deck: ${deckId}`);
+      const found = (await db.cards.bulkGet(ids)).filter((c): c is Card => Boolean(c));
+      for (const card of found) {
+        await db.cards.put({ ...card, deckId, updatedAt: now });
+        await db.outbox.put(outboxEntry('card', card.id, 'put', now));
+      }
+    });
+  },
+
+  /**
+   * `state`, `dir`, `deckId` and `query` combine with AND. `state`/`due` are
+   * computed by the same `rowStateAndDue` rule everywhere, so a row never
+   * disagrees with itself between filters.
+   */
+  async list(filter: CardFilter): Promise<CardRow[]> {
+    const allDecks = await db.decks.toArray();
+    const decksById = byId(allDecks);
+
+    let candidates = (await db.cards.toArray()).filter((c) => cardVisible(c, decksById));
+    if (filter.deckId !== undefined) {
+      candidates = candidates.filter((c) => c.deckId === filter.deckId);
+    }
+    const trimmedQuery = filter.query?.trim() ?? '';
+    if (trimmedQuery.length > 0) {
+      candidates = candidates.filter((c) => matchesQuery(c, trimmedQuery));
+    }
+
+    const itemsByCard = new Map<string, Item[]>();
+    for (const item of await db.items.toArray()) {
+      const list = itemsByCard.get(item.cardId) ?? [];
+      list.push(item);
+      itemsByCard.set(item.cardId, list);
+    }
+
+    const rows: CardRow[] = [];
+    for (const card of candidates) {
+      const cardItems = itemsByCard.get(card.id) ?? [];
+      const { state, due } = rowStateAndDue(cardItems);
+      if (filter.state !== undefined && state !== filter.state) continue;
+      if (filter.dir !== undefined && !cardItems.some((i) => i.dir === filter.dir && !i.suspended)) continue;
+      rows.push({ card, deckName: decksById.get(card.deckId)?.name ?? '', items: cardItems, state, due });
+    }
+    return rows;
   },
 };
 
@@ -141,6 +465,17 @@ export const items = {
     const cardsById = byId(await db.cards.bulkGet(found.map((i) => i.cardId)));
     const decksById = await decksByIdFor(cardsById);
     return found.filter((i) => !i.suspended && cardVisible(cardsById.get(i.cardId), decksById));
+  },
+
+  /** One transaction for every id — a bulk suspend/un-suspend either fully lands or fully doesn't. */
+  async setSuspended(ids: string[], suspended: boolean, now: number): Promise<void> {
+    await db.transaction('rw', db.items, db.outbox, async () => {
+      const found = (await db.items.bulkGet(ids)).filter((i): i is Item => Boolean(i));
+      for (const item of found) {
+        await db.items.put({ ...item, suspended, updatedAt: now });
+        await db.outbox.put(outboxEntry('item', item.id, 'put', now));
+      }
+    });
   },
 };
 
@@ -209,4 +544,11 @@ export const reviews = {
   },
 
   forItem: (itemIdValue: string) => db.reviews.where('itemId').equals(itemIdValue).sortBy('reviewedAt'),
+
+  /** Every review across all of a card's items (both directions), oldest first. */
+  async historyForCard(cardId: string): Promise<Review[]> {
+    const cardItems = await db.items.where('cardId').equals(cardId).toArray();
+    const perItem = await Promise.all(cardItems.map((item) => db.reviews.where('itemId').equals(item.id).toArray()));
+    return perItem.flat().sort((a, b) => a.reviewedAt - b.reviewedAt);
+  },
 };
