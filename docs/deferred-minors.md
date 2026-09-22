@@ -53,3 +53,31 @@ findings are never parked here.
 | Kanto's `kt-dropdown` (fix in Kanto) | The closed panel is `visibility: hidden` but still laid out, so a start-aligned trigger near the right edge widens the page. Fanka works around it with `align="end"` | Worked around here; the root fix belongs in Kanto | Phase 2 task 10 fix round |
 | Kanto's `kt-input` (fix in Kanto) | Every `kt-input` without an explicit `placeholder` (Hanzi, Translation, Example pinyin, Note on the card editor; also DeckFormModal's Name/Tag) shows a ghost "123-456-7890" placeholder — `kt-input.ts`'s render falls back to `this.selectedCountry?.format` regardless of `type`, not only in phone mode | Cosmetic; typing and saving both work correctly. Already logged for DeckFormModal (phase 2 task 10); recurs on every plain `kt-input` in the app | Phase 2 task 11 review |
 | Kanto's `kt-form` (fix in Kanto) | Loading `/cards/new` or `/cards/:id` logs "Element kt-form scheduled an update ... after an update completed" once, in a real browser | Same Lit-scheduling class already logged for `kt-card`/`kt-modal` (phase 1 task 12); traced no further than that | Phase 2 task 11 review |
+| `app/components/TagInput.vue` | `resetMenuField` clears `kt-input-menu`'s private query/open state with a synthetic Escape keydown; replace with a public reset once Kanto has one | Works; depends on Escape behaviour staying the same | Phase 2 task 11 fix round |
+| `app/components/CardForm.vue` | `gap: 24px` and `min-width: 160px` lack the "no matching token" comment | Paper trail only | Phase 2 task 11 review |
+| `app/components/CardForm.vue` | `kt-toggle` gets a `label` while also slotting text, contrary to its .md ("when nothing is slotted") | Works: the label carries the disabled reason | Phase 2 task 11 review |
+| Kanto's `kt-input-menu` (fix in Kanto) | Does not recompute `activeIndex` when `options` change after `kt-filter`, so Enter misses a just-filtered option. Fanka handles Enter itself in TagInput | Worked around here | Phase 2 task 11 review |
+| Kanto's `kt-input` (fix in Kanto) | Shows a ghost "123-456-7890" placeholder on plain text fields with no placeholder (falls back to the default country's phone format regardless of `type`) | Cosmetic; typing and saving work | Phase 2 tasks 10, 11 |
+| `app/components/CardDetailPanel.vue` | `.hanzi` font-size 32px literal (commented, follows ReviewCard) | Existing precedent | Phase 2 task 12 review |
+| `app/components/CardDetailPanel.vue`, `GradeButtons.vue` | Grade → variant mapping duplicated | Two call sites | Phase 2 task 12 review |
+| `app/components/CardTable.vue` | Bulk Suspend counts already-suspended ids in its toast | Idempotent write; wording only | Phase 2 task 12 review |
+| `app/components/CardTable.vue` | Manual `tabindex="-1"` on a `<tr>` can persist on a reused row after re-sort or re-page | Inert for Tab order | Phase 2 task 12 review |
+| `app/composables/useBrowse.ts` | zh-Hant hanzi sort and due-null-last are verified in a browser only, no test | Verified by hand | Phase 2 task 12 |
+| `app/components/CardTable.vue` (`runAction`) | If a filter change supersedes the action's own reload, the selection prune runs against pre-action rows until the next action | Needs a filter change mid-action | Phase 2 task 12 fix round |
+| Kanto (`95f9917`, unpushed) | The closed-dialog click fix has no regression test in Kanto's suite | Arnaud decides whether to keep the commit | Phase 2 task 12 review |
+| `app/pages/decks/[id].vue` | `load()` has no request-sequence guard (unlike `useBrowse`) | Self-mitigated: re-reads the id live, summaries are unscoped | Phase 2 task 13 review |
+| `app/components/AppSidebar.vue`, `app/layouts/default.vue` | The `/decks/:id` → `/decks` activeHref mapping is duplicated | One line each | Phase 2 task 13 review |
+| `app/pages/decks/index.vue`, `app/pages/decks/[id].vue` | The delete-confirm message computed is duplicated | Identical output | Phase 2 task 13 review |
+| `app/components/DeckFields.vue` | Clicking the Colour label does not focus the `kt-select` (not `kt-label-input`'s direct child) | Accessible name is still correct | Phase 2 tasks 10, 13 |
+| `app/pages/import.vue` | Error toast says "1 card were already created" | Copy only | Phase 2 task 14 review |
+| `app/pages/import.vue` (`onContinueFromStep2`) | No catch: a `verify()` read failure leaves the user silently on step 2 | Needs an IndexedDB read failure | Phase 2 task 14 review |
+| `app/composables/useImport.ts` (`commitBatch`) | Does not check the target deck is still live; a deck deleted in another tab between verify and commit receives hidden cards | Needs a second tab | Phase 2 task 14 review |
+| `app/composables/useImport.ts` | Verify-time `skipped` also counts duplicate rows that have other errors | Slight over-count | Phase 2 task 14 review |
+| `core/import/validate.ts` as shown on `/import` | A duplicate inside the file is labelled "Already in this deck" | Wording only | Phase 2 task 14 review |
+| `/import` + `core/import/validate.ts` | With "First row is a header" off, the header row imports as a card with only a warning, because `validateCard` does not require a Han character in hanzi | Visible as a warning in the preview | Phase 2 task 14 review |
+| `app/composables/useImport.ts` | Pinyin and zhuyin work runs inside the batch transaction (synchronous, correct) | Could move before the transaction | Phase 2 task 14 review |
+| `app/pages/import.vue` | `gap: 2px` has no token or comment | Paper trail only | Phase 2 task 14 review |
+| `app/pages/import.vue` | A retry after a partial failure reports the already-committed batch as "duplicates skipped" | Safe; wording only | Phase 2 task 14 review |
+| Kanto's `kt-drag-drop` (fix in Kanto) | The `recommended-size` hint is hard-coded "Recommended image size:"; Fanka uses a caption instead | Worked around here | Phase 2 task 14 |
+| `app/pages/import.vue` | The "New deck…" sentinel option id is a plain string in `KtOption` space | Real ids are UUIDs | Phase 2 task 14 |
+| `app/pages/import.vue` | A deck-list load failure is a toast, not the empty state + Retry used elsewhere | Inconsistent pattern only | Phase 2 task 14 |
