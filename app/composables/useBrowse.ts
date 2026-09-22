@@ -76,6 +76,11 @@ export function useBrowse(scope?: { deckId: string }) {
   const raw = ref<CardRow[]>([]);
   const selected = ref<string[]>([]);
   const loading = ref(true);
+  /**
+   * The latest reload's read failed. Kept apart from "no rows": a failed
+   * read must never render as "No cards yet" (final review I3).
+   */
+  const error = ref(false);
 
   // The sequence number of the most recently *started* reload. A filter
   // change fires `reload()` through the watcher below, but nothing stops a
@@ -89,6 +94,11 @@ export function useBrowse(scope?: { deckId: string }) {
   // `rows`/`loading` by then.
   let latestRequestId = 0;
 
+  /**
+   * Never rejects: the first load and the filter watcher both fire this
+   * without awaiting it, so a failure is recorded in `error` (and logged)
+   * rather than thrown into nothing.
+   */
   async function reload(): Promise<void> {
     const requestId = ++latestRequestId;
     loading.value = true;
@@ -102,9 +112,11 @@ export function useBrowse(scope?: { deckId: string }) {
       });
       if (requestId !== latestRequestId) return;
       raw.value = result;
+      error.value = false;
     } catch (err) {
       if (requestId !== latestRequestId) return;
-      throw err;
+      console.error('useBrowse: failed to load the cards', err);
+      error.value = true;
     } finally {
       if (requestId === latestRequestId) loading.value = false;
     }
@@ -198,5 +210,5 @@ export function useBrowse(scope?: { deckId: string }) {
     return reviews.historyForCard(cardId);
   }
 
-  return { rows, filter, sort, setSort, clearFilters, selected, loading, reload, suspend, unsuspend, move, remove, history };
+  return { rows, filter, sort, setSort, clearFilters, selected, loading, error, reload, suspend, unsuspend, move, remove, history };
 }

@@ -4,10 +4,8 @@ import { toaster } from 'kanto';
 import { html } from 'lit';
 import DeckFormModal from '~/components/DeckFormModal.vue';
 import { ImportCommitError, useImport } from '~/composables/useImport';
-import { useDecks } from '~/composables/useDecks';
 import type { Mapping, Target } from '~core/import/mapping';
 import type { Validated } from '~core/import/validate';
-import type { Deck } from '~core/db/schema';
 
 // Ruling 4: behaviour, not a styling token — see CLAUDE.md's carve-out for
 // "no hard-coded colour, size, duration or radius" ("Where no token exists,
@@ -16,37 +14,43 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const NEW_DECK_OPTION_ID = '__new_deck__';
 
 const route = useRoute();
-const { step, source, rows, mapping, results, counts, targetDeckId, load, setMapping, verify, commit } = useImport();
+const {
+  step,
+  source,
+  rows,
+  mapping,
+  results,
+  counts,
+  targetDeckId,
+  decks: deckList,
+  decksLoading,
+  decksError,
+  loadDecks,
+  load,
+  setMapping,
+  verify,
+  commit,
+} = useImport();
 
 // --- Destination deck --------------------------------------------------
 
-const { listAll } = useDecks();
-const deckList = ref<Deck[]>([]);
-const decksLoading = ref(true);
-
-async function loadDecks(): Promise<void> {
-  decksLoading.value = true;
-  try {
-    deckList.value = await listAll();
-  } catch (err) {
-    console.error('import: failed to load the deck list', err);
-    toaster.error("Couldn't load your decks", { description: 'Try reloading the page.' });
-  } finally {
-    decksLoading.value = false;
-  }
-}
-
-onMounted(async () => {
+/**
+ * Loads the deck list, then picks the destination: the same `?deck=<id>`
+ * preset as /cards/new and Browse — only when it still names a live deck —
+ * or the first deck. Run on mount and by the load-failure Retry.
+ */
+async function initDecks(): Promise<void> {
   await loadDecks();
-  // Same `?deck=<id>` preset as /cards/new and Browse — only applied once,
-  // and only when it still names a live deck.
+  if (decksError.value) return;
   const presetDeckId = typeof route.query.deck === 'string' ? route.query.deck : undefined;
   if (presetDeckId && deckList.value.some((d) => d.id === presetDeckId)) {
     targetDeckId.value = presetDeckId;
   } else {
     targetDeckId.value = deckList.value[0]?.id ?? null;
   }
-});
+}
+
+onMounted(initDecks);
 
 const deckOptions = computed<KtOption[]>(() => [
   ...deckList.value.map((d) => ({ id: d.id, label: d.name })),
@@ -343,7 +347,16 @@ const stepDescription = computed(() => {
     <!-- Kanto has no stepper (task-14-brief.md) — a progress bar under the header is what stands in for one. -->
     <kt-progress-bar :value="step" :max="3" label="Import progress" />
 
-    <section v-if="step === 1" class="step">
+    <kt-empty-state
+      v-if="decksError"
+      icon="triangle-alert"
+      heading="Couldn't load your decks"
+      description="Something went wrong reading the database. Try again."
+    >
+      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="initDecks">Retry</kt-button>
+    </kt-empty-state>
+
+    <section v-else-if="step === 1" class="step">
       <kt-segmented-control label="Source" :options="SOURCE_OPTIONS" :value="source.mode" @kt-change="onSourceModeChange" />
 
       <!--

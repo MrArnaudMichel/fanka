@@ -4,8 +4,8 @@ import { type CardDraft, type Validated, validateCard } from '~core/import/valid
 import { parsePinyin } from '~core/chinese/pinyin';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { db } from '~core/db/db';
-import { cards } from '~core/db/repositories';
-import { type Card, type Direction, type Item, type OutboxEntry, itemId } from '~core/db/schema';
+import { cards, decks as deckRepository } from '~core/db/repositories';
+import { type Card, type Deck, type Direction, type Item, type OutboxEntry, itemId } from '~core/db/schema';
 import { newSrsState } from '~core/srs';
 import { refreshDueCounts } from '~/composables/useDueCounts';
 
@@ -151,6 +151,24 @@ export function useImport() {
   const mapping = ref<Mapping | null>(null);
   const results = ref<Validated[]>([]);
   const targetDeckId = ref<string | null>(null);
+  const decks = ref<Deck[]>([]);
+  const decksLoading = ref(true);
+  /** The destination-deck list could not be read — the page shows Retry, never "no decks" (final review I3). */
+  const decksError = ref(false);
+
+  /** Never rejects: a failure lands in `decksError`, and `decks` keeps whatever it last held. */
+  async function loadDecks(): Promise<void> {
+    decksLoading.value = true;
+    decksError.value = false;
+    try {
+      decks.value = await deckRepository.listAll();
+    } catch (err) {
+      console.error('useImport: failed to load the deck list', err);
+      decksError.value = true;
+    } finally {
+      decksLoading.value = false;
+    }
+  }
 
   const counts = computed<ImportCounts>(() => {
     let valid = 0;
@@ -264,5 +282,21 @@ export function useImport() {
     return { created, skipped };
   }
 
-  return { step, source, rows, mapping, results, counts, targetDeckId, load, setMapping, verify, commit };
+  return {
+    step,
+    source,
+    rows,
+    mapping,
+    results,
+    counts,
+    targetDeckId,
+    decks,
+    decksLoading,
+    decksError,
+    loadDecks,
+    load,
+    setMapping,
+    verify,
+    commit,
+  };
 }

@@ -103,6 +103,12 @@ export function useCardEditor(id?: string) {
   const loading = ref(true);
   const saving = ref(false);
   const notFound = ref(false);
+  /**
+   * The card or the deck list could not be read. The form must then never
+   * render, and `save()` refuses — an empty draft saved from here would
+   * create an orphan card with `deckId ''` (final review I3).
+   */
+  const error = ref(false);
   const deckList = ref<Deck[]>([]);
   const allTags = ref<string[]>([]);
   const existingHanzi = ref<Set<string>>(new Set());
@@ -153,10 +159,18 @@ export function useCardEditor(id?: string) {
     existingHanzi.value = new Set(deckCards.filter((c) => c.id !== existingCard.value?.id).map((c) => c.hanzi));
   }
 
-  watch(() => draft.deckId, refreshExistingHanzi);
+  // `save()` re-reads the set itself, so a failure here only costs the
+  // live duplicate hint until then — logged, never thrown into the watcher.
+  watch(
+    () => draft.deckId,
+    () => refreshExistingHanzi().catch((err: unknown) => console.error('useCardEditor: failed to check duplicates', err)),
+  );
 
+  /** Never rejects — a failed read lands in `error`, for the page's Retry. */
   async function load(): Promise<void> {
     loading.value = true;
+    error.value = false;
+    notFound.value = false;
     try {
       const [liveDecks, allRows] = await Promise.all([deckRepository.listAll(), cards.list({ now: Date.now() })]);
       deckList.value = liveDecks;
@@ -201,6 +215,9 @@ export function useCardEditor(id?: string) {
       }
 
       await refreshExistingHanzi();
+    } catch (err) {
+      console.error('useCardEditor: failed to load', err);
+      error.value = true;
     } finally {
       loading.value = false;
     }
@@ -233,6 +250,9 @@ export function useCardEditor(id?: string) {
    * otherwise silently drop (see repositories.ts).
    */
   async function save(): Promise<boolean> {
+    // Never save over a failed or unfinished load: with an id, only once
+    // the card itself has been read.
+    if (loading.value || error.value || notFound.value || (id && !existingCard.value)) return false;
     saving.value = true;
     saveAttempted.value = true;
     try {
@@ -273,6 +293,8 @@ export function useCardEditor(id?: string) {
     loading,
     saving,
     notFound,
+    error,
+    retry: load,
     suspended,
     directionsError,
     decks: deckList,

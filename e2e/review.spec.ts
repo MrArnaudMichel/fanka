@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installReadFaults } from './fixtures/read-faults';
 
 /**
  * Each test gets its own browser context and so its own IndexedDB — the
@@ -98,66 +99,6 @@ test('the keyboard drives the review loop: space reveals, a digit grades, u undo
   await expect(answer).toHaveText(/\S+/);
   await expect(page.getByRole('button', { name: 'Good' })).toBeVisible();
 });
-
-/**
- * Installs a hook on IndexedDB reads and writes before any app code runs, so
- * a test can make one specific operation fail (or come back empty) on
- * demand, the way a quota error, a blocked `versionchange`, a vanished row,
- * or IndexedDB connection loss after the Android app is backgrounded would.
- * Armed and disarmed through `window.__fankaFaults` from `page.evaluate`.
- *
- * - `failSessionReads`: how many reads of the persisted session to reject.
- *   Only `restore()` reads that key, so seeding and the Today page's counts
- *   are unaffected.
- * - `missingCards`: while true, every read of the `cards` store resolves to
- *   nothing, as if the row were gone.
- * - `failReviewPuts`: how many writes to the `reviews` store to reject.
- *   `reviews.record()`'s transaction is the only writer, so this fails a
- *   grade before anything in it is written (the `items` write inside the
- *   same transaction precedes it, but the transaction only commits once
- *   every write in it succeeds).
- * - `failItemPuts`: how many writes to the `items` store to reject. Both
- *   `reviews.record()` and `reviews.undo()` write `items` — arm this only
- *   once the state under test (e.g. a card already graded) is in place, so
- *   it fails the operation actually being tested rather than an earlier one.
- */
-async function installReadFaults(
-  page: import('@playwright/test').Page,
-  initial: { failSessionReads?: number; failReviewPuts?: number; failItemPuts?: number },
-) {
-  await page.addInitScript(
-    (init) => {
-      const faults = { ...init, missingCards: false };
-      (window as unknown as { __fankaFaults: typeof faults }).__fankaFaults = faults;
-      const get = IDBObjectStore.prototype.get;
-      IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey | IDBKeyRange) {
-        if (this.name === 'settings' && key === 'session' && faults.failSessionReads > 0) {
-          faults.failSessionReads -= 1;
-          throw new DOMException('Injected read failure', 'UnknownError');
-        }
-        if (this.name === 'cards' && faults.missingCards) return get.call(this, '￿-no-such-card');
-        return get.call(this, key);
-      };
-      const put = IDBObjectStore.prototype.put;
-      IDBObjectStore.prototype.put = function (this: IDBObjectStore, value: unknown, key?: IDBValidKey) {
-        if (this.name === 'reviews' && faults.failReviewPuts > 0) {
-          faults.failReviewPuts -= 1;
-          throw new DOMException('Injected write failure', 'UnknownError');
-        }
-        if (this.name === 'items' && faults.failItemPuts > 0) {
-          faults.failItemPuts -= 1;
-          throw new DOMException('Injected write failure', 'UnknownError');
-        }
-        return put.call(this, value, key);
-      };
-    },
-    {
-      failSessionReads: initial.failSessionReads ?? 0,
-      failReviewPuts: initial.failReviewPuts ?? 0,
-      failItemPuts: initial.failItemPuts ?? 0,
-    },
-  );
-}
 
 test('a failed load offers Retry, and the keyboard works once it succeeds', async ({ page }) => {
   await installReadFaults(page, { failSessionReads: 1 });

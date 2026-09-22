@@ -13,7 +13,7 @@ import type { Grade } from '~core/srs';
  * (ruling 5); only a delete closes it, and that is `CardTable`'s call, not
  * this component's.
  */
-const props = defineProps<{ open: boolean; row: BrowseRow | null; historyRows: Review[]; historyLoading: boolean }>();
+const props = defineProps<{ open: boolean; row: BrowseRow | null; historyRows: Review[]; historyLoading: boolean; historyError: boolean }>();
 const emit = defineEmits<{ close: []; suspend: [cardId: string]; unsuspend: [cardId: string]; delete: [cardId: string] }>();
 
 const stateMeta = computed(() => (props.row ? STATE_META[props.row.state] : null));
@@ -80,6 +80,7 @@ function onClose(): void {
       <div class="history">
         <p class="section-label">Review history</p>
         <kt-skeleton v-if="historyLoading" height="120px" />
+        <p v-else-if="historyError" class="empty">Couldn't load the review history.</p>
         <p v-else-if="timeline.length === 0" class="empty">No reviews yet.</p>
         <kt-timeline v-else compact>
           <kt-timeline-item

@@ -17,9 +17,8 @@ const props = defineProps<{ cardId?: string; defaultDeckId?: string }>();
 const editing = computed(() => Boolean(props.cardId));
 const router = useRouter();
 
-const { draft, directions, issues, preview, save, loading, saving, notFound, suspended, directionsError, decks, allTags } = useCardEditor(
-  props.cardId,
-);
+const { draft, directions, issues, preview, save, loading, saving, notFound, error, retry, suspended, directionsError, decks, allTags } =
+  useCardEditor(props.cardId);
 
 /**
  * Ruling 6: the deck defaults to the first one (`useCardEditor`'s own
@@ -200,6 +199,15 @@ async function onSubmit(): Promise<void> {
     <kt-page-header eyebrow="Collection" :heading="editing ? 'Edit card' : 'New card'" />
 
     <kt-skeleton v-if="loading" height="480px" />
+
+    <kt-empty-state
+      v-else-if="error"
+      icon="triangle-alert"
+      :heading="editing ? 'Couldn\'t load this card' : 'Couldn\'t load your decks'"
+      description="Something went wrong reading the database. Try again."
+    >
+      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retry">Retry</kt-button>
+    </kt-empty-state>
 
     <kt-empty-state
       v-else-if="notFound"

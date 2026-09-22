@@ -19,19 +19,37 @@ import { formatInterval } from '~core/srs/format';
  */
 const props = defineProps<{ scope?: { deckId: string }; defaultDeckId?: string }>();
 
-const { rows, filter, sort, setSort, clearFilters, selected, loading, reload, suspend, unsuspend, move, remove, history } = useBrowse(
+const { rows, filter, sort, setSort, clearFilters, selected, loading, error, reload, suspend, unsuspend, move, remove, history } = useBrowse(
   props.scope,
 );
 
 const decks = ref<Deck[]>([]);
+const decksError = ref(false);
 const { listAll } = useDecks();
 
+/** The deck filter's and Move's options. A failure shows the same "Couldn't load" state as the cards, never an empty picker. */
+async function loadDecks(): Promise<void> {
+  decksError.value = false;
+  try {
+    decks.value = await listAll();
+  } catch (err) {
+    console.error('CardTable: failed to load the deck list', err);
+    decksError.value = true;
+  }
+}
+
 onMounted(async () => {
-  decks.value = await listAll();
+  await loadDecks();
   if (!props.scope && props.defaultDeckId && decks.value.some((d) => d.id === props.defaultDeckId)) {
     filter.deckId = props.defaultDeckId;
   }
 });
+
+const loadFailed = computed(() => error.value || decksError.value);
+
+async function retryLoad(): Promise<void> {
+  await Promise.all([reload(), decksError.value ? loadDecks() : Promise.resolve()]);
+}
 
 const deckOptions = computed<KtOption[]>(() => decks.value.map((d) => ({ id: d.id, label: d.name })));
 
@@ -155,12 +173,20 @@ const openCardId = ref<string | null>(null);
 const panelRow = computed<BrowseRow | null>(() => rows.value.find((r) => r.id === openCardId.value) ?? null);
 const historyRows = ref<Review[]>([]);
 const historyLoading = ref(false);
+const historyError = ref(false);
 
 watch(openCardId, async (id) => {
   if (!id) return;
+  // Cleared first, so a failure never leaves the previous card's history
+  // showing under this one.
+  historyRows.value = [];
+  historyError.value = false;
   historyLoading.value = true;
   try {
     historyRows.value = await history(id);
+  } catch (err) {
+    console.error('CardTable: failed to load the review history', err);
+    historyError.value = true;
   } finally {
     historyLoading.value = false;
   }
@@ -317,7 +343,16 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
     </div>
 
     <kt-empty-state
-      v-if="!loading && rows.length === 0 && !isFiltered"
+      v-if="!loading && loadFailed"
+      icon="triangle-alert"
+      heading="Couldn't load your cards"
+      description="Something went wrong reading the database. Try again."
+    >
+      <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retryLoad">Retry</kt-button>
+    </kt-empty-state>
+
+    <kt-empty-state
+      v-else-if="!loading && rows.length === 0 && !isFiltered"
       icon="inbox"
       heading="No cards yet"
       description="Add your first card to start building this collection."
@@ -373,6 +408,7 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
       :row="panelRow"
       :history-rows="historyRows"
       :history-loading="historyLoading"
+      :history-error="historyError"
       @close="closePanel"
       @suspend="onPanelSuspend"
       @unsuspend="onPanelUnsuspend"
