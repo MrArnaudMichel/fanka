@@ -82,13 +82,18 @@ describe('useBrowse', () => {
     const browse = useBrowse();
     await ready(browse);
 
+    // The filter watcher reloads on its own (see the next test) — an
+    // explicit `reload()` here as well would race it: two independent
+    // requests for the same (now-identical) filter, and the request
+    // sequencing fix means only the more-recently-*started* one is applied,
+    // which is not necessarily the one this call awaits. Mutate and wait for
+    // the watcher's own effect, the way CardTable.vue actually does it.
     browse.filter.deckId = 'd1';
     browse.filter.state = 'new';
     browse.filter.dir = 'recognition';
     browse.filter.query = 'greet';
-    await browse.reload();
 
-    expect(ids(browse.rows.value)).toEqual(['c1']);
+    await vi.waitFor(() => expect(ids(browse.rows.value)).toEqual(['c1']));
   });
 
   it('reacts to a filter change on its own, without an explicit reload', async () => {
@@ -180,10 +185,13 @@ describe('useBrowse', () => {
     await ready(browse);
     expect(ids(browse.rows.value)).toEqual(['c1']);
 
-    // Setting the filter's own deckId must not leak d2's card in, nor drop d1's.
+    // Setting the filter's own deckId must not leak d2's card in, nor drop
+    // d1's. Waited for, not `reload()`ed explicitly — see the AND-filter
+    // test's comment on why an extra explicit call here would race the
+    // watcher's own.
     browse.filter.deckId = 'd2';
-    await browse.reload();
 
+    await vi.waitFor(() => expect(browse.loading.value).toBe(false));
     expect(ids(browse.rows.value)).toEqual(['c1']);
   });
 });

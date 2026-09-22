@@ -76,18 +76,36 @@ export function useBrowse(scope?: { deckId: string }) {
   const selected = ref<string[]>([]);
   const loading = ref(true);
 
+  // The sequence number of the most recently *started* reload. A filter
+  // change fires `reload()` through the watcher below, but nothing stops a
+  // slower, older request from resolving after a faster, newer one — without
+  // this, whichever `cards.list` call happens to land last wins, even if it
+  // was answering a filter the learner has since changed away from. Each
+  // call captures its own id at the top; by the time it resolves, it only
+  // applies its rows (and, on failure, its error) when it is still the
+  // request `latestRequestId` points to. A superseded call's result — success
+  // or failure — is simply discarded, since a newer request already owns
+  // `rows`/`loading` by then.
+  let latestRequestId = 0;
+
   async function reload(): Promise<void> {
+    const requestId = ++latestRequestId;
     loading.value = true;
     try {
-      raw.value = await cards.list({
+      const result = await cards.list({
         deckId: scope?.deckId ?? filter.deckId ?? undefined,
         state: filter.state ?? undefined,
         dir: filter.dir ?? undefined,
         query: filter.query.trim() || undefined,
         now: Date.now(),
       });
+      if (requestId !== latestRequestId) return;
+      raw.value = result;
+    } catch (err) {
+      if (requestId !== latestRequestId) return;
+      throw err;
     } finally {
-      loading.value = false;
+      if (requestId === latestRequestId) loading.value = false;
     }
   }
 
