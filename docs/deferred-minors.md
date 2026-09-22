@@ -81,3 +81,25 @@ findings are never parked here.
 | Kanto's `kt-drag-drop` (fix in Kanto) | The `recommended-size` hint is hard-coded "Recommended image size:"; Fanka uses a caption instead | Worked around here | Phase 2 task 14 |
 | `app/pages/import.vue` | The "New deck…" sentinel option id is a plain string in `KtOption` space | Real ids are UUIDs | Phase 2 task 14 |
 | `app/pages/import.vue` | A deck-list load failure is a toast, not the empty state + Retry used elsewhere | Inconsistent pattern only | Phase 2 task 14 |
+| `app/plugins/kanto.client.ts` | Icons `inbox` (CardTable empty state) and `arrow-left` (deck detail) are not registered; the inbox icon renders an empty svg | Label text still shows | Phase 2 final review |
+| Kanto's `kt-side-panel` (fix in Kanto) | Its closed dialog is `display:flex` off-screen and Tab-reachable: one invisible tab stop on /browse and /decks/:id. Same class as Kanto `95f9917`, not covered by it | One stray tab stop | Phase 2 final review |
+| `app/pages/decks/[id].vue` | `kt-tabs` receives no `panel`, so no `aria-controls` ties tabs to the existing panel ids | Tabs still work by keyboard | Phase 2 final review |
+| `app/components/DeckCard.vue` | Every deck's actions button is labelled "Deck actions"; the label should name the deck | Ambiguous for screen readers only | Phase 2 final review |
+| `app/pages/decks/[id].vue` | The delete confirm reads the card count once; after cards are moved or deleted from the Cards tab it is stale | Wording only | Phase 2 final review |
+| `app/components/CardTable.vue` | The history load has no request-sequence guard | Needs two fast row clicks | Phase 2 final review |
+| `app/composables/useImport.ts` | Builds cards, items and outbox entries itself instead of a repository method (duplicates `cards.create`). Move it into `core/db` before phase 5 sync | Correct today; a maintenance risk | Phase 2 final review |
+| `app/composables/useImport.ts` | A mapped zhuyin column is stored as-is, unvalidated | Derived zhuyin is the default path | Phase 2 final review |
+| `app/composables/useCardEditor.ts`, `useImport.ts` | `normalisePinyinText` is duplicated | Duplication only | Phase 2 final review |
+| Page containers and tables | The 24px page gap and several column/min widths are uncommented literals (CardForm, browse, decks, decks/[id], CardTable, import) | One repeated pattern | Phase 2 final review |
+| `e2e/layout.spec.ts` | Overflow is tested on /, /decks and /review only; /browse, /import and /decks/:id were probed clean at 390px but are untested | Probed by hand | Phase 2 final review |
+| `core/db/repositories.ts` (`cards.move`) | A card already in the target deck counts as "moved" in the toast | Wording only | Phase 2 final re-review |
+| `app/pages/import.vue` | Step 3 focuses Back, not Import | Judgement call; one-line change | Phase 2 final re-review |
+| Browse Unsuspend vs editor directions | Unsuspend from Browse also re-enables a direction the editor had turned off; the two still share one flag on the way back | Needs a direction turned off, then a suspend/unsuspend | Phase 2 final re-review |
+| Kanto's `kt-form` (fix in Kanto) | `syncDisabled()` runs on `firstUpdated` and on every default-slot `slotchange`, overwriting each control's own `disabled`. Fanka keeps kt-form's direct children stable (`v-show`) and re-applies the toggles once after first render; any new conditional direct child would reopen the bug | Worked around, fragile | Phase 2 final fix wave |
+| Kanto's `kt-segmented-control` | Has no `focus()` of its own, so import step 1 cannot focus it directly | Focus goes to the next control | Phase 2 final fix wave |
+| `app/composables/useCardEditor.ts` | A type-only `?? []` in the new-card path | Dead branch | Phase 2 final fix wave |
+| `app/composables/useCardEditor.ts` | "Turn on at least one direction." cannot be reached through the UI (the last toggle is disabled); only the composable test covers it | Defensive message | Phase 2 final fix wave |
+| `app/layouts/default.vue` | `main` (tabindex -1) shows a full-width focus ring after keyboard menu navigation | Cosmetic | Phase 2 final fix wave |
+| `e2e` | `installTodayReadFault` is not in the shared `e2e/fixtures/read-faults.ts` | Duplication only | Phase 2 final fix wave |
+| Browse, editor, import, decks | The "Couldn't load …" empty-state copy is repeated across four screens | Consistent copy, duplicated | Phase 2 final fix wave |
+| `app/components/CardForm.vue` | The "Check this card" kt-alert is now always mounted and shown with `v-show`; revealing it may be announced less reliably than inserting it | It only holds zhuyin issues, effectively never shown | Phase 2 final fix wave |
