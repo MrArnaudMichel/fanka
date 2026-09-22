@@ -29,11 +29,14 @@ const dropdownOptions: KtOption[] = [
 /**
  * "Browse cards" navigates directly rather than emitting — unlike Edit and
  * Delete, it does not open anything on this page, so there is nothing for a
- * parent to own. `?deck=<id>` only presets Browse's deck filter (ruling 1
- * from task-12-report.md); it stays a filter the learner can change there.
+ * parent to own. It now opens the deck detail page (ruling 2,
+ * task-13-report.md), which opens on its Cards tab by default — the same
+ * scoped table Browse itself uses, just reached through the deck rather than
+ * a `?deck=<id>` filter. `/browse?deck=<id>` stays supported; it is simply no
+ * longer linked from here.
  */
 function onSelect(event: CustomEvent<{ value: string | number | null }>): void {
-  if (event.detail.value === 'browse') navigateTo(`/browse?deck=${props.deck.id}`);
+  if (event.detail.value === 'browse') navigateTo(`/decks/${props.deck.id}`);
   else if (event.detail.value === 'edit') emit('edit', props.deck);
   else if (event.detail.value === 'delete') emit('delete', props.deck);
 }

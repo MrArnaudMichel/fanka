@@ -9,6 +9,11 @@ const route = useRoute();
 
 const header = ref<KtHeader>();
 
+// Same mapping as AppSidebar.vue's `activeHref` — kept here too so the
+// mobile menu's "Decks" entry stays highlighted on `/decks/:id` the same way
+// the desktop sidebar's does (ruling 8, task-13-report.md).
+const activeHref = computed(() => (route.path.startsWith('/decks/') ? '/decks' : route.path));
+
 /**
  * `kt-navigate` is cancelable specifically so a host can take over routing —
  * without `preventDefault()` the element's own `<a href>` would perform a
@@ -50,7 +55,7 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
         Today's session · {{ total }}
       </kt-button>
 
-      <kt-sub-menu-navigation slot="menu" flush :sections="sections" :active-href="route.path" @kt-navigate="onNavigate" />
+      <kt-sub-menu-navigation slot="menu" flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
     </kt-header>
 
     <main class="main">

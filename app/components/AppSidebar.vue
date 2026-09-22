@@ -5,6 +5,16 @@ defineProps<{ sections: KtNavSection[]; dueTotal: number }>();
 const route = useRoute();
 
 /**
+ * `kt-sub-menu-navigation` matches `activeHref` by exact equality against an
+ * item's `href` (kt-sub-menu-navigation.ts's `isActive`), so the deck detail
+ * page's `/decks/:id` would otherwise light up nothing at all. Map any
+ * `/decks/...` path back to `/decks` so the "Decks" entry stays highlighted
+ * there (ruling 8, task-13-report.md) — this never touches kt-sub-menu-navigation
+ * itself.
+ */
+const activeHref = computed(() => (route.path.startsWith('/decks/') ? '/decks' : route.path));
+
+/**
  * `kt-navigate` is cancelable specifically so a host can take over routing —
  * without `preventDefault()` the element's own `<a href>` would perform a
  * full page navigation.
@@ -43,7 +53,7 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
       Today's session · {{ dueTotal }}
     </kt-button>
 
-    <kt-sub-menu-navigation flush :sections="sections" :active-href="route.path" @kt-navigate="onNavigate" />
+    <kt-sub-menu-navigation flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
   </aside>
 </template>
 
