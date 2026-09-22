@@ -137,6 +137,16 @@ describe('guessMapping', () => {
     expect(mapping.columns[1]).toBe('pinyin');
   });
 
+  it('does not catastrophically backtrack on a long non-pinyin token', () => {
+    // A long run of letters with no match at the end (a long word, a URL)
+    // used to make the pinyin content guess take exponentially long.
+    const rows = [['你好', 'a'.repeat(10000) + '!']];
+    const start = performance.now();
+    guessMapping(rows);
+    const elapsed = performance.now() - start;
+    expect(elapsed).toBeLessThan(100);
+  });
+
   it('ignores a column that is mostly empty', () => {
     const rows = [
       ['你好', 'ni3 hao3', 'hello', ''],

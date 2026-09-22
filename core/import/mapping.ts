@@ -53,16 +53,24 @@ function containsHan(value: string): boolean {
 }
 
 /**
- * One pinyin syllable's letters — Latin letters, a tone-marked vowel, ü, or
- * `:` for the `u:` umlaut spelling — with an optional trailing tone digit
- * and an optional trailing apostrophe (the `xi'an` syllable break). A token
- * is one or more of these run together with no separator, which is what
- * lets "ni3hao3" and "Xi'an1" through, but a token can never start with a
- * digit: that is what rules out a bare "3" as its own token, so "level 3
- * word" and "3 o'clock" fail on their numeral token alone.
+ * A token is a pinyin letter (Latin letters, a tone-marked vowel, ü, or `:`
+ * for the `u:` umlaut spelling), then any run of letters, apostrophe
+ * syllable breaks (`xi'an`), or a tone digit 1-5 not followed by another
+ * digit — the lookahead is what rejects two tone digits in a row, like
+ * "ni33". Starting with a letter, never a digit, is what rules out a bare
+ * "3" as its own token, so "level 3 word" and "3 o'clock" fail on their
+ * numeral token alone; "ni3hao3" and "Xi'an1" still match.
+ *
+ * Each character has exactly one way to be consumed — unlike an earlier
+ * version that nested `[letters]+` inside `(...)+`, this has no repeated
+ * group nested inside another repeated group, so a non-matching tail (a
+ * long plain word, a URL) fails in linear time instead of backtracking
+ * catastrophically: the nested form had exponentially many ways to
+ * partition the same run of letters into groups, and tried them all before
+ * giving up.
  */
 const SYLLABLE_TOKEN_PATTERN =
-  /^(?:[a-zA-Zü:āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+[1-5]?'?)+$/;
+  /^[a-zA-Zü:āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ](?:[a-zA-Zü:āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ']|[1-5](?![1-5]))*$/;
 
 function isSyllableToken(token: string): boolean {
   return SYLLABLE_TOKEN_PATTERN.test(token);
