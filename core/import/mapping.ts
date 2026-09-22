@@ -7,7 +7,6 @@
  */
 
 import type { CardDraft, CardField } from '~core/import/validate';
-import { PINYIN_PATTERN } from '~core/import/validate';
 
 export type Target = CardField | 'ignore';
 
@@ -53,11 +52,31 @@ function containsHan(value: string): boolean {
   return HAN_PATTERN.test(value);
 }
 
+/**
+ * One pinyin syllable's letters — Latin letters, a tone-marked vowel, ü, or
+ * `:` for the `u:` umlaut spelling — with an optional trailing tone digit
+ * and an optional trailing apostrophe (the `xi'an` syllable break). A token
+ * is one or more of these run together with no separator, which is what
+ * lets "ni3hao3" and "Xi'an1" through, but a token can never start with a
+ * digit: that is what rules out a bare "3" as its own token, so "level 3
+ * word" and "3 o'clock" fail on their numeral token alone.
+ */
+const SYLLABLE_TOKEN_PATTERN =
+  /^(?:[a-zA-Zü:āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+[1-5]?'?)+$/;
+
+function isSyllableToken(token: string): boolean {
+  return SYLLABLE_TOKEN_PATTERN.test(token);
+}
+
 function looksLikePinyin(value: string): boolean {
-  // The pattern alone is not enough — plain English like "hello" matches
-  // it too. A tone digit or a tone-marked vowel is what pinyin has that
-  // English does not.
-  return PINYIN_PATTERN.test(value) && TONE_PATTERN.test(value);
+  const tokens = value.trim().split(/\s+/).filter((token) => token.length > 0);
+  if (tokens.length === 0) return false;
+  // A digit or tone mark anywhere in the value used to be enough — but
+  // plain English like "level 3 word" has one too. Every token has to be a
+  // plausible syllable run on its own, and at least one of them has to
+  // actually carry a tone, which "level" and "word" do not.
+  if (!tokens.every(isSyllableToken)) return false;
+  return tokens.some((token) => TONE_PATTERN.test(token));
 }
 
 /** True when more than half of a column's non-empty values satisfy `predicate`. */

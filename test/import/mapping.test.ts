@@ -97,6 +97,46 @@ describe('guessMapping', () => {
     expect(mapping.columns).toEqual(['hanzi', 'translation', 'ignore']);
   });
 
+  it('does not mistake a numeral-bearing English column for pinyin', () => {
+    // A digit 1-5 anywhere used to be enough to pass as a tone marker; a
+    // bare "3", "level 3 word" or "3 o'clock" all have one, but none of
+    // them is pinyin.
+    const rows = [
+      ['你好', '3'],
+      ['謝謝', 'level 3 word'],
+      ['再見', "3 o'clock"],
+    ];
+    const mapping = guessMapping(rows);
+    expect(mapping.columns).toEqual(['hanzi', 'translation']);
+  });
+
+  it('still recognises run-together numbered pinyin with no space between syllables', () => {
+    const rows = [
+      ['你好', 'ni3hao3', 'hello'],
+      ['再見', 'zai4jian4', 'goodbye'],
+    ];
+    const mapping = guessMapping(rows);
+    expect(mapping.columns[1]).toBe('pinyin');
+  });
+
+  it('still recognises tone-mark pinyin', () => {
+    const rows = [
+      ['你好', 'nǐ hǎo', 'hello'],
+      ['再見', 'zài jiàn', 'goodbye'],
+    ];
+    const mapping = guessMapping(rows);
+    expect(mapping.columns[1]).toBe('pinyin');
+  });
+
+  it('still recognises an apostrophe syllable break like Xi\'an1', () => {
+    const rows = [
+      ['西安', "Xi'an1", 'Xian'],
+      ['台北', "Tai2bei3", 'Taipei'],
+    ];
+    const mapping = guessMapping(rows);
+    expect(mapping.columns[1]).toBe('pinyin');
+  });
+
   it('ignores a column that is mostly empty', () => {
     const rows = [
       ['你好', 'ni3 hao3', 'hello', ''],
