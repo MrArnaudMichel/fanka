@@ -13,6 +13,8 @@ declare global {
   const ref: typeof import('vue').ref;
   const readonly: typeof import('vue').readonly;
   const computed: typeof import('vue').computed;
+  const reactive: typeof import('vue').reactive;
+  const watch: typeof import('vue').watch;
   const onScopeDispose: typeof import('vue').onScopeDispose;
 
   interface ImportMeta {
