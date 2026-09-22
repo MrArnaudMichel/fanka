@@ -227,6 +227,12 @@ describe('decks.update', () => {
     await expect(decks.update('d1', { colorToken: 'not-a-token' }, NOW)).rejects.toThrow();
     expect((await decks.get('d1'))!.colorToken).toBe('var(--chart-series-1)');
   });
+
+  it('does not erase colorToken when the patch carries it as an explicit undefined key', async () => {
+    await decks.put(aDeck());
+    await decks.update('d1', { colorToken: undefined, name: 'x' }, NOW);
+    expect((await decks.get('d1'))!).toMatchObject({ colorToken: 'var(--chart-series-1)', name: 'x' });
+  });
 });
 
 describe('decks.softDelete', () => {
@@ -303,6 +309,16 @@ describe('cards.update', () => {
     expect((await cards.get('c1'))!.zhuyin).toBe('custom');
   });
 
+  it('does not recompute zhuyin when the patch pinyin is unchanged from the stored value', async () => {
+    await decks.put(aDeck());
+    // aCard()'s default pinyin is [{ text: 'xué', tone: 2 }] — the patch below
+    // sends the same syllables back, so nothing about the pinyin actually
+    // changed, and a hand-set zhuyin must survive untouched.
+    await cards.create(aCard({ zhuyin: 'hand-set' }), ['recognition'], NOW);
+    await cards.update('c1', { pinyin: [{ text: 'xué', tone: 2 }] }, ['recognition'], NOW + 1);
+    expect((await cards.get('c1'))!.zhuyin).toBe('hand-set');
+  });
+
   it('suspends a disabled direction and keeps its review history, then un-suspends the same item on re-enable', async () => {
     await decks.put(aDeck());
     await cards.create(aCard(), ['recognition', 'production'], NOW);
@@ -342,17 +358,38 @@ describe('cards.update', () => {
     await expect(cards.update('c1', {}, [], NOW)).rejects.toThrow();
   });
 
-  it('throws when the deckId patch points at a soft-deleted deck', async () => {
+  it('moves a card to a live deck via a deckId patch, with an outbox entry — proving db.decks is reachable inside the transaction', async () => {
+    await decks.put(aDeck());
+    await decks.put(aDeck({ id: 'd2', name: 'HSK 2' }));
+    await cards.create(aCard(), ['recognition'], NOW);
+    const before = (await db.outbox.toArray()).length;
+
+    await cards.update('c1', { deckId: 'd2' }, ['recognition'], NOW + 1);
+
+    expect((await cards.get('c1'))!.deckId).toBe('d2');
+    const pending = await db.outbox.toArray();
+    expect(pending.length).toBeGreaterThan(before);
+    expect(pending.some((e) => e.entity === 'card' && e.entityId === 'c1')).toBe(true);
+  });
+
+  it('throws a specific message when the deckId patch points at a soft-deleted deck', async () => {
     await decks.put(aDeck());
     await decks.put(aDeck({ id: 'd2', deletedAt: NOW }));
     await cards.create(aCard(), ['recognition'], NOW);
-    await expect(cards.update('c1', { deckId: 'd2' }, ['recognition'], NOW)).rejects.toThrow();
+    await expect(cards.update('c1', { deckId: 'd2' }, ['recognition'], NOW)).rejects.toThrow('no such deck: d2');
   });
 
-  it('throws when the deckId patch points at an unknown deck', async () => {
+  it('throws a specific message when the deckId patch points at an unknown deck', async () => {
     await decks.put(aDeck());
     await cards.create(aCard(), ['recognition'], NOW);
-    await expect(cards.update('c1', { deckId: 'no-such-deck' }, ['recognition'], NOW)).rejects.toThrow();
+    await expect(cards.update('c1', { deckId: 'no-such-deck' }, ['recognition'], NOW)).rejects.toThrow('no such deck: no-such-deck');
+  });
+
+  it('does not erase a required field when the patch carries it as an explicit undefined key', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    await cards.update('c1', { hanzi: undefined, translation: 'to learn' }, ['recognition'], NOW + 1);
+    expect((await cards.get('c1'))!).toMatchObject({ hanzi: '學習', translation: 'to learn' });
   });
 });
 

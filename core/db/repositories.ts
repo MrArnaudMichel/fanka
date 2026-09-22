@@ -64,6 +64,22 @@ function assertDeckColor(colorToken: string): asserts colorToken is DeckColor {
   }
 }
 
+/**
+ * Drops keys whose value is `undefined` from a patch before it is spread
+ * onto an existing row. `{ ...row, ...patch }` cannot tell "key omitted"
+ * from "key present with value `undefined`" — both look identical once
+ * spread — so a patch built as `{ colorToken: undefined, name: 'x' }` would
+ * otherwise blank out a required field. Every patch that gets merged this
+ * way must be run through this first.
+ */
+function definedOnly<T extends object>(patch: T): Partial<T> {
+  const result: Partial<T> = {};
+  for (const key of Object.keys(patch) as (keyof T)[]) {
+    if (patch[key] !== undefined) result[key] = patch[key];
+  }
+  return result;
+}
+
 export interface DeckSummary {
   deck: Deck;
   total: number;
@@ -143,6 +159,11 @@ function matchesQuery(card: Card, trimmedQuery: string): boolean {
   return toneless(pinyinText).includes(tonelessQuery);
 }
 
+/** Same syllables, same tones, same order — used to tell a real pinyin edit from a patch that just echoes the stored value back. */
+function pinyinEqual(a: Card['pinyin'], b: Card['pinyin']): boolean {
+  return a.length === b.length && a.every((syllable, i) => syllable.text === b[i]!.text && syllable.tone === b[i]!.tone);
+}
+
 export const decks = {
   get: (id: string) => db.decks.get(id),
 
@@ -185,10 +206,11 @@ export const decks = {
 
   async update(id: string, patch: Partial<Pick<Deck, 'name' | 'description' | 'colorToken' | 'tag'>>, now: number): Promise<void> {
     if (patch.colorToken !== undefined) assertDeckColor(patch.colorToken);
+    const safePatch = definedOnly(patch);
     await db.transaction('rw', db.decks, db.outbox, async () => {
       const deck = await db.decks.get(id);
       if (!deck) throw new Error(`no such deck: ${id}`);
-      await db.decks.put({ ...deck, ...patch, updatedAt: now });
+      await db.decks.put({ ...deck, ...safePatch, updatedAt: now });
       await db.outbox.put(outboxEntry('deck', id, 'put', now));
     });
   },
@@ -302,7 +324,7 @@ export const cards = {
     if (directions.length === 0) throw new Error('a card needs at least one direction');
     const enabled = new Set(directions);
 
-    await db.transaction('rw', db.cards, db.items, db.outbox, async () => {
+    await db.transaction('rw', db.cards, db.items, db.decks, db.outbox, async () => {
       const card = await db.cards.get(id);
       if (!card) throw new Error(`no such card: ${id}`);
 
@@ -313,9 +335,11 @@ export const cards = {
         deckId = patch.deckId;
       }
 
-      const zhuyin = patch.pinyin !== undefined && patch.zhuyin === undefined ? toZhuyin(patch.pinyin) : patch.zhuyin;
+      const pinyinChanged = patch.pinyin !== undefined && !pinyinEqual(patch.pinyin, card.pinyin);
+      const zhuyin = pinyinChanged && patch.zhuyin === undefined ? toZhuyin(patch.pinyin!) : patch.zhuyin;
 
-      const updated: Card = { ...card, ...patch, deckId, ...(zhuyin !== undefined ? { zhuyin } : {}), updatedAt: now };
+      const safePatch = definedOnly(patch);
+      const updated: Card = { ...card, ...safePatch, deckId, ...(zhuyin !== undefined ? { zhuyin } : {}), updatedAt: now };
       await db.cards.put(updated);
       await db.outbox.put(outboxEntry('card', id, 'put', now));
 
