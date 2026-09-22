@@ -382,17 +382,42 @@ export const cards = {
     });
   },
 
-  /** Throws, and moves nothing, if the target deck is unknown or soft-deleted — one transaction for every id. */
-  async move(ids: string[], deckId: string, now: number): Promise<void> {
+  /**
+   * Throws, and moves nothing, if the target deck is unknown or soft-deleted
+   * — one transaction for every id. A card whose trimmed hanzi the target
+   * deck's visible cards already have is skipped, never moved: a deck holds
+   * one card per hanzi, and the editor would otherwise refuse to save either
+   * copy ("Already in this deck"). The check grows as cards move, so the
+   * second of two moved cards sharing a hanzi is skipped too. A card already
+   * in the target deck counts as moved, with nothing to write.
+   */
+  async move(ids: string[], deckId: string, now: number): Promise<{ moved: number; skipped: number }> {
+    let moved = 0;
+    let skipped = 0;
     await db.transaction('rw', db.cards, db.decks, db.outbox, async () => {
       const targetDeck = await db.decks.get(deckId);
       if (!targetDeck || targetDeck.deletedAt !== null) throw new Error(`no such deck: ${deckId}`);
       const found = (await db.cards.bulkGet(ids)).filter((c): c is Card => Boolean(c));
+      const deckCards = await db.cards.where('deckId').equals(deckId).toArray();
+      const taken = new Set(deckCards.filter((c) => c.deletedAt === null).map((c) => c.hanzi.trim()));
+
       for (const card of found) {
+        if (card.deckId === deckId) {
+          moved += 1;
+          continue;
+        }
+        const hanzi = card.hanzi.trim();
+        if (taken.has(hanzi)) {
+          skipped += 1;
+          continue;
+        }
+        taken.add(hanzi);
         await db.cards.put({ ...card, deckId, updatedAt: now });
         await db.outbox.put(outboxEntry('card', card.id, 'put', now));
+        moved += 1;
       }
     });
+    return { moved, skipped };
   },
 
   /**

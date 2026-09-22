@@ -196,9 +196,11 @@ export function useBrowse(scope?: { deckId: string }) {
     await refreshDueCounts();
   }
 
-  async function move(cardIds: string[], deckId: string): Promise<void> {
-    await cards.move(cardIds, deckId, Date.now());
+  /** `skipped` counts the cards left where they were because the target deck already has their hanzi. */
+  async function move(cardIds: string[], deckId: string): Promise<{ moved: number; skipped: number }> {
+    const result = await cards.move(cardIds, deckId, Date.now());
     await refreshDueCounts();
+    return result;
   }
 
   async function remove(cardIds: string[]): Promise<void> {

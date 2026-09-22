@@ -460,6 +460,48 @@ describe('cards.move', () => {
     await cards.create(aCard(), ['recognition'], NOW);
     await expect(cards.move(['c1'], 'no-such-deck', NOW)).rejects.toThrow();
   });
+
+  it('skips a card whose hanzi the target deck already has, and reports both counts', async () => {
+    await decks.put(aDeck());
+    await decks.put(aDeck({ id: 'd2', name: 'HSK 2' }));
+    await cards.create(aCard({ id: 'c1', hanzi: '學習' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c2', hanzi: '你好' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c3', deckId: 'd2', hanzi: ' 學習 ' }), ['recognition'], NOW);
+
+    const result = await cards.move(['c1', 'c2'], 'd2', NOW + 1);
+
+    expect(result).toEqual({ moved: 1, skipped: 1 });
+    expect((await cards.get('c1'))!.deckId).toBe('d1');
+    expect((await cards.get('c2'))!.deckId).toBe('d2');
+    const entries = (await db.outbox.toArray()).filter((e) => e.at === NOW + 1);
+    expect(entries.map((e) => e.entityId)).toEqual(['c2']);
+  });
+
+  it('moves only the first of two moved cards sharing a hanzi', async () => {
+    await decks.put(aDeck());
+    await decks.put(aDeck({ id: 'd2', name: 'HSK 2' }));
+    await decks.put(aDeck({ id: 'd3', name: 'HSK 3' }));
+    await cards.create(aCard({ id: 'c1', hanzi: '學習' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c2', deckId: 'd2', hanzi: '學習' }), ['recognition'], NOW);
+
+    const result = await cards.move(['c1', 'c2'], 'd3', NOW + 1);
+
+    expect(result).toEqual({ moved: 1, skipped: 1 });
+    expect((await cards.get('c1'))!.deckId).toBe('d3');
+    expect((await cards.get('c2'))!.deckId).toBe('d2');
+    const entries = (await db.outbox.toArray()).filter((e) => e.at === NOW + 1);
+    expect(entries.map((e) => e.entityId)).toEqual(['c1']);
+  });
+
+  it('ignores a soft-deleted card in the target deck when checking duplicates', async () => {
+    await decks.put(aDeck());
+    await decks.put(aDeck({ id: 'd2', name: 'HSK 2' }));
+    await cards.create(aCard({ id: 'c1', hanzi: '學習' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c2', deckId: 'd2', hanzi: '學習', deletedAt: NOW }), ['recognition'], NOW);
+
+    expect(await cards.move(['c1'], 'd2', NOW + 1)).toEqual({ moved: 1, skipped: 0 });
+    expect((await cards.get('c1'))!.deckId).toBe('d2');
+  });
 });
 
 describe('cards.list', () => {

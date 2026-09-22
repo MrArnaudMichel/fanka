@@ -229,14 +229,23 @@ function closePanel(): void {
 
 // --- Actions -------------------------------------------------------------
 
-/** Ruling 4: reload, drop any selection that no longer surfaces, toast, and — only on failure — leave everything as it was. */
-async function runAction(action: () => Promise<void>, successMessage: string): Promise<boolean> {
+interface SuccessToast {
+  message: string;
+  description?: string;
+}
+
+/**
+ * Ruling 4: reload, drop any selection that no longer surfaces, toast, and — only on failure — leave everything as it was.
+ * `success` is the toast's text, or a function building it from the action's own result (Move's moved/skipped counts).
+ */
+async function runAction<T>(action: () => Promise<T>, success: string | ((result: T) => SuccessToast)): Promise<boolean> {
   try {
-    await action();
+    const result = await action();
     await reload();
     const present = new Set(rows.value.map((r) => r.id));
     selected.value = selected.value.filter((id) => present.has(id));
-    toaster.success(successMessage);
+    const toast = typeof success === 'string' ? { message: success } : success(result);
+    toaster.success(toast.message, toast.description ? { description: toast.description } : undefined);
     return true;
   } catch (err) {
     console.error('CardTable: action failed', err);
@@ -280,7 +289,13 @@ async function confirmMove(): Promise<void> {
   if (!target) return;
   const ids = selected.value.slice();
   moveOpen.value = false;
-  await runAction(() => move(ids, target), `${plural(ids.length, 'card')} moved`);
+  await runAction(
+    () => move(ids, target),
+    ({ moved, skipped }) => ({
+      message: `${plural(moved, 'card')} moved`,
+      description: skipped > 0 ? `${plural(skipped, 'duplicate')} skipped` : undefined,
+    }),
+  );
 }
 
 const deleteConfirmOpen = ref(false);
