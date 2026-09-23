@@ -16,9 +16,17 @@
     "build:app": "nuxt generate",
     "typecheck": "tsc --noEmit -p tsconfig.check.json && nuxt typecheck",
     "test:e2e": "playwright test",
-    "build:chinese-data": "node scripts/build-simplified-set.mjs"
+    "build:chinese-data": "node scripts/build-simplified-set.mjs",
+    "android:sync": "npm run build:app && cap sync android",
+    "android:build": "cd android && ./gradlew assembleDebug",
+    "android:run": "cd android && ./gradlew installDebug && adb shell am start -n fr.arnaudmichel.fanka/.MainActivity",
+    "android:open": "cap open android",
+    "android": "npm run android:sync && npm run android:build"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2",
     "dexie": "^4.4.6",
     "kanto": "file:../kanto",
     "lit": "^3.3.3",
@@ -29,6 +37,8 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2",
     "@nuxt/test-utils": "^3.23.0",
     "@playwright/test": "^1.63.0",
     "@vue/test-utils": "^2.5.0",

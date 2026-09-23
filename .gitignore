@@ -7,9 +7,6 @@
 dist
 .vercel
 
-# Capacitor
-android
-
 # Node dependencies
 node_modules
 

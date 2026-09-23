@@ -1,0 +1,13 @@
+// Lets Gradle auto-provision the JDK its daemon needs (see
+// gradle/gradle-daemon-jvm.properties) instead of depending on whatever
+// `JAVA_HOME` happens to point at — only JDK 25 is installed on this
+// machine, and Gradle's own Groovy build scripts cannot run on it.
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+include ':app'
+include ':capacitor-cordova-android-plugins'
+project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
+
+apply from: 'capacitor.settings.gradle'
