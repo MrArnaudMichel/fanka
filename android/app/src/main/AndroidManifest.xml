@@ -18,6 +18,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- The magic-link sign-in redirect (see app/plugins/deep-link.client.ts
+                 and app/composables/useAuth.ts's redirectTarget()). The magic link
+                 opens in the OS browser, which then relaunches Fanka with this
+                 scheme instead of the app's own WebView ever seeing the redirect. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="fanka" android:host="auth" />
+            </intent-filter>
         </activity>
 
         <provider

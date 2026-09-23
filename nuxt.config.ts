@@ -15,6 +15,18 @@ export default defineNuxtConfig({
   // under Android's edge-to-edge layout (enforced from Android 15/targetSdk
   // 35+), which the layout uses to keep the header clear of the status bar.
   app: { head: { viewport: 'width=device-width, initial-scale=1, viewport-fit=cover' } },
+  // Baked in at build time: `ssr: false` means there is no request-time
+  // server to inject these, so `npm run dev`/`npm run build:app` both read
+  // them from `.env` (`.env.example` documents the two keys), and an Android
+  // release build needs them set in the shell/CI environment beforehand.
+  // Both are safe in a client bundle — the publishable key only grants what
+  // row-level security (`supabase/migrations/0001_init.sql`) allows.
+  runtimeConfig: {
+    public: {
+      supabaseUrl: '',
+      supabaseAnonKey: '',
+    },
+  },
   css: ['kanto/styles.css', '~/assets/css/fanka.css'],
   vue: {
     compilerOptions: { isCustomElement: isKantoElement },
