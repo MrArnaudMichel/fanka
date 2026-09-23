@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toaster } from 'kanto';
+import { toaster } from 'kanto-ui';
 import { computed, onMounted, ref } from 'vue';
 import DeckCard from '~/components/DeckCard.vue';
 import DeckFormModal from '~/components/DeckFormModal.vue';

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KtHeader, KtNavItem } from 'kanto';
+import type { KtHeader, KtNavItem } from 'kanto-ui';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useNavigation } from '~/composables/useNavigation';
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { KtOption, KtSegmentedOption, KtTableColumn, KtTableRow } from 'kanto';
-import { toaster } from 'kanto';
+import type { KtOption, KtSegmentedOption, KtTableColumn, KtTableRow } from 'kanto-ui';
+import { toaster } from 'kanto-ui';
 import { html } from 'lit';
 import CardDetailPanel from '~/components/CardDetailPanel.vue';
 import { type BrowseRow, type BrowseState, STATE_META, useBrowse } from '~/composables/useBrowse';

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { KtOption } from 'kanto';
-import { toaster } from 'kanto';
+import type { KtOption } from 'kanto-ui';
+import { toaster } from 'kanto-ui';
 import PinyinText from '~/components/PinyinText.vue';
 import TagInput from '~/components/TagInput.vue';
 import { useCardEditor } from '~/composables/useCardEditor';

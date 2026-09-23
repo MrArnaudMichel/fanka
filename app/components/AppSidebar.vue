@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KtNavItem, KtNavSection } from 'kanto';
+import type { KtNavItem, KtNavSection } from 'kanto-ui';
 
 defineProps<{ sections: KtNavSection[]; dueTotal: number }>();
 const route = useRoute();

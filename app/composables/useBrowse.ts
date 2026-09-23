@@ -1,4 +1,4 @@
-import type { KtSortDirection } from 'kanto';
+import type { KtSortDirection } from 'kanto-ui';
 import { type CardRow, cards, items, reviews } from '~core/db/repositories';
 import type { Card, Direction, Item, Review } from '~core/db/schema';
 import type { ItemState } from '~core/srs';

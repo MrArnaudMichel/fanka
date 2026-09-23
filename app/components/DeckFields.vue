@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KtOption } from 'kanto';
+import type { KtOption } from 'kanto-ui';
 import { DECK_COLORS, type DeckColor } from '~core/db/repositories';
 
 /**

@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { isKantoElement } from 'kanto/vue';
+import { isKantoElement } from 'kanto-ui/vue';
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
@@ -27,16 +27,10 @@ export default defineNuxtConfig({
       supabaseAnonKey: '',
     },
   },
-  css: ['kanto/styles.css', '~/assets/css/fanka.css'],
+  css: ['kanto-ui/styles.css', '~/assets/css/fanka.css'],
   vue: {
     compilerOptions: { isCustomElement: isKantoElement },
   },
   typescript: { strict: true, typeCheck: false },
   alias: { '~core': fileURLToPath(new URL('./core', import.meta.url)) },
-  // Kanto is consumed as a sibling `file:` dependency, not a workspace
-  // member, so Vite's dev server otherwise refuses to serve its font files
-  // (they sit outside the project root) and every Kanto element falls back
-  // to a system font. Only `dist` is ever requested, so only `dist` is
-  // opened — not `src`, `node_modules` or `.git` alongside it.
-  vite: { server: { fs: { allow: [fileURLToPath(new URL('../kanto/dist', import.meta.url))] } } },
 });

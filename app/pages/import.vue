@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { KtOption, KtSegmentedOption, KtTableColumn, KtTableRow } from 'kanto';
-import { toaster } from 'kanto';
+import type { KtOption, KtSegmentedOption, KtTableColumn, KtTableRow } from 'kanto-ui';
+import { toaster } from 'kanto-ui';
 import { html } from 'lit';
 import DeckFormModal from '~/components/DeckFormModal.vue';
 import { ImportCommitError, useImport } from '~/composables/useImport';

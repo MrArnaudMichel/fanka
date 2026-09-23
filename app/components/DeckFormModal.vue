@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toaster } from 'kanto';
+import { toaster } from 'kanto-ui';
 import { computed, ref, watch } from 'vue';
 import DeckFields from '~/components/DeckFields.vue';
 import { type DeckInput, useDecks } from '~/composables/useDecks';

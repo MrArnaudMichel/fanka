@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toaster } from 'kanto';
+import { toaster } from 'kanto-ui';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';

@@ -30,7 +30,7 @@
     "@capacitor/status-bar": "^8.0.3",
     "@supabase/supabase-js": "^2.117.0",
     "dexie": "^4.4.6",
-    "kanto": "file:../kanto",
+    "kanto-ui": "^1.0.1",
     "lit": "^3.3.3",
     "lucide": "^1.43.0",
     "nuxt": "^4.5.2",

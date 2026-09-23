@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KtMeterSegment, KtOption } from 'kanto';
+import type { KtMeterSegment, KtOption } from 'kanto-ui';
 import { computed } from 'vue';
 import type { DeckSummary } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';

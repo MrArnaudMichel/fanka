@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { toaster } from 'kanto';
-import type { KtOption } from 'kanto';
+import { toaster } from 'kanto-ui';
+import type { KtOption } from 'kanto-ui';
 import { computed, reactive, ref, watch } from 'vue';
 import { useAuth } from '~/composables/useAuth';
 import { useSettings } from '~/composables/useSettings';

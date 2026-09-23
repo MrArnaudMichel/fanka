@@ -1,4 +1,4 @@
-import type { KtNavSection } from 'kanto';
+import type { KtNavSection } from 'kanto-ui';
 
 /**
  * Kanto's sidebar sections. Each screen is added here by the task that

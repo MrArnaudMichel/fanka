@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KtTimelineVariant } from 'kanto';
+import type { KtTimelineVariant } from 'kanto-ui';
 import PinyinText from '~/components/PinyinText.vue';
 import { type BrowseRow, STATE_META } from '~/composables/useBrowse';
 import type { Review } from '~core/db/schema';
