@@ -13,6 +13,17 @@ export interface StrokeRow {
   fetchedAt: number;
 }
 
+/**
+ * Small key/value store for `core/sync`'s own bookkeeping — today just the
+ * `lastPulledAt` cursor. Kept separate from `SettingsRow`/`Settings` (which
+ * is user-facing app config) so sync internals never risk colliding with a
+ * setting key or getting wiped by a settings import/reset.
+ */
+export interface SyncStateRow {
+  key: string;
+  value: unknown;
+}
+
 export class FankaDatabase extends Dexie {
   decks!: Table<Deck, string>;
   cards!: Table<Card, string>;
@@ -21,6 +32,7 @@ export class FankaDatabase extends Dexie {
   strokes!: Table<StrokeRow, string>;
   settings!: Table<SettingsRow, string>;
   outbox!: Table<OutboxEntry, string>;
+  syncState!: Table<SyncStateRow, string>;
 
   constructor() {
     super('fanka');
@@ -39,6 +51,11 @@ export class FankaDatabase extends Dexie {
       strokes: 'char',
       settings: 'key',
       outbox: 'id, entity, entityId, at',
+    });
+    // Additive only: every store from version 1 is left unlisted here and
+    // keeps its existing definition, per Dexie's incremental versioning.
+    this.version(2).stores({
+      syncState: 'key',
     });
   }
 }
