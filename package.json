@@ -18,8 +18,8 @@
     "test:e2e": "playwright test",
     "build:chinese-data": "node scripts/build-simplified-set.mjs",
     "android:sync": "npm run build:app && cap sync android",
-    "android:build": "cd android && ./gradlew assembleDebug",
-    "android:run": "cd android && ./gradlew installDebug && adb shell am start -n fr.arnaudmichel.fanka/.MainActivity",
+    "android:build": "[ -x \"$JAVA_HOME/bin/java\" ] || unset JAVA_HOME; cd android && ./gradlew assembleDebug",
+    "android:run": "[ -x \"$JAVA_HOME/bin/java\" ] || unset JAVA_HOME; cd android && ./gradlew installDebug && adb shell am start -n fr.arnaudmichel.fanka/.MainActivity",
     "android:open": "cap open android",
     "android": "npm run android:sync && npm run android:build"
   },
