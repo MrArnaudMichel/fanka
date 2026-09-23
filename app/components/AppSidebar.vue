@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { KtNavItem, KtNavSection } from 'kanto-ui';
 
+/** `dueTotal` is Review's: this button starts Review, not Writing. */
 defineProps<{ sections: KtNavSection[]; dueTotal: number }>();
 const route = useRoute();
 
@@ -47,10 +48,10 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
       icon="play"
       full-width
       :disabled="dueTotal === 0"
-      :label="dueTotal === 0 ? 'Today\'s session — nothing due right now' : ''"
+      :label="dueTotal === 0 ? 'Start review — nothing due right now' : ''"
       @click="navigateTo('/review')"
     >
-      Today's session · {{ dueTotal }}
+      Start review · {{ dueTotal }}
     </kt-button>
 
     <kt-sub-menu-navigation flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />

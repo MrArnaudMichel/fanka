@@ -1,7 +1,7 @@
 # Fanka — hanzi-first review, drawn writing, mobile pass
 
 **Date:** 2026-09-23
-**Status:** design approved in conversation; written spec awaiting review
+**Status:** approved; implemented
 **Parent spec:** `docs/superpowers/specs/2026-09-16-fanka-design.md`
 
 Three changes, requested together:
@@ -116,7 +116,7 @@ overwrites the Review cursor.
 
 ```ts
 type Point = { x: number; y: number };
-interface CharacterStrokes { strokes: string[]; medians: Point[][] }
+interface CharacterStrokes { strokes: string[]; medians: [number, number][][] }
 interface StrokeCheck {
   correct: boolean;
   expected: number;          // stroke count of the model
@@ -168,12 +168,13 @@ function toModelSpace(points: Point[], padSize: number): Point[];
 - `scripts/build-stroke-data.mjs` (`npm run build:stroke-data`) copies
   `strokes` and `medians` (dropping `radStrokes`) for every character
   **not** in `core/chinese/data/simplified-only.json` into
-  `public/strokes/<character>.json`. It also copies `ARPHICPL.TXT` next to
-  them. The output is committed, like `simplified-only.json`, so builds do
+  `public/strokes/<code point>.json` (學 → `5b78.json`: non-ASCII file
+  names are fragile in APK assets and URLs). It also copies `ARPHICPL.TXT`
+  next to them. The output is committed, like `simplified-only.json`, so builds do
   not depend on the script.
-- Expected size: a few thousand files at about 4 KB each. APK growth has to
-  be measured once the output exists.
-- `app/composables/useStrokeData.ts` fetches `/strokes/<c>.json`. Nuxt
+- Measured: 7,272 characters (2,302 simplified-only skipped), about 9.7 MB
+  gzipped. All 41 characters of the HSK 1 seed are covered.
+- `app/composables/useStrokeData.ts` fetches `/strokes/<code point>.json`. Nuxt
   serves `public/`, and so does Capacitor's bundle. The composable caches
   results in memory for the session and returns `null` for a character
   with no data (404).
@@ -205,10 +206,9 @@ is not flush right.
 ### Page headers
 
 - In Review and Writing, the "Session" eyebrow is dropped.
-- Undo and Leave sit in `kt-page-header`'s actions slot, on the same row as
-  the heading. Whether `kt-page-header` keeps them on one row at 360px has
-  to be observed in a browser. If it wraps, the two icons move into the
-  progress row instead.
+- Undo and Leave sit in the progress row, right of the "n / total" count.
+  Observed in a browser: `kt-page-header` wraps its actions onto their own
+  row at phone width, so the fallback applies at every width.
 
 ### Review and Writing
 
@@ -221,12 +221,17 @@ is not flush right.
   `position: sticky; bottom: 0` on `--surface-page`, with padding for
   `env(safe-area-inset-bottom)`. The answer content scrolls under it, so
   grading never needs a scroll to reach the buttons.
+- The drawing pad is sized to the viewport height as well as its width
+  (`calc(100dvh - 440px)`, never below 200px), so the sticky bar never
+  covers its lower edge. Found by the e2e test: on a 720px-tall window, a
+  stroke at the bottom of 習 landed on the bar.
 - The keyboard hints (`kt-kbd`) are hidden below 900px, since a phone has no
   keyboard.
 
 ### Today
 
-Each mode's three `kt-stat`s sit on one row.
+Each mode's three `kt-stat`s sit on one row. "To review" becomes "Due",
+which fits a third of a phone's width without wrapping.
 
 ### Browse
 

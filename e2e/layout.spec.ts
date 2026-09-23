@@ -49,3 +49,48 @@ test('navigating through the mobile menu leaves focus on main, not body', async 
     expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('MAIN');
   }
 });
+
+/**
+ * The phone pass: nothing scrolls sideways, the menu button sits flush
+ * right (kt-header's bar grid used to park it mid-bar, with the session
+ * button over the wordmark), and a revealed Review card never pushes the
+ * grade buttons below the fold.
+ */
+test.describe('at 390px', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  for (const [path, heading] of [
+    ['/', 'Today'],
+    ['/review', 'Review'],
+    ['/writing', 'Writing'],
+    ['/browse', 'Browse'],
+    ['/decks', 'Decks'],
+  ] as const) {
+    test(`${path} fits the width and keeps the menu button flush right`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+
+      const menu = (await page.getByRole('button', { name: 'Open menu' }).boundingBox())!;
+      expect(390 - (menu.x + menu.width)).toBeLessThanOrEqual(24);
+    });
+  }
+
+  test('every grade button is on screen once the answer is revealed', async ({ page }) => {
+    await page.goto('/review');
+    await page.getByRole('button', { name: 'Show answer', exact: true }).click();
+    for (const name of ['Again', 'Hard', 'Good', 'Easy']) {
+      await expect(page.getByRole('button', { name: new RegExp(`^${name}`) })).toBeInViewport({ ratio: 1 });
+    }
+  });
+
+  test('the action bar never covers the drawing pad', async ({ page }) => {
+    await page.goto('/writing');
+    const pad = (await page.locator('svg.pad').boundingBox())!;
+    const actions = (await page.locator('.fk-session-actions').boundingBox())!;
+    expect(pad.y + pad.height).toBeLessThanOrEqual(actions.y);
+    expect(actions.y + actions.height).toBeLessThanOrEqual(844);
+  });
+});

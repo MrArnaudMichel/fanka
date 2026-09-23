@@ -2,27 +2,23 @@
 import type { Card, Item } from '~core/db/schema';
 import type { Settings } from '~core/db/settings';
 
+/**
+ * Review shows recognition items only (see `SessionMode`): the hanzi alone,
+ * and the learner recalls its pinyin and meaning before revealing them.
+ */
 defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>();
 </script>
 
 <template>
   <kt-card>
     <div slot="header" class="meta">
-      <kt-badge variant="tag" :tone="item.dir === 'recognition' ? 'primary' : 'info'" size="small"
-        :label="item.dir === 'recognition' ? 'Recognition · 字 → meaning' : 'Production · meaning → 字'" />
       <span class="state">{{ item.state }}</span>
     </div>
 
-    <div class="face fk-selectable">
-      <div v-if="item.dir === 'recognition'" class="hanzi">{{ card.hanzi }}</div>
-      <div v-else class="prompt">
-        <p class="overline">Write the character</p>
-        <p class="meaning">{{ card.translation }}</p>
-        <PinyinText v-if="!settings.hidePinyinUntilRevealed" :syllables="card.pinyin" :colored="settings.toneColors" size="22px" />
-      </div>
+    <div class="face fk-selectable" :class="{ revealed }">
+      <div class="hanzi">{{ card.hanzi }}</div>
 
       <div v-if="revealed" class="answer" role="status" aria-live="polite" aria-atomic="true">
-        <div v-if="item.dir === 'production'" class="hanzi answer-hanzi">{{ card.hanzi }}</div>
         <PinyinText :syllables="card.pinyin" :colored="settings.toneColors" size="28px" />
         <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
         <p class="meaning">{{ card.translation }}</p>
@@ -51,8 +47,10 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
   align-items: center;
   justify-content: center;
   gap: var(--gap-card);
-  padding: 48px 24px;
-  min-height: 320px;
+  padding: var(--padding-card);
+  /* Tall enough that the hanzi reads as the card's one subject, short
+     enough on a phone that Show answer stays in view without scrolling. */
+  min-height: min(320px, 38dvh);
   text-align: center;
 }
 
@@ -64,8 +62,8 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
   color: var(--text-body);
 }
 
-.answer-hanzi { font-size: clamp(64px, 11vw, 110px); }
-.prompt { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+/* Once revealed, the hanzi steps down so the answer fits under it. */
+.revealed .hanzi { font-size: clamp(64px, 14vw, 110px); }
 
 .overline {
   margin: 0;

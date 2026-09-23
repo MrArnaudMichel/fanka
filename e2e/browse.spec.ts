@@ -32,7 +32,7 @@ test('filtering by a query and opening a row shows the panel with the card', asy
 test('a failed card load on Browse offers Retry, and Retry recovers', async ({ page }) => {
   await installReadFaults(page, {});
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Start session', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Start review', exact: true })).toBeEnabled();
 
   await page.evaluate(() => {
     (window as unknown as { __fankaFaults: { failCardScans: boolean } }).__fankaFaults.failCardScans = true;

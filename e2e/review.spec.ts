@@ -7,12 +7,12 @@ import { installReadFaults } from './fixtures/read-faults';
  * none leaves anything behind that would change another's result.
  */
 
-// The card's own prompt (hanzi for recognition, the translation prompt for
-// production) — a `.face > .hanzi`/`.face > .prompt` direct child, so it
-// never includes `.answer`'s revealed content and reads the same whether
-// the card is revealed or not. Comparing this across steps proves the app
+// The card's own prompt — Review shows recognition items only, so it is
+// always the hanzi: a `.face > .hanzi` direct child, so it never includes
+// `.answer`'s revealed content and reads the same whether the card is
+// revealed or not. Comparing this across steps proves the app
 // moved to a genuinely different card, not just that a counter changed.
-const cardIdentity = (page: import('@playwright/test').Page) => page.locator('.face > .hanzi, .face > .prompt').first();
+const cardIdentity = (page: import('@playwright/test').Page) => page.locator('.face > .hanzi');
 
 const position = (page: import('@playwright/test').Page) => page.locator('.progress').getByText(/^\d+ \/ \d+$/);
 
@@ -23,7 +23,7 @@ test('a learner can start, reveal, grade and resume a session after a reload', a
   // Waiting for this to become enabled also waits out seeding and the due
   // count query: while nothing is due it stays disabled with a different
   // accessible name, so an exact match only resolves once it is ready.
-  const startButton = page.getByRole('button', { name: 'Start session', exact: true });
+  const startButton = page.getByRole('button', { name: 'Start review', exact: true });
   await expect(startButton).toBeEnabled();
   await startButton.click();
   await expect(page).toHaveURL(/\/review$/);
@@ -216,7 +216,7 @@ test('a card that cannot be read offers Retry instead of a skeleton', async ({ p
 
 test('a learner can finish a session and return to Today', async ({ page }) => {
   await page.goto('/');
-  const startButton = page.getByRole('button', { name: 'Start session', exact: true });
+  const startButton = page.getByRole('button', { name: 'Start review', exact: true });
   await expect(startButton).toBeEnabled();
 
   // A two-card day keeps the loop short: the queue is built from settings
@@ -241,7 +241,8 @@ test('a learner can finish a session and return to Today', async ({ page }) => {
   // Reloaded so Today recounts under the new setting. Two cards at eight
   // seconds each round to zero minutes; the estimate never says less than one.
   await page.reload();
-  await expect(page.getByText('2 cards due · about 1 min')).toBeVisible();
+  // Review's summary is the first of the two; Writing's shows the same count.
+  await expect(page.getByText('2 cards due · about 1 min').first()).toBeVisible();
   await startButton.click();
   await expect(page).toHaveURL(/\/review$/);
 
@@ -263,6 +264,6 @@ test('a learner can finish a session and return to Today', async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
   await expect(page.getByText('Nothing due right now')).toBeVisible();
-  // With nothing left, the sidebar's session button is disabled and says why.
-  await expect(page.getByRole('button', { name: "Today's session — nothing due right now" })).toBeDisabled();
+  // With nothing left, the sidebar's review button is disabled and says why.
+  await expect(page.locator('aside').getByRole('button', { name: 'Start review — nothing due right now' })).toBeDisabled();
 });

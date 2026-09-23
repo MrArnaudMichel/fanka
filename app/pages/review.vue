@@ -5,7 +5,7 @@ import { useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
 import type { Grade } from '~core/srs/types';
 
-const session = useReviewSession();
+const session = useReviewSession('review');
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
 
@@ -151,28 +151,34 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 
 <template>
   <div class="review">
-    <kt-page-header eyebrow="Session" heading="Review">
-      <kt-button
-        slot="actions"
-        variant="secondary-no-bg"
-        size="small"
-        icon="undo-2"
-        label="Undo"
-        :disabled="session.busy.value || session.log.value.length === 0"
-        @click="undo"
-      />
-      <kt-button
-        slot="actions"
-        variant="secondary-no-bg"
-        size="small"
-        icon="x"
-        label="Leave session"
-        @click="navigateTo('/')"
-      />
-    </kt-page-header>
+    <kt-page-header heading="Review" />
 
+    <!--
+      Undo and Leave sit with the count rather than in the page header's
+      actions: at phone width kt-page-header wraps its actions onto a row
+      of their own, which cost a card's worth of height for two icons.
+    -->
     <div class="progress">
-      <span class="mono">{{ session.position.value }} / {{ session.total.value }}</span>
+      <div class="progress-row">
+        <span class="mono">{{ session.position.value }} / {{ session.total.value }}</span>
+        <span class="session-actions">
+          <kt-button
+            variant="secondary-no-bg"
+            size="small"
+            icon="undo-2"
+            label="Undo"
+            :disabled="session.busy.value || session.log.value.length === 0"
+            @click="undo"
+          />
+          <kt-button
+            variant="secondary-no-bg"
+            size="small"
+            icon="x"
+            label="Leave session"
+            @click="navigateTo('/')"
+          />
+        </span>
+      </div>
       <kt-progress-bar :value="progress" label="Session progress" />
     </div>
 
@@ -212,13 +218,15 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
         :revealed="session.revealed.value"
         :settings="settings"
       />
-      <ShowAnswerButton
-        v-if="!session.revealed.value"
-        :autofocus="hasGraded || retried"
-        :busy="session.busy.value"
-        @reveal="session.reveal()"
-      />
-      <GradeButtons v-else :intervals="session.intervals.value" :busy="session.busy.value" @grade="grade" />
+      <div class="actions fk-session-actions">
+        <ShowAnswerButton
+          v-if="!session.revealed.value"
+          :autofocus="hasGraded || retried"
+          :busy="session.busy.value"
+          @reveal="session.reveal()"
+        />
+        <GradeButtons v-else :intervals="session.intervals.value" :busy="session.busy.value" @grade="grade" />
+      </div>
     </template>
 
     <kt-skeleton v-else height="320px" />
@@ -228,6 +236,8 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 <style scoped>
 .review { display: flex; flex-direction: column; gap: var(--gap-card); }
 .progress { display: flex; flex-direction: column; gap: 6px; }
+.progress-row { display: flex; align-items: center; justify-content: space-between; }
+.session-actions { display: flex; gap: var(--gap-button); }
 .mono { font: var(--font-normal-small); font-family: var(--font-family-code); color: var(--text-muted); }
 .done-body { display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
 .seal { font-family: var(--fk-font-hanzi-serif); font-size: 56px; color: var(--color-primary-base); }

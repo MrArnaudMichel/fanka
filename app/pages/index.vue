@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { Deck } from '~core/db/schema';
+import type { SessionMode } from '~core/db/session';
 import { useDecks } from '~/composables/useDecks';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useSeedStatus } from '~/composables/useSeedStatus';
 
-const { total, byState, refresh } = useDueCounts();
+const { counts, refresh } = useDueCounts();
 const { failed: seedFailed, retry: retrySeedStatus } = useSeedStatus();
 const { listAll: listDecks } = useDecks();
 
@@ -45,11 +46,22 @@ async function loadToday(): Promise<void> {
 onMounted(loadToday);
 
 /**
- * Roughly eight seconds a card, which is what a steady session averages.
+ * One summary per session mode. Seconds per card is what a steady session
+ * averages: about eight to recall a word, about twenty to draw one.
+ */
+const MODES: Array<{ mode: SessionMode; heading: string; href: string; secondsPerCard: number }> = [
+  { mode: 'review', heading: 'Review', href: '/review', secondsPerCard: 8 },
+  { mode: 'writing', heading: 'Writing', href: '/writing', secondsPerCard: 20 },
+];
+
+/**
  * Never below one, as `formatInterval` does: only shown while something is
  * due, and one to three cards would otherwise round to "about 0 min".
  */
-const minutes = computed(() => Math.max(1, Math.round((total.value * 8) / 60)));
+const minutes = (total: number, secondsPerCard: number) => Math.max(1, Math.round((total * secondsPerCard) / 60));
+
+/** Where a successful retry puts focus: the first mode with work to do. */
+const firstDue = computed(() => MODES.findIndex(({ mode }) => counts.value[mode].total > 0));
 
 /**
  * Both Retry buttons below unmount the instant their state resolves — the
@@ -66,24 +78,25 @@ const minutes = computed(() => Math.max(1, Math.round((total.value * 8) / 60)));
  * `kt-page-header` element was verified in a real browser (Chromium, via
  * `npx playwright`) to silently no-op: forcing the day's load to fail and
  * clicking Retry left `document.activeElement` on `<body>`, not the
- * heading. Start session is the next control the learner needs anyway, so
- * it takes focus instead.
+ * heading. A Start button is the next control the learner needs anyway —
+ * the first mode with something due (`firstDue`) — so it takes focus
+ * instead.
  *
- * `useFocusWhenEnabled`, not a plain call: Start session is a `kt-button`,
- * which paints its shadow DOM asynchronously, and disables itself when
- * nothing is due (`total === 0`) — focusing it in that state would be the
- * same silent no-op via a different door. `awaitingRetryRecovery` is the
+ * `useFocusWhenEnabled`, not a plain call: each Start button is a
+ * `kt-button`, which paints its shadow DOM asynchronously, and disables
+ * itself when its mode has nothing due — focusing it in that state would be
+ * the same silent no-op via a different door. `awaitingRetryRecovery` is the
  * composable's "disabled" gate: it starts `true` so a normal page load
  * never steals focus, a retry sets it `true` again (idempotent, so a second
  * failure can still trigger the watcher) and only a *successful* retry sets
  * it `false`, which is what the composable is watching for.
  */
-const startButton = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
+const startButtons = ref<(HTMLElement & { updateComplete?: Promise<boolean> })[]>([]);
 const awaitingRetryRecovery = ref(true);
 
 useFocusWhenEnabled(
-  () => startButton.value,
-  () => awaitingRetryRecovery.value || total.value === 0,
+  () => startButtons.value[firstDue.value],
+  () => awaitingRetryRecovery.value || firstDue.value === -1,
 );
 
 async function retryLoad(): Promise<void> {
@@ -108,15 +121,19 @@ async function retrySeed(): Promise<void> {
   <div class="today">
     <kt-page-header eyebrow="Dashboard" heading="Today" />
 
-    <kt-card>
+    <kt-card v-for="{ mode, heading, href, secondsPerCard } in MODES" :key="mode">
+      <p class="overline" slot="header">{{ heading }}</p>
       <div class="summary">
         <div class="counts">
-          <kt-stat label="New" :value="String(byState.fresh)" size="small" />
-          <kt-stat label="Learning" :value="String(byState.learning)" size="small" />
-          <kt-stat label="To review" :value="String(byState.review)" size="small" />
+          <kt-stat label="New" :value="String(counts[mode].fresh)" size="small" />
+          <kt-stat label="Learning" :value="String(counts[mode].learning)" size="small" />
+          <kt-stat label="Due" :value="String(counts[mode].review)" size="small" />
         </div>
         <p class="eta">
-          <template v-if="total > 0">{{ total }} card{{ total === 1 ? '' : 's' }} due · about {{ minutes }} min</template>
+          <template v-if="counts[mode].total > 0">
+            {{ counts[mode].total }} card{{ counts[mode].total === 1 ? '' : 's' }} due · about
+            {{ minutes(counts[mode].total, secondsPerCard) }} min
+          </template>
           <template v-else>Nothing due right now</template>
         </p>
         <!--
@@ -129,16 +146,16 @@ async function retrySeed(): Promise<void> {
           reaches the one place aria-describedby couldn't.
         -->
         <kt-button
-          ref="startButton"
-          variant="primary"
+          ref="startButtons"
+          :variant="mode === 'review' ? 'primary' : 'secondary'"
           size="large"
-          icon="play"
+          :icon="mode === 'review' ? 'play' : 'pen-line'"
           full-width
-          :disabled="total === 0"
-          :label="total === 0 ? 'Start session — nothing due right now' : ''"
-          @click="navigateTo('/review')"
+          :disabled="counts[mode].total === 0"
+          :label="counts[mode].total === 0 ? `Start ${heading.toLowerCase()} — nothing due right now` : ''"
+          @click="navigateTo(href)"
         >
-          Start session
+          Start {{ heading.toLowerCase() }}
         </kt-button>
       </div>
     </kt-card>
@@ -190,7 +207,7 @@ async function retrySeed(): Promise<void> {
 /* 12px matches --gap-drag-drop by value only — that token names an
    interaction this grid has nothing to do with, so a literal is the
    honest choice (name-plus-value match wins over value alone). */
-.counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .eta { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 .decks { display: flex; flex-direction: column; gap: var(--gap-button); }
 </style>

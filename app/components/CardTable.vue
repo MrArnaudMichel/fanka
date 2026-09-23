@@ -4,6 +4,7 @@ import { toaster } from 'kanto-ui';
 import { html } from 'lit';
 import CardDetailPanel from '~/components/CardDetailPanel.vue';
 import { type BrowseRow, type BrowseState, STATE_META, useBrowse } from '~/composables/useBrowse';
+import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useDecks } from '~/composables/useDecks';
 import { toneColorToken } from '~core/chinese/tones';
 import type { Deck, Review } from '~core/db/schema';
@@ -118,7 +119,21 @@ const importHref = computed(() => {
 
 // --- Table -------------------------------------------------------------
 
+const { compact } = useCompactLayout();
+
+/**
+ * On a phone, two columns: the hanzi, and pinyin over translation in one
+ * cell (`renderCell`'s `translation` branch). Five columns at 390px wrapped
+ * every cell onto two lines. Deck, state and due stay one tap away, in the
+ * row's side panel.
+ */
 const columns = computed<KtTableColumn[]>(() => {
+  if (compact.value) {
+    return [
+      { key: 'hanzi', label: 'Hanzi', sortable: true, width: '96px' },
+      { key: 'translation', label: 'Word', sortable: true },
+    ];
+  }
   const cols: KtTableColumn[] = [
     { key: 'hanzi', label: 'Hanzi', sortable: true, width: '140px' },
     { key: 'pinyin', label: 'Pinyin', width: '160px' },
@@ -147,6 +162,13 @@ function renderCell(row: KtTableRow, column: KtTableColumn): unknown {
   if (column.key === 'pinyin') {
     const syllables = r.card.pinyin.map((s, i) => html`${i > 0 ? ' ' : ''}<span style="color: ${toneColorToken(s.tone)}">${s.text}</span>`);
     return html`<span style="font-family: var(--font-family-code)">${syllables}</span>`;
+  }
+  if (column.key === 'translation' && compact.value) {
+    const syllables = r.card.pinyin.map((s, i) => html`${i > 0 ? ' ' : ''}<span style="color: ${toneColorToken(s.tone)}">${s.text}</span>`);
+    return html`<span style="display: flex; flex-direction: column; gap: 2px">
+      <span style="font-family: var(--font-family-code)">${syllables}</span>
+      <span>${r.card.translation}</span>
+    </span>`;
   }
   if (column.key === 'state') {
     const meta = STATE_META[r.state];
@@ -460,6 +482,11 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
 .filters .search { flex: 1 1 240px; min-width: 0; }
 .filters .deck-filter,
 .filters .state-filter { flex: 0 1 200px; min-width: 160px; }
+@media (max-width: 899px) {
+  .filters .search,
+  .filters .deck-filter,
+  .filters .state-filter { flex: 1 1 100%; }
+}
 
 .bulk-bar {
   display: flex;

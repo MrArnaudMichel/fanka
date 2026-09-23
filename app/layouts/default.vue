@@ -3,8 +3,9 @@ import type { KtHeader, KtNavItem } from 'kanto-ui';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useNavigation } from '~/composables/useNavigation';
 
-const { total } = useDueCounts();
-const { sections } = useNavigation(total);
+const { counts } = useDueCounts();
+const { sections } = useNavigation(counts);
+const reviewTotal = computed(() => counts.value.review.total);
 const route = useRoute();
 
 const header = ref<KtHeader>();
@@ -43,7 +44,7 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
 
 <template>
   <div class="shell">
-    <AppSidebar :sections="sections" :due-total="total" />
+    <AppSidebar :sections="sections" :due-total="reviewTotal" />
 
     <kt-header ref="header" class="mobile-header" sticky label="Fanka">
       <span slot="brand" class="brand">
@@ -52,22 +53,10 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
       </span>
 
       <!--
-        Same button, same behaviour, as the sidebar's: secondary, not
-        primary, disabled with its reason as the accessible name when
-        nothing is due. Only the container around it changes.
+        Nothing in `actions` on a phone: the brand and the menu button are
+        all the bar has room for. The Today page's Start buttons take the
+        sidebar button's place.
       -->
-      <kt-button
-        slot="actions"
-        variant="secondary"
-        size="medium"
-        icon="play"
-        full-width
-        :disabled="total === 0"
-        :label="total === 0 ? 'Today\'s session — nothing due right now' : ''"
-        @click="navigateTo('/review')"
-      >
-        Today's session · {{ total }}
-      </kt-button>
 
       <kt-sub-menu-navigation ref="menu" slot="menu" flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
     </kt-header>
@@ -124,6 +113,17 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
        this padding becomes blank space under the status bar rather than
        shifting the sticky position. */
     padding-top: env(safe-area-inset-top);
+  }
+  /*
+    kt-header's bar is a three-column grid sized for brand · nav · actions.
+    Below its breakpoint the nav column is hidden, so the brand, the
+    actions and the menu button shift into those three columns instead —
+    the menu button ends up in the middle one, not flush right. Two columns
+    here: the brand takes the space, the menu button sits at the end.
+    Logged in docs/deferred-minors.md for a fix in Kanto itself.
+  */
+  .mobile-header::part(bar) {
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 }
 

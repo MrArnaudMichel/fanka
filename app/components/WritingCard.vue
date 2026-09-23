@@ -3,23 +3,31 @@ import type { Card } from '~core/db/schema';
 import type { Settings } from '~core/db/settings';
 
 /**
- * Deliberately ignores `item.dir`: writing practice always shows the meaning
- * first and the hanzi behind Reveal, regardless of which direction the
- * underlying item happens to be scheduled in. That is the one layout the
- * brief asks for — see the task report for why this reuses the session
- * engine's queue as-is rather than filtering it to `production` items.
+ * Writing shows production items only (see `SessionMode`): the meaning, and
+ * the pinyin as a hint unless `hidePinyinUntilRevealed` is on. The default
+ * slot holds whatever sits between prompt and answer — the drawing pad, or
+ * the verdict once the drawing is checked.
  */
 defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
 </script>
 
 <template>
   <kt-card>
-    <div class="face fk-selectable">
-      <p class="overline">Write the character</p>
-      <p class="meaning">{{ card.translation }}</p>
-      <PinyinText v-if="!settings.hidePinyinUntilRevealed || revealed" :syllables="card.pinyin" :colored="settings.toneColors" size="22px" />
+    <div class="face">
+      <div class="prompt fk-selectable">
+        <p class="overline">Write the character{{ [...card.hanzi].length > 1 ? 's' : '' }}</p>
+        <p class="meaning">{{ card.translation }}</p>
+        <PinyinText
+          v-if="!settings.hidePinyinUntilRevealed || revealed"
+          :syllables="card.pinyin"
+          :colored="settings.toneColors"
+          size="22px"
+        />
+      </div>
 
-      <div v-if="revealed" class="answer" role="status" aria-live="polite" aria-atomic="true">
+      <slot />
+
+      <div v-if="revealed" class="answer fk-selectable" role="status" aria-live="polite" aria-atomic="true">
         <div class="hanzi">{{ card.hanzi }}</div>
         <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
       </div>
@@ -32,12 +40,11 @@ defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--gap-card);
-  padding: 48px 24px;
-  min-height: 320px;
   text-align: center;
 }
+
+.prompt { display: flex; flex-direction: column; align-items: center; gap: var(--gap-element); }
 
 .overline {
   margin: 0;
@@ -53,16 +60,15 @@ defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--gap-form);
+  gap: var(--gap-element);
   width: 100%;
   border-top: var(--border-width) solid var(--border-subtle);
-  padding-top: 24px;
-  margin-top: 8px;
+  padding-top: var(--padding-card);
 }
 
 .hanzi {
   font-family: var(--fk-font-hanzi);
-  font-size: clamp(88px, 16vw, 168px);
+  font-size: clamp(64px, 14vw, 110px);
   line-height: 1.05;
   letter-spacing: 6px;
   color: var(--text-body);

@@ -1,0 +1,140 @@
+import { type Page, expect, test } from '@playwright/test';
+
+/**
+ * Writing practice end to end: the learner draws on the pad with a real
+ * pointer, the app checks the strokes, and the verdict sets the grade.
+ *
+ * The drawing replays the Make Me a Hanzi medians of whatever card the
+ * session opened on — read from the session record and the card row in
+ * IndexedDB, then from the bundled stroke files — so the test does not
+ * depend on the seed's order.
+ */
+
+type Median = [number, number][];
+
+/** The hanzi of the card the Writing session is showing. */
+async function currentHanzi(page: Page): Promise<string> {
+  return page.evaluate(
+    () =>
+      new Promise<string>((resolve, reject) => {
+        const open = indexedDB.open('fanka');
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction(['settings', 'items', 'cards'], 'readonly');
+          const session = tx.objectStore('settings').get('session:writing');
+          session.onsuccess = () => {
+            const { queueIds, index } = session.result.value as { queueIds: string[]; index: number };
+            const item = tx.objectStore('items').get(queueIds[index]!);
+            item.onsuccess = () => {
+              const card = tx.objectStore('cards').get(item.result.cardId);
+              card.onsuccess = () => {
+                db.close();
+                resolve(card.result.hanzi as string);
+              };
+            };
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+  );
+}
+
+async function mediansFor(page: Page, character: string): Promise<Median[]> {
+  const file = `${character.codePointAt(0)!.toString(16)}.json`;
+  return page.evaluate(async (path) => (await (await fetch(path)).json()).medians, `/strokes/${file}`);
+}
+
+/** `heading` is a property (Kanto data goes in as properties), not an attribute. */
+const heading = (page: Page) => page.locator('kt-alert').evaluate((el) => (el as HTMLElement & { heading: string }).heading);
+
+/** Draws each median on the pad, model space (1024, y up from 900) to screen. */
+async function draw(page: Page, medians: Median[], reversed = false): Promise<void> {
+  const ink = page.locator('svg.pad polyline');
+  // Each character gets a fresh pad: wait for it to be empty, so no stroke
+  // lands on the previous character's pad while it is being replaced.
+  await expect(ink).toHaveCount(0);
+  const box = (await page.locator('svg.pad').boundingBox())!;
+  // A few medians start a hair outside the box (習's do, above it); a finger
+  // cannot start a stroke off the pad, so neither does this.
+  const clamp = (v: number) => Math.min(1016, Math.max(8, v));
+  const toScreen = ([x, y]: [number, number]) => ({
+    x: box.x + (clamp(x) / 1024) * box.width,
+    y: box.y + (clamp(900 - y) / 1024) * box.height,
+  });
+  for (const median of medians) {
+    const points = (reversed ? [...median].reverse() : median).map(toScreen);
+    await page.mouse.move(points[0]!.x, points[0]!.y);
+    await page.mouse.down();
+    for (const p of points.slice(1)) await page.mouse.move(p.x, p.y, { steps: 4 });
+    await page.mouse.up();
+  }
+  await expect(ink).toHaveCount(medians.length);
+}
+
+async function openWriting(page: Page): Promise<string> {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Start writing', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Start writing', exact: true }).click();
+  await expect(page).toHaveURL(/\/writing$/);
+  await expect(page.locator('svg.pad')).toBeVisible();
+  return currentHanzi(page);
+}
+
+test('drawing the right strokes in order is checked as right, and Continue moves on', async ({ page }) => {
+  const hanzi = await openWriting(page);
+  const check = page.getByRole('button', { name: 'Check', exact: true });
+
+  for (const character of hanzi) {
+    await draw(page, await mediansFor(page, character));
+    await check.click();
+  }
+
+  await expect.poll(() => heading(page)).toBe('Right');
+  await expect(page.locator('.answer .hanzi')).toHaveText(hanzi);
+  await expect(page.getByRole('button', { name: 'Count it as right' })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.locator('.progress').getByText(/^2 \/ \d+$/)).toBeVisible();
+  await expect(page.locator('svg.pad')).toBeVisible();
+});
+
+test('strokes drawn backwards are checked as wrong and name the first bad stroke', async ({ page }) => {
+  const hanzi = await openWriting(page);
+  const check = page.getByRole('button', { name: 'Check', exact: true });
+
+  for (const character of hanzi) {
+    await draw(page, await mediansFor(page, character), true);
+    await check.click();
+  }
+
+  await expect.poll(() => heading(page)).toMatch(/stroke 1 doesn't match$/);
+  await expect(page.getByRole('button', { name: 'Count it as right' })).toBeVisible();
+});
+
+test('Undo stroke and Clear empty the pad before a check', async ({ page }) => {
+  const hanzi = await openWriting(page);
+  const medians = await mediansFor(page, [...hanzi][0]!);
+  const check = page.getByRole('button', { name: 'Check', exact: true });
+  const ink = page.locator('svg.pad polyline');
+
+  await expect(check).toBeDisabled();
+  await draw(page, medians.slice(0, 2));
+  await expect(ink).toHaveCount(2);
+  await page.getByRole('button', { name: 'Undo stroke' }).click();
+  await expect(ink).toHaveCount(1);
+  await page.getByRole('button', { name: 'Clear' }).click();
+  await expect(ink).toHaveCount(0);
+  await expect(check).toBeDisabled();
+});
+
+test('Review shows the hanzi alone until the answer is revealed', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Start review', exact: true }).click();
+  await expect(page.locator('.face > .hanzi')).toBeVisible();
+  await expect(page.locator('.answer')).toHaveCount(0);
+  await expect(page.locator('.face').getByText(/[āáǎàēéěèīíǐìōóǒòūúǔù]/)).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Show answer', exact: true }).click();
+  await expect(page.locator('.answer .meaning')).toHaveText(/\S+/);
+});

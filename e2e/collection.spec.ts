@@ -252,7 +252,7 @@ test('deleting a deck drops Today’s counts and a new session never shows one o
   await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
   // Waiting for this also waits out seeding — the same reasoning
   // review.spec.ts's own first test relies on.
-  await expect(page.getByRole('button', { name: 'Start session', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Start review', exact: true })).toBeEnabled();
 
   const { controlHanzi } = await seedDueCardsForDeletion(page, { deckId, deckName, cardId, hanzi: targetHanzi });
 
@@ -276,7 +276,7 @@ test('deleting a deck drops Today’s counts and a new session never shows one o
   await page.goto('/');
   await expect(page.getByText('1 card due · about 1 min')).toBeVisible();
 
-  const startButton = page.getByRole('button', { name: 'Start session', exact: true });
+  const startButton = page.getByRole('button', { name: 'Start review', exact: true });
   await expect(startButton).toBeEnabled();
   await startButton.click();
   await expect(page).toHaveURL(/\/review$/);
@@ -319,7 +319,7 @@ async function installTodayReadFault(page: Page): Promise<void> {
   });
 }
 
-test('a failed Today load offers Retry, and focus lands on Start session once it recovers', async ({ page }) => {
+test('a failed Today load offers Retry, and focus lands on Start review once it recovers', async ({ page }) => {
   await installTodayReadFault(page);
   await page.goto('/');
 
@@ -330,7 +330,7 @@ test('a failed Today load offers Retry, and focus lands on Start session once it
   });
   await page.getByRole('button', { name: 'Retry' }).click();
 
-  const startButton = page.getByRole('button', { name: 'Start session', exact: true });
+  const startButton = page.getByRole('button', { name: 'Start review', exact: true });
   await expect(startButton).toBeEnabled();
   await expect(startButton).toBeFocused();
 });

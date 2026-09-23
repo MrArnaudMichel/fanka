@@ -230,7 +230,7 @@ const loading = computed(() => !ready.value);
         <kt-toggle :checked="toneColors" label="Colour pinyin by tone" @kt-change="(e: CustomEvent) => (toneColors = e.detail.checked)" />
         <kt-toggle
           :checked="hidePinyinUntilRevealed"
-          label="Hide pinyin until revealed"
+          label="Hide the pinyin hint in writing practice"
           @kt-change="(e: CustomEvent) => (hidePinyinUntilRevealed = e.detail.checked)"
         />
       </kt-form>

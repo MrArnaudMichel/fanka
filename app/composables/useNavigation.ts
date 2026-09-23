@@ -1,18 +1,22 @@
 import type { KtNavSection } from 'kanto-ui';
+import type { SessionMode } from '~core/db/session';
+import type { ModeCounts } from '~/composables/useDueCounts';
 
 /**
  * Kanto's sidebar sections. Each screen is added here by the task that
  * creates it — never before the page exists, so the sidebar never offers a
  * dead link.
  */
-export function useNavigation(dueTotal: Readonly<Ref<number>>) {
+export function useNavigation(counts: Readonly<Ref<Readonly<Record<SessionMode, ModeCounts>>>>) {
+  const badge = (n: number) => (n > 0 ? String(n) : undefined);
+
   const sections = computed<KtNavSection[]>(() => [
     {
       title: 'Learn',
       items: [
-        { label: 'Today', href: '/', icon: 'house', badge: dueTotal.value > 0 ? String(dueTotal.value) : undefined },
-        { label: 'Review', href: '/review', icon: 'play' },
-        { label: 'Writing', href: '/writing', icon: 'pen-line' },
+        { label: 'Today', href: '/', icon: 'house' },
+        { label: 'Review', href: '/review', icon: 'play', badge: badge(counts.value.review.total) },
+        { label: 'Writing', href: '/writing', icon: 'pen-line', badge: badge(counts.value.writing.total) },
       ],
     },
     {
