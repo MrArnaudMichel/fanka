@@ -13,7 +13,7 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
       <span class="state">{{ item.state }}</span>
     </div>
 
-    <div class="face">
+    <div class="face fk-selectable">
       <div v-if="item.dir === 'recognition'" class="hanzi">{{ card.hanzi }}</div>
       <div v-else class="prompt">
         <p class="overline">Write the character</p>

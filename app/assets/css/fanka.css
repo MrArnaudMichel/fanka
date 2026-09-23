@@ -24,3 +24,35 @@ body,
 * {
   box-sizing: border-box;
 }
+
+/*
+ * Android app shell (Capacitor WebView) only, from here down.
+ *
+ * `overscroll-behavior-y: contain` stops the WebView's rubber-band
+ * pull-to-refresh/pull-to-navigate gesture from firing when a page's own
+ * scroll runs out — it does nothing in a normal desktop browser tab.
+ */
+html {
+  overscroll-behavior-y: contain;
+}
+
+/*
+ * UI chrome (nav, buttons, labels) gets no text selection or long-press
+ * callout — it reads as an app, not a web page. Card content is the
+ * exception: it carries `.fk-selectable` so hanzi, pinyin, definitions and
+ * examples stay copyable (see ReviewCard.vue, CardDetailPanel.vue).
+ */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.fk-selectable,
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}

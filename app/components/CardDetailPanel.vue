@@ -66,7 +66,7 @@ function onClose(): void {
 <template>
   <kt-side-panel :open="open" eyebrow="Card" :heading="row?.card.hanzi ?? ''" @kt-close="onClose">
     <template v-if="row">
-      <div class="fields">
+      <div class="fields fk-selectable">
         <p class="hanzi">{{ row.card.hanzi }}</p>
         <PinyinText :syllables="row.card.pinyin" />
         <p class="translation">{{ row.card.translation }}</p>

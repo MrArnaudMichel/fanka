@@ -8,6 +8,10 @@ export default defineNuxtConfig({
   // flash entirely. Nitro still serves /server/api.
   ssr: false,
   devtools: { enabled: true },
+  // `viewport-fit=cover` lets the WebView report `env(safe-area-inset-*)`
+  // under Android's edge-to-edge layout (enforced from Android 15/targetSdk
+  // 35+), which the layout uses to keep the header clear of the status bar.
+  app: { head: { viewport: 'width=device-width, initial-scale=1, viewport-fit=cover' } },
   css: ['kanto/styles.css', '~/assets/css/fanka.css'],
   vue: {
     compilerOptions: { isCustomElement: isKantoElement },

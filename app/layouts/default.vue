@@ -96,18 +96,35 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
  * and `/decks` both overflowed at 360/500px, and their own `<h1>`s came out
  * with a zero-size box — narrow enough to not register as "visible" at all).
  */
-.shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--surface-page); color: var(--text-body); }
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--surface-page);
+  color: var(--text-body);
+  /* Landscape/notch clearance on Android's edge-to-edge WebView (a no-op
+     everywhere else — these resolve to 0 without a WebView inset). */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
 @media (min-width: 900px) {
   .shell { flex-direction: row; }
 }
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.page { flex: 1; min-width: 0; padding: 24px; max-width: 1240px; width: 100%; margin: 0 auto; }
+.page { flex: 1; min-width: 0; padding: 24px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); max-width: 1240px; width: 100%; margin: 0 auto; }
 
 /* AppSidebar takes over above kt-header's own collapse breakpoint (900px);
    the two are never shown at once. */
 .mobile-header { display: none; }
 @media (max-width: 899px) {
-  .mobile-header { display: block; }
+  .mobile-header {
+    display: block;
+    /* Keeps the sticky header's content clear of the status bar: the host
+       element itself sticks at `top: 0` (kt-header's own shadow style), so
+       this padding becomes blank space under the status bar rather than
+       shifting the sticky position. */
+    padding-top: env(safe-area-inset-top);
+  }
 }
 
 .brand { display: flex; align-items: center; gap: 8px; font: var(--font-title-h6); letter-spacing: 4px; color: var(--text-body); }
