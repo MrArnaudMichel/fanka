@@ -31,6 +31,10 @@ export function useNavigation(dueTotal: Readonly<Ref<number>>) {
         { label: 'Settings', href: '/settings', icon: 'settings' },
       ],
     },
+    // `/install` only exists under `npm run dev` (`modules/dev-install.ts`
+    // adds the route, and it dead-code-eliminates out of every other build)
+    // — so this whole section must too, or the link would 404 in prod.
+    ...(import.meta.dev ? [{ title: 'Development', items: [{ label: 'Install on a phone', href: '/install', icon: 'smartphone' }] }] : []),
   ]);
 
   return { sections };

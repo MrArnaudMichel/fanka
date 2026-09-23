@@ -54,6 +54,20 @@ Other scripts:
    needs a device already attached — it was not verified against a real
    device while building this, since none was plugged in.)
 
+## Installing over Wi-Fi from `npm run dev`
+
+`npm run dev` (now `nuxt dev --host`, so the dev server listens on every
+network interface, not just `localhost`) adds an `/install` page — reachable
+from the sidebar's "Development" section, dev only — with a QR code and a
+link to the most recently built debug APK
+(`android/app/build/outputs/apk/debug/app-debug.apk`), its size and build
+time, and the `adb install -r …` command as a USB alternative. Scan the code
+with the phone's camera while it's on the same Wi-Fi as the dev machine, then
+allow installs from that source when Android asks. The page, its QR code and
+the APK-serving routes are wired up in `modules/dev-install.ts` and
+`server/dev/`, and exist only under `npm run dev` — none of it is reachable
+from `npm run build`, `npm run build:app`, or the Android app itself.
+
 ## What's wired up for the WebView
 
 - **Status bar clearance**: `viewport-fit=cover` (`nuxt.config.ts`) plus

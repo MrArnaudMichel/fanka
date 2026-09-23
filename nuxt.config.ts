@@ -3,6 +3,9 @@ import { isKantoElement } from 'kanto/vue';
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
+  // Dev-only "install the debug APK on a phone" page and routes — see
+  // modules/dev-install.ts, a no-op outside `npm run dev`.
+  modules: ['./modules/dev-install'],
   // Kanto elements need a DOM at definition time. Under SSR they render
   // unstyled-but-present until the bundle lands; disabling SSR removes that
   // flash entirely. Nitro still serves /server/api.

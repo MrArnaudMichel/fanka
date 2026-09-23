@@ -70,4 +70,12 @@ export default defineNuxtPlugin(async () => {
     Upload,
     X,
   });
+
+  // Dev-only nav entry (`useNavigation.ts`) for `/install` — its icon has no
+  // business in a production bundle, so it is registered, and imported,
+  // only under `import.meta.dev`; both are dead-code-eliminated otherwise.
+  if (import.meta.dev) {
+    const { Smartphone } = await import('lucide');
+    registerIcons({ Smartphone });
+  }
 });
