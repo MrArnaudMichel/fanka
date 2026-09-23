@@ -607,3 +607,101 @@ export const reviews = {
     return perItem.flat().sort((a, b) => a.reviewedAt - b.reviewedAt);
   },
 };
+
+const DAY_MS = 86_400_000;
+const STATS_WINDOW_DAYS = 30;
+
+/** `now`'s local midnight, as an epoch. Kept local to this module rather than shared with `app/`'s own copy (`useDueCounts.startOfDay`) — `core` never imports from `app`. */
+function startOfDayLocal(now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/** `yyyy-mm-dd` in local time, so two calls a day apart never collide across a DST shift. */
+function dayKey(ms: number): string {
+  const d = new Date(ms);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+const GRADE_KEY: Record<Grade, keyof StatsSummary['answerMix']> = { 1: 'again', 2: 'hard', 3: 'good', 4: 'easy' };
+
+export interface StatsSummary {
+  /** One entry per day over the trailing 30 days (inclusive of today), oldest first. */
+  reviewsPerDay: { date: string; count: number }[];
+  answerMix: { again: number; hard: number; good: number; easy: number };
+  /** Unsuspended items on visible cards, counted the same way `decks.summaries` counts them — one per item, not per card. */
+  cardStates: { new: number; learning: number; young: number; mature: number };
+  /** Consecutive days, ending today or yesterday, with at least one review. A day with no reviews yet (today, before the learner's first review) does not break a streak earned on earlier days. */
+  streakDays: number;
+}
+
+/**
+ * Counts backward from today, one day at a time, stopping at the first empty
+ * day — except today itself, which is allowed to be empty without breaking a
+ * streak earned on earlier days (the day is not over yet). Bounded at ten
+ * years of daily use as a sanity guard against an unbounded loop; no
+ * plausible prototype history reaches it.
+ */
+async function currentStreak(now: number): Promise<number> {
+  let cursor = startOfDayLocal(now);
+  const today = cursor;
+  let streak = 0;
+  for (let guard = 0; guard < 3650; guard += 1) {
+    const count = await db.reviews.where('reviewedAt').between(cursor, cursor + DAY_MS, true, false).count();
+    if (count > 0) {
+      streak += 1;
+    } else if (cursor !== today) {
+      break;
+    }
+    cursor -= DAY_MS;
+  }
+  return streak;
+}
+
+export const stats = {
+  /**
+   * Aggregates the review log and the live item table into what the
+   * Statistics page shows. Pages never touch Dexie directly (see
+   * `CLAUDE.md`) — this is the one place that reads both tables for that
+   * screen, through `useStats`.
+   */
+  async summary(now: number): Promise<StatsSummary> {
+    const todayStart = startOfDayLocal(now);
+    const windowStart = todayStart - (STATS_WINDOW_DAYS - 1) * DAY_MS;
+
+    const recentReviews = await db.reviews.where('reviewedAt').aboveOrEqual(windowStart).toArray();
+
+    const buckets = new Map<string, number>();
+    for (let i = 0; i < STATS_WINDOW_DAYS; i += 1) {
+      buckets.set(dayKey(windowStart + i * DAY_MS), 0);
+    }
+    const answerMix = { again: 0, hard: 0, good: 0, easy: 0 };
+    for (const review of recentReviews) {
+      const key = dayKey(review.reviewedAt);
+      if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+      answerMix[GRADE_KEY[review.grade]] += 1;
+    }
+    const reviewsPerDay = [...buckets.entries()].map(([date, count]) => ({ date, count }));
+
+    const allDecks = await db.decks.toArray();
+    const decksById = byId(allDecks);
+    const visibleCardIds = new Set((await db.cards.toArray()).filter((c) => cardVisible(c, decksById)).map((c) => c.id));
+
+    const cardStates = { new: 0, learning: 0, young: 0, mature: 0 };
+    for (const item of await db.items.toArray()) {
+      if (item.suspended || !visibleCardIds.has(item.cardId)) continue;
+      if (item.state === 'new') cardStates.new += 1;
+      else if (item.state === 'learning' || item.state === 'relearning') cardStates.learning += 1;
+      else if (item.scheduledDays > MATURE_SCHEDULED_DAYS) cardStates.mature += 1;
+      else cardStates.young += 1;
+    }
+
+    const streakDays = await currentStreak(now);
+
+    return { reviewsPerDay, answerMix, cardStates, streakDays };
+  },
+};

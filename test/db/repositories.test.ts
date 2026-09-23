@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '~core/db/db';
-import { DECK_COLORS, cards, decks, items, reviews } from '~core/db/repositories';
+import { DECK_COLORS, cards, decks, items, reviews, stats } from '~core/db/repositories';
 import { itemId } from '~core/db/schema';
 import { newSrsState } from '~core/srs';
 
@@ -598,5 +598,88 @@ describe('reviews.historyForCard', () => {
 
     const history = await reviews.historyForCard('c1');
     expect(history.map((r) => r.id)).toEqual([r2, r1]);
+  });
+});
+
+describe('stats.summary', () => {
+  async function record(itemIdValue: string, grade: 1 | 2 | 3 | 4, reviewedAt: number, tag: string) {
+    await db.reviews.put({
+      id: `r-${tag}`,
+      itemId: itemIdValue,
+      grade,
+      reviewedAt,
+      durationMs: 1000,
+      before: { ...newSrsState(NOW), updatedAt: NOW },
+    });
+  }
+
+  it('buckets the last 30 days of reviews and tallies the answer mix', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+
+    await record(id, 1, NOW - DAY, 'yesterday-again');
+    await record(id, 3, NOW, 'today-good-1');
+    await record(id, 3, NOW + 3_600_000, 'today-good-2');
+
+    const summary = await stats.summary(NOW);
+
+    expect(summary.reviewsPerDay).toHaveLength(30);
+    expect(summary.reviewsPerDay.at(-1)).toMatchObject({ count: 2 }); // today
+    expect(summary.reviewsPerDay.at(-2)).toMatchObject({ count: 1 }); // yesterday
+    expect(summary.reviewsPerDay.slice(0, -2).every((d) => d.count === 0)).toBe(true);
+    expect(summary.answerMix).toEqual({ again: 1, hard: 0, good: 2, easy: 0 });
+  });
+
+  it('counts unsuspended items on visible cards by state, mature past 21 scheduled days', async () => {
+    await decks.put(aDeck());
+    await decks.put(aDeck({ id: 'd2', deletedAt: NOW }));
+    await cards.create(aCard({ id: 'c1' }), ['recognition'], NOW); // left as 'new'
+    await cards.create(aCard({ id: 'c2', hanzi: '你好' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c3', hanzi: '謝謝' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c4', hanzi: '再見' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c5', hanzi: '對不起', deckId: 'd2' }), ['recognition'], NOW); // deck soft-deleted
+
+    await items.put({ ...(await items.get(itemId('c2', 'recognition')))!, state: 'learning' });
+    await items.put({ ...(await items.get(itemId('c3', 'recognition')))!, state: 'review', scheduledDays: 30 });
+    await items.put({ ...(await items.get(itemId('c4', 'recognition')))!, state: 'review', scheduledDays: 5, suspended: true });
+
+    const summary = await stats.summary(NOW);
+
+    expect(summary.cardStates).toEqual({ new: 1, learning: 1, young: 0, mature: 1 });
+  });
+
+  it('tolerates an empty today without breaking a streak earned on earlier days', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+
+    await record(id, 3, NOW - DAY, 'd1');
+    await record(id, 3, NOW - 2 * DAY, 'd2');
+
+    expect((await stats.summary(NOW)).streakDays).toBe(2);
+  });
+
+  it('extends the streak once today itself has a review too', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+
+    await record(id, 3, NOW, 'd0');
+    await record(id, 3, NOW - DAY, 'd1');
+    await record(id, 3, NOW - 2 * DAY, 'd2');
+
+    expect((await stats.summary(NOW)).streakDays).toBe(3);
+  });
+
+  it('breaks the streak at the first earlier day with no reviews', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const id = itemId('c1', 'recognition');
+
+    await record(id, 3, NOW, 'today');
+    await record(id, 3, NOW - 2 * DAY, 'gap-before-yesterday'); // NOW - DAY is left empty
+
+    expect((await stats.summary(NOW)).streakDays).toBe(1);
   });
 });

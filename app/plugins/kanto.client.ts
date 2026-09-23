@@ -1,16 +1,20 @@
 import {
+  ChartLine,
   Check,
   Ellipsis,
   FileQuestion,
+  Flame,
   House,
   Layers,
   List,
   Move,
   Pause,
+  PenLine,
   Play,
   Plus,
   RefreshCw,
   Search,
+  Settings,
   SquarePen,
   Trash2,
   TriangleAlert,
@@ -38,21 +42,27 @@ export default defineNuxtPlugin(async () => {
   // suspend/unsuspend actions; Move is its bulk Move action; SquarePen is
   // the card detail panel's Edit action; Trash2 is Browse's delete actions.
   // Upload is the Import nav entry, the Import empty-state action and the
-  // import page's own primary action (Task 14). Settings returns with its
-  // page in phase 3.
+  // import page's own primary action (Task 14). ChartLine is the Statistics
+  // nav entry and its "no history yet" empty state; Flame is the streak
+  // stat's icon; PenLine is the Writing nav entry; Settings is the Settings
+  // nav entry (phase 3).
   registerIcons({
+    ChartLine,
     Check,
     Ellipsis,
     FileQuestion,
+    Flame,
     House,
     Layers,
     List,
     Move,
     Pause,
+    PenLine,
     Play,
     Plus,
     RefreshCw,
     Search,
+    Settings,
     SquarePen,
     Trash2,
     TriangleAlert,
