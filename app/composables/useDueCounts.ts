@@ -1,26 +1,38 @@
 import { db } from '~core/db/db';
 import { items } from '~core/db/repositories';
-import type { Item } from '~core/db/schema';
+import type { Direction, Item } from '~core/db/schema';
+import { MODE_DIRECTION, type SessionMode } from '~core/db/session';
 import { type Settings, loadSettings } from '~core/db/settings';
 
-const total = ref(0);
-const byState = ref({ fresh: 0, learning: 0, review: 0 });
+export interface ModeCounts {
+  total: number;
+  fresh: number;
+  learning: number;
+  review: number;
+}
 
-async function refresh(now = Date.now()): Promise<void> {
-  const { due, fresh } = await dueToday(now);
+const EMPTY: ModeCounts = { total: 0, fresh: 0, learning: 0, review: 0 };
+const counts = ref<Record<SessionMode, ModeCounts>>({ review: { ...EMPTY }, writing: { ...EMPTY } });
 
-  byState.value = {
+async function countsFor(mode: SessionMode, now: number): Promise<ModeCounts> {
+  const { due, fresh } = await dueToday(now, MODE_DIRECTION[mode]);
+  return {
+    total: due.length + fresh.length,
     fresh: fresh.length,
     learning: due.filter((i) => i.state === 'learning' || i.state === 'relearning').length,
     review: due.filter((i) => i.state === 'review').length,
   };
-  total.value = due.length + fresh.length;
+}
+
+async function refresh(now = Date.now()): Promise<void> {
+  const [review, writing] = await Promise.all([countsFor('review', now), countsFor('writing', now)]);
+  counts.value = { review, writing };
 }
 
 /**
  * Called by every collection write (`useDecks`, `useBrowse`,
  * `useCardEditor`, `useImport`) once it has landed, so the shell's
- * "Today's session · n" never goes stale after a deck delete, a suspend or
+ * Review and Writing badges never go stale after a deck delete, a suspend or
  * an import — pages never have to remember to do it themselves. Never
  * throws: the write itself already succeeded, and a failed recount must not
  * turn it into a reported failure.
@@ -33,14 +45,14 @@ export async function refreshDueCounts(): Promise<void> {
   }
 }
 
-/** Shared across the shell and the Today page so both read one number. */
+/** Shared across the shell and the Today page so both read the same numbers. */
 export function useDueCounts() {
   // Fire-and-forget: nothing awaits the initial load, so a rejection would
   // otherwise vanish as an unhandled promise rejection and leave the counts
   // pinned at zero with no sign anything went wrong.
   if (import.meta.client) refresh().catch((err: unknown) => console.error('useDueCounts: refresh failed', err));
 
-  return { total: readonly(total), byState: readonly(byState), refresh };
+  return { counts: readonly(counts), refresh };
 }
 
 export interface DueToday {
@@ -52,16 +64,18 @@ export interface DueToday {
 }
 
 /**
- * What today's work is at `now`: every due item, and as many new items as
- * the daily allowance still permits once today's introductions are counted.
- * The one place that allowance is computed — the Today page's counts and a
- * review session's queue both read it from here, so they cannot disagree.
+ * What today's work in one direction is at `now`: every due item, and as
+ * many new items as the daily allowance still permits once today's
+ * introductions in that direction are counted — `newPerDay` applies to
+ * Review and to Writing each on its own. The one place that allowance is
+ * computed — the Today page's counts and a session's queue both read it
+ * from here, so they cannot disagree.
  */
-export async function dueToday(now: number): Promise<DueToday> {
+export async function dueToday(now: number, dir: Direction): Promise<DueToday> {
   const settings = await loadSettings();
-  const due = await items.due(now);
-  const introducedToday = await introducedSince(startOfDay(now));
-  const fresh = await items.fresh(Math.max(0, settings.newPerDay - introducedToday));
+  const due = await items.due(now, dir);
+  const introducedToday = await introducedSince(startOfDay(now), dir);
+  const fresh = await items.fresh(Math.max(0, settings.newPerDay - introducedToday), dir);
   return { due, fresh, introducedToday, settings };
 }
 
@@ -71,8 +85,14 @@ export function startOfDay(now: number): number {
   return d.getTime();
 }
 
-/** New cards introduced today, counted from the log rather than tracked. */
-export async function introducedSince(since: number): Promise<number> {
+/**
+ * New items introduced since `since`, counted from the log rather than
+ * tracked — in one direction when `dir` is given, read from the item id
+ * (`itemId()` builds it as `<cardId>:<dir>`).
+ */
+export async function introducedSince(since: number, dir?: Direction): Promise<number> {
   const recent = await db.reviews.where('reviewedAt').aboveOrEqual(since).toArray();
-  return new Set(recent.filter((r) => r.before.state === 'new').map((r) => r.itemId)).size;
+  return new Set(
+    recent.filter((r) => r.before.state === 'new' && (!dir || r.itemId.endsWith(`:${dir}`))).map((r) => r.itemId),
+  ).size;
 }

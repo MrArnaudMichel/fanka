@@ -7,7 +7,7 @@ import { useDisposableSessions } from './disposableSessions';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 
-// A gate that blocks the *next* call to loadSession() until released. Kept
+// A gate that blocks the *next* call to loadSession('review') until released. Kept
 // in its own file with its own `vi.mock`, rather than folded into
 // useReviewSession.test.ts, so this mock never applies to the other 20+
 // tests there, which need the real loadSession/saveSession/clearSession.
@@ -18,7 +18,7 @@ const NOW = Date.parse('2026-09-16T08:00:00Z');
 // in this environment a dropped restore()'s subsequent start() attempt
 // consistently landed *before* the first call's real restoreCore() had
 // finished, rather than after — the narrow window the described bug
-// actually depends on. Gating loadSession() directly makes that window
+// actually depends on. Gating loadSession('review') directly makes that window
 // exact and deterministic instead of hoping for it.
 const { gateState } = vi.hoisted(() => {
   let resolveGate: (() => void) | null = null;
@@ -48,7 +48,7 @@ vi.mock('~core/db/session', async (importOriginal) => {
         gateState.armed = false;
         await gateState.gate;
       }
-      return actual.loadSession();
+      return actual.loadSession('review');
     }),
   };
 });
@@ -63,7 +63,7 @@ beforeEach(async () => {
 });
 
 // Disarms and releases the gate even when a test fails before doing so
-// itself, so a blocked or still-armed loadSession() cannot leak into the
+// itself, so a blocked or still-armed loadSession('review') cannot leak into the
 // next test.
 afterEach(() => {
   gateState.armed = false;
@@ -85,7 +85,7 @@ describe("useReviewSession — a restore()-then-start() fallback does not clobbe
     const session = createSession();
 
     // Flow A: the page's own restore-or-start pattern. Its restore()'s
-    // loadSession() read is gated — it will not resolve until released.
+    // loadSession('review') read is gated — it will not resolve until released.
     gateState.arm();
     const flowA = (async () => {
       if (!(await session.restore())) await session.start();
@@ -94,7 +94,7 @@ describe("useReviewSession — a restore()-then-start() fallback does not clobbe
     // A second restore() attempt — e.g. a duplicate mount — fired while
     // flow A's read is still blocked. Under the fixed guard this is
     // queued behind flow A, not dropped, so it does not even call
-    // loadSession() itself until flow A's restoreCore() has fully run.
+    // loadSession('review') itself until flow A's restoreCore() has fully run.
     const secondRestore = session.restore();
 
     // Flow A's blocked read completes now.
@@ -106,7 +106,7 @@ describe("useReviewSession — a restore()-then-start() fallback does not clobbe
     if (!(await secondRestore)) await session.start();
 
     expect(session.index.value).toBe(2);
-    const stored = await loadSession();
+    const stored = await loadSession('review');
     expect(stored?.index).toBe(2);
   });
 });

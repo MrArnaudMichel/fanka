@@ -35,7 +35,7 @@ export async function installReadFaults(
       (window as unknown as { __fankaFaults: typeof faults }).__fankaFaults = faults;
       const get = IDBObjectStore.prototype.get;
       IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey | IDBKeyRange) {
-        if (this.name === 'settings' && key === 'session' && faults.failSessionReads > 0) {
+        if (this.name === 'settings' && key === 'session:review' && faults.failSessionReads > 0) {
           faults.failSessionReads -= 1;
           throw new DOMException('Injected read failure', 'UnknownError');
         }

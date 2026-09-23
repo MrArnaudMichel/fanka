@@ -31,9 +31,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-/** The seed's items, oldest card first — the order `items.fresh()` uses. */
+/** The seed's recognition items — what Review counts. */
 async function seededItems(): Promise<Item[]> {
-  return db.items.orderBy('id').toArray();
+  return (await db.items.orderBy('id').toArray()).filter((i) => i.dir === 'recognition');
 }
 
 /** Writes a review-log row for `item` as if it had been graded at `at` from `before`. */
@@ -73,6 +73,17 @@ describe('startOfDay', () => {
 });
 
 describe('introducedSince', () => {
+  it('counts one direction only when asked to', async () => {
+    const all = await db.items.orderBy('id').toArray();
+    const recognition = all.find((i) => i.dir === 'recognition')!;
+    const production = all.find((i) => i.dir === 'production')!;
+    await logReview(recognition, NOW, 'new');
+    await logReview(production, NOW, 'new');
+    expect(await introducedSince(startOfDay(NOW), 'recognition')).toBe(1);
+    expect(await introducedSince(startOfDay(NOW), 'production')).toBe(1);
+    expect(await introducedSince(startOfDay(NOW))).toBe(2);
+  });
+
   it('counts only reviews whose item was new beforehand', async () => {
     const [a, b, c] = await seededItems();
     await logReview(a!, NOW, 'new');
@@ -106,10 +117,10 @@ describe('useDueCounts().refresh', () => {
     // A review of an already-introduced item today does not spend allowance.
     await logReview(all[2]!, NOW - 100, 'review');
 
-    const { total, byState, refresh } = useDueCounts();
+    const { counts, refresh } = useDueCounts();
     await refresh(NOW);
-    expect(byState.value.fresh).toBe(3);
-    expect(total.value).toBe(3);
+    expect(counts.value.review.fresh).toBe(3);
+    expect(counts.value.review.total).toBe(3);
   });
 
   it('offers no new cards once more than the allowance was introduced today', async () => {
@@ -117,9 +128,9 @@ describe('useDueCounts().refresh', () => {
     const all = await seededItems();
     for (const item of all.slice(0, 3)) await introduce(item, NOW - 1000);
 
-    const { byState, refresh } = useDueCounts();
+    const { counts, refresh } = useDueCounts();
     await refresh(NOW);
-    expect(byState.value.fresh).toBe(0);
+    expect(counts.value.review.fresh).toBe(0);
   });
 
   it('does not count yesterday’s introductions against today', async () => {
@@ -129,9 +140,9 @@ describe('useDueCounts().refresh', () => {
     await introduce(all[0]!, lastNight);
     await introduce(all[1]!, lastNight);
 
-    const { byState, refresh } = useDueCounts();
+    const { counts, refresh } = useDueCounts();
     await refresh(NOW);
-    expect(byState.value.fresh).toBe(5);
+    expect(counts.value.review.fresh).toBe(5);
   });
 
   it('counts relearning items as learning, and totals due plus fresh', async () => {
@@ -142,9 +153,22 @@ describe('useDueCounts().refresh', () => {
     await setState(all[2]!, 'review', NOW - 1000);
     await setState(all[3]!, 'review', NOW + DAY); // not due yet
 
-    const { total, byState, refresh } = useDueCounts();
+    const { counts, refresh } = useDueCounts();
     await refresh(NOW);
-    expect(byState.value).toEqual({ fresh: 0, learning: 2, review: 1 });
-    expect(total.value).toBe(3);
+    expect(counts.value.review).toEqual({ total: 3, fresh: 0, learning: 2, review: 1 });
+  });
+
+  it('keeps each direction to its own allowance and its own due items', async () => {
+    await saveSettings({ newPerDay: 3 });
+    const recognition = await seededItems();
+    await introduce(recognition[0]!, NOW - 1000);
+    await introduce(recognition[1]!, NOW - 1000);
+    await setState(recognition[2]!, 'review', NOW - 1000);
+
+    const { counts, refresh } = useDueCounts();
+    await refresh(NOW);
+    // Two of Review's three introductions are spent; Writing's are not.
+    expect(counts.value.review).toEqual({ total: 2, fresh: 1, learning: 0, review: 1 });
+    expect(counts.value.writing).toEqual({ total: 3, fresh: 3, learning: 0, review: 0 });
   });
 });

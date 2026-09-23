@@ -369,7 +369,7 @@ describe('useReviewSession — grade/undo/start/restore are serialised, not drop
     expect(secondResult).toBe(true);
     expect(session.position.value).toBe(storedPosition);
     expect(session.total.value).toBe(storedTotal);
-    expect(await loadSession()).not.toBeNull();
+    expect(await loadSession('review')).not.toBeNull();
   });
 
   it('exposes busy while something is queued or running, and clears it once idle', async () => {
@@ -458,7 +458,7 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
 
     const resumed = createSession();
     expect(await resumed.restore()).toBe(false);
-    expect(await loadSession()).toBeNull();
+    expect(await loadSession('review')).toBeNull();
   });
 
   it('returns false and clears a session that was started before today', async () => {
@@ -467,18 +467,18 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
     // check can be what refuses it.
     const queueIds = (await items.fresh(3)).map((i) => i.id);
     expect(queueIds).toHaveLength(3);
-    await saveSession({ queueIds, index: 1, startedAt: NOW - DAY, log: [] });
+    await saveSession('review', { queueIds, index: 1, startedAt: NOW - DAY, log: [] });
 
     const session = createSession();
     expect(await session.restore(NOW)).toBe(false);
-    expect(await loadSession()).toBeNull();
+    expect(await loadSession('review')).toBeNull();
   });
 
   it('resumes the same session when it was started today', async () => {
     // The control for the test above: same queue and cursor, started at
     // the very first instant of today instead.
     const queueIds = (await items.fresh(3)).map((i) => i.id);
-    await saveSession({ queueIds, index: 1, startedAt: startOfDay(NOW), log: [] });
+    await saveSession('review', { queueIds, index: 1, startedAt: startOfDay(NOW), log: [] });
 
     const session = createSession();
     expect(await session.restore(NOW)).toBe(true);
@@ -503,7 +503,7 @@ describe('useReviewSession — restore refuses a session that cannot be resumed'
 
     const resumed = createSession();
     expect(await resumed.restore()).toBe(false);
-    expect(await loadSession()).toBeNull();
+    expect(await loadSession('review')).toBeNull();
   });
 });
 
@@ -707,5 +707,36 @@ describe('useReviewSession — persist() failing right after a grade or undo com
     expect(await db.reviews.count()).toBe(0);
     expect(session.card.value).toBeNull();
     expect(session.busy.value).toBe(false);
+  });
+});
+
+describe('useReviewSession modes', () => {
+  it('queues only recognition items for Review and only production items for Writing', async () => {
+    const review = createSession('review');
+    const writing = createSession('writing');
+    await review.start();
+    await writing.start();
+    expect(review.total.value).toBeGreaterThan(0);
+    expect(review.queue.value.every((i) => i.dir === 'recognition')).toBe(true);
+    expect(writing.total.value).toBeGreaterThan(0);
+    expect(writing.queue.value.every((i) => i.dir === 'production')).toBe(true);
+  });
+
+  it('resumes each mode at its own position', async () => {
+    const review = createSession('review');
+    await review.start();
+    review.reveal();
+    await review.grade(3);
+    await review.grade(3);
+
+    const writing = createSession('writing');
+    await writing.start();
+
+    const resumedReview = createSession('review');
+    const resumedWriting = createSession('writing');
+    expect(await resumedReview.restore()).toBe(true);
+    expect(await resumedWriting.restore()).toBe(true);
+    expect(resumedReview.index.value).toBe(2);
+    expect(resumedWriting.index.value).toBe(0);
   });
 });

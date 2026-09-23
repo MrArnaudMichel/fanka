@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBrowse } from '~/composables/useBrowse';
 import { useCardEditor } from '~/composables/useCardEditor';
 import { useDecks } from '~/composables/useDecks';
+import { type ComputedRef, computed } from 'vue';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useImport } from '~/composables/useImport';
 import { db } from '~core/db/db';
@@ -12,8 +13,9 @@ import { seedIfNeeded } from '~core/seed/seed';
 /**
  * Final review I1: the shell's due count is a module singleton, so every
  * collection write has to refresh it itself — nothing on the page calls
- * `refresh()` for it. Each test only ever reads `total` after the write
- * resolves, never calls `refresh()` by hand after it.
+ * `refresh()` for it. Each test only ever reads the total after the write
+ * resolves, never calls `refresh()` by hand after it. The total here sums
+ * both modes, so one card counts twice: once to recognise, once to write.
  */
 
 beforeEach(async () => {
@@ -21,10 +23,10 @@ beforeEach(async () => {
   await db.open();
 });
 
-async function settledTotal(): Promise<ReturnType<typeof useDueCounts>['total']> {
-  const counts = useDueCounts();
-  await counts.refresh();
-  return counts.total;
+async function settledTotal(): Promise<ComputedRef<number>> {
+  const { counts, refresh } = useDueCounts();
+  await refresh();
+  return computed(() => counts.value.review.total + counts.value.writing.total);
 }
 
 describe('due counts stay fresh after collection writes', () => {

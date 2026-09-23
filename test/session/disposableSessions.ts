@@ -1,11 +1,12 @@
 import { type EffectScope, effectScope } from 'vue';
 import { afterEach, beforeEach } from 'vitest';
+import type { SessionMode } from '~core/db/session';
 import { useReviewSession } from '~/composables/useReviewSession';
 
 /**
  * Registers per-test hooks so that every session a test creates is disposed
  * when that test ends, and returns the factory tests should use instead of
- * calling `useReviewSession()` directly.
+ * calling `useReviewSession()` directly. Sessions default to Review mode.
  *
  * A session registers a real `visibilitychange` listener on `document` once
  * it starts, and only removes it when the session ends or its effect scope is
@@ -21,7 +22,7 @@ import { useReviewSession } from '~/composables/useReviewSession';
  * scope in `afterEach`, runs the composable's own `onScopeDispose` cleanup,
  * exactly as unmounting a page would.
  */
-export function useDisposableSessions(): () => ReturnType<typeof useReviewSession> {
+export function useDisposableSessions(): (mode?: SessionMode) => ReturnType<typeof useReviewSession> {
   let scope: EffectScope | null = null;
 
   beforeEach(() => {
@@ -33,8 +34,8 @@ export function useDisposableSessions(): () => ReturnType<typeof useReviewSessio
     scope = null;
   });
 
-  return () => {
+  return (mode = 'review') => {
     if (!scope) throw new Error('useDisposableSessions: a session can only be created inside a test');
-    return scope.run(() => useReviewSession())!;
+    return scope.run(() => useReviewSession(mode))!;
   };
 }

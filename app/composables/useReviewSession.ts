@@ -1,6 +1,6 @@
 import { cards, items, reviews } from '~core/db/repositories';
 import type { Card, Item } from '~core/db/schema';
-import { type LogEntry, clearSession, loadSession, saveSession } from '~core/db/session';
+import { type LogEntry, MODE_DIRECTION, type SessionMode, clearSession, loadSession, saveSession } from '~core/db/session';
 import { loadSettings } from '~core/db/settings';
 import { GRADES, type Grade, type SrsState, schedulerFor } from '~core/srs';
 import { buildQueue } from '~core/srs/queue';
@@ -21,8 +21,12 @@ import { dueToday, startOfDay } from '~/composables/useDueCounts';
  * it explicitly `restore()`s, and whose own persisted write would then
  * overwrite the first instance's more advanced progress with its own stale
  * position.
+ *
+ * `mode` picks the direction and the persisted record: Review works through
+ * recognition items, Writing through production items, and each resumes its
+ * own cursor (see `SessionMode`).
  */
-export function useReviewSession() {
+export function useReviewSession(mode: SessionMode) {
   const queue = ref<Item[]>([]);
   const index = ref(0);
   const revealed = ref(false);
@@ -261,11 +265,11 @@ export function useReviewSession() {
   }
 
   async function persist(): Promise<void> {
-    await saveSession({ queueIds: queue.value.map((i) => i.id), index: index.value, startedAt: startedAt.value, log: log.value });
+    await saveSession(mode, { queueIds: queue.value.map((i) => i.id), index: index.value, startedAt: startedAt.value, log: log.value });
   }
 
   async function startCore(now: number): Promise<void> {
-    const { due, fresh, introducedToday, settings } = await dueToday(now);
+    const { due, fresh, introducedToday, settings } = await dueToday(now, MODE_DIRECTION[mode]);
 
     queue.value = buildQueue({ due, fresh, newPerDay: settings.newPerDay, introducedToday });
     index.value = 0;
@@ -311,11 +315,11 @@ export function useReviewSession() {
    * dropped ahead of it.
    */
   async function restoreCore(now: number): Promise<boolean> {
-    const stored = await loadSession();
+    const stored = await loadSession(mode);
     if (!stored) return false;
 
     if (stored.startedAt < startOfDay(now)) {
-      await clearSession();
+      await clearSession(mode);
       return false;
     }
 
@@ -324,7 +328,7 @@ export function useReviewSession() {
     const reanchoredIndex = stored.queueIds.slice(0, stored.index).filter((id) => visibleIds.has(id)).length;
 
     if (reanchoredIndex >= visible.length) {
-      await clearSession();
+      await clearSession(mode);
       return false;
     }
 

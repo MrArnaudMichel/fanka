@@ -473,11 +473,12 @@ export const items = {
    * Due, already introduced, not suspended, and belonging to a card and deck
    * that are both still live — soonest first. A soft-deleted card or deck
    * must never surface a review, so this always re-checks both, not just
-   * `suspended`.
+   * `suspended`. `dir` narrows it to one direction — Review and Writing
+   * each work through their own.
    */
-  async due(now: number): Promise<Item[]> {
+  async due(now: number, dir?: Direction): Promise<Item[]> {
     const candidates = (await db.items.where('due').belowOrEqual(now).toArray()).filter(
-      (i) => !i.suspended && i.state !== 'new',
+      (i) => !i.suspended && i.state !== 'new' && (!dir || i.dir === dir),
     );
     const cardsById = byId(await db.cards.bulkGet(candidates.map((i) => i.cardId)));
     const decksById = await decksByIdFor(cardsById);
@@ -488,10 +489,13 @@ export const items = {
 
   /**
    * Never-seen items, oldest card first, so a deck is learned in its order.
-   * Excludes items whose card or deck is soft-deleted, same as `due()`.
+   * Excludes items whose card or deck is soft-deleted, same as `due()`, and
+   * narrows to `dir` the same way.
    */
-  async fresh(limit: number): Promise<Item[]> {
-    const candidates = (await db.items.where('state').equals('new').toArray()).filter((i) => !i.suspended);
+  async fresh(limit: number, dir?: Direction): Promise<Item[]> {
+    const candidates = (await db.items.where('state').equals('new').toArray()).filter(
+      (i) => !i.suspended && (!dir || i.dir === dir),
+    );
     const cardsById = byId(await db.cards.bulkGet(candidates.map((i) => i.cardId)));
     const decksById = await decksByIdFor(cardsById);
     return candidates
