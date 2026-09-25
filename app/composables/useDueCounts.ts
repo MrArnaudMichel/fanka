@@ -3,6 +3,7 @@ import { items } from '~core/db/repositories';
 import type { Direction, Item } from '~core/db/schema';
 import { MODE_DIRECTION, type SessionMode } from '~core/db/session';
 import { type Settings, loadSettings } from '~core/db/settings';
+import { studyDeckFilter } from '~core/db/study-decks';
 
 export interface ModeCounts {
   total: number;
@@ -69,13 +70,15 @@ export interface DueToday {
  * introductions in that direction are counted — `newPerDay` applies to
  * Review and to Writing each on its own. The one place that allowance is
  * computed — the Today page's counts and a session's queue both read it
- * from here, so they cannot disagree.
+ * from here, so they cannot disagree. Both are narrowed to the decks being
+ * studied (`studyDeckFilter`), when the learner has picked any.
  */
 export async function dueToday(now: number, dir: Direction): Promise<DueToday> {
   const settings = await loadSettings();
-  const due = await items.due(now, dir);
+  const deckIds = await studyDeckFilter();
+  const due = await items.due(now, dir, deckIds);
   const introducedToday = await introducedSince(startOfDay(now), dir);
-  const fresh = await items.fresh(Math.max(0, settings.newPerDay - introducedToday), dir);
+  const fresh = await items.fresh(Math.max(0, settings.newPerDay - introducedToday), dir, deckIds);
   return { due, fresh, introducedToday, settings };
 }
 

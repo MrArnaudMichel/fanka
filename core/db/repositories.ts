@@ -27,6 +27,11 @@ function cardVisible(card: Card | undefined, decksById: Map<string, Deck>): bool
   return deck !== undefined && deck.deletedAt === null;
 }
 
+/** Whether the card belongs to one of `deckIds`; no set means every deck. */
+function inDecks(card: Card | undefined, deckIds: ReadonlySet<string> | undefined): boolean {
+  return !deckIds || (card !== undefined && deckIds.has(card.deckId));
+}
+
 /** decksById for the distinct decks referenced by the given cards. */
 async function decksByIdFor(cardsById: Map<string, Card>): Promise<Map<string, Deck>> {
   const deckIds = [...new Set([...cardsById.values()].map((c) => c.deckId))];
@@ -474,32 +479,34 @@ export const items = {
    * that are both still live — soonest first. A soft-deleted card or deck
    * must never surface a review, so this always re-checks both, not just
    * `suspended`. `dir` narrows it to one direction — Review and Writing
-   * each work through their own.
+   * each work through their own. `deckIds`, when given, narrows it to the
+   * decks being studied.
    */
-  async due(now: number, dir?: Direction): Promise<Item[]> {
+  async due(now: number, dir?: Direction, deckIds?: ReadonlySet<string>): Promise<Item[]> {
     const candidates = (await db.items.where('due').belowOrEqual(now).toArray()).filter(
       (i) => !i.suspended && i.state !== 'new' && (!dir || i.dir === dir),
     );
     const cardsById = byId(await db.cards.bulkGet(candidates.map((i) => i.cardId)));
     const decksById = await decksByIdFor(cardsById);
     return candidates
-      .filter((i) => cardVisible(cardsById.get(i.cardId), decksById))
+      .filter((i) => cardVisible(cardsById.get(i.cardId), decksById) && inDecks(cardsById.get(i.cardId), deckIds))
       .sort((a, b) => a.due - b.due);
   },
 
   /**
    * Never-seen items, oldest card first, so a deck is learned in its order.
    * Excludes items whose card or deck is soft-deleted, same as `due()`, and
-   * narrows to `dir` the same way.
+   * narrows to `dir` and `deckIds` the same way — before `limit` applies,
+   * so the allowance is filled from the studied decks alone.
    */
-  async fresh(limit: number, dir?: Direction): Promise<Item[]> {
+  async fresh(limit: number, dir?: Direction, deckIds?: ReadonlySet<string>): Promise<Item[]> {
     const candidates = (await db.items.where('state').equals('new').toArray()).filter(
       (i) => !i.suspended && (!dir || i.dir === dir),
     );
     const cardsById = byId(await db.cards.bulkGet(candidates.map((i) => i.cardId)));
     const decksById = await decksByIdFor(cardsById);
     return candidates
-      .filter((i) => cardVisible(cardsById.get(i.cardId), decksById))
+      .filter((i) => cardVisible(cardsById.get(i.cardId), decksById) && inDecks(cardsById.get(i.cardId), deckIds))
       .sort((a, b) => (cardsById.get(a.cardId)?.createdAt ?? 0) - (cardsById.get(b.cardId)?.createdAt ?? 0))
       .slice(0, limit);
   },

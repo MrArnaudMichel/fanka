@@ -12,13 +12,19 @@ import type { Deck } from '~core/db/schema';
  * quietly drift apart the way a second copy would let them.
  *
  * `summary` is required in full mode — the counts and the meter both read it
- * — and ignored in compact mode, which only ever needed `deck`.
+ * — and ignored in compact mode, which only ever needed `deck`. So is
+ * `studying`, the full card's "study this deck" checkbox.
  */
-const props = withDefaults(defineProps<{ deck: Deck; mode?: 'compact' | 'full'; summary?: DeckSummary }>(), {
-  mode: 'compact',
-});
+const props = withDefaults(
+  defineProps<{ deck: Deck; mode?: 'compact' | 'full'; summary?: DeckSummary; studying?: boolean }>(),
+  { mode: 'compact', studying: false },
+);
 
-const emit = defineEmits<{ edit: [deck: Deck]; delete: [deck: Deck] }>();
+const emit = defineEmits<{ edit: [deck: Deck]; delete: [deck: Deck]; study: [deck: Deck, studying: boolean] }>();
+
+function onStudy(event: CustomEvent<{ checked: boolean }>): void {
+  emit('study', props.deck, event.detail.checked);
+}
 
 const dropdownOptions: KtOption[] = [
   { id: 'browse', label: 'Browse cards' },
@@ -59,6 +65,14 @@ const meterSegments = computed<KtMeterSegment[]>(() => {
 <template>
   <kt-card>
     <div class="row" :class="{ full: mode === 'full' }" :slot="mode === 'full' ? 'header' : undefined">
+      <kt-checkbox
+        v-if="mode === 'full'"
+        class="study"
+        size="small"
+        :checked="studying"
+        :label="`Study ${deck.name}`"
+        @kt-change="onStudy"
+      />
       <span class="swatch" :style="{ background: deck.colorToken }" />
       <span class="name">{{ deck.name }}</span>
       <kt-badge v-if="deck.tag" variant="category" tone="neutral" size="small" :label="deck.tag" />
@@ -93,6 +107,7 @@ const meterSegments = computed<KtMeterSegment[]>(() => {
 .swatch { width: 4px; height: 26px; border-radius: var(--radius-full); flex: none; }
 .row.full .swatch { height: 20px; }
 .name { flex: 1; min-width: 0; font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.study { flex: none; }
 .menu { flex: none; margin-left: auto; }
 .counts { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 </style>

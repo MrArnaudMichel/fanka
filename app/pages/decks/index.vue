@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue';
 import DeckCard from '~/components/DeckCard.vue';
 import DeckFormModal from '~/components/DeckFormModal.vue';
 import { useDecks } from '~/composables/useDecks';
+import { useStudyDecks } from '~/composables/useStudyDecks';
 import type { DeckSummary } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';
 
@@ -30,6 +31,39 @@ async function loadDecks(): Promise<void> {
 }
 
 onMounted(loadDecks);
+
+const study = useStudyDecks();
+
+onMounted(() => {
+  study.load().catch((err: unknown) => console.error('decks: failed to load the study selection', err));
+});
+
+/** Only decks still on the page count; a deleted deck left in the selection is ignored. */
+const studyingCount = computed(() => rows.value.filter((r) => study.ids.value.includes(r.deck.id)).length);
+
+const studyLine = computed(() =>
+  studyingCount.value === 0
+    ? 'Studying all decks'
+    : `Studying ${studyingCount.value} of ${rows.value.length} deck${rows.value.length === 1 ? '' : 's'}`,
+);
+
+async function onStudy(deck: Deck, studying: boolean): Promise<void> {
+  try {
+    await study.toggle(deck.id, studying);
+  } catch (err) {
+    console.error('decks: failed to save the study selection', err);
+    toaster.error("Couldn't save your selection", { description: 'Try again.' });
+  }
+}
+
+async function clearStudy(): Promise<void> {
+  try {
+    await study.clear();
+  } catch (err) {
+    console.error('decks: failed to clear the study selection', err);
+    toaster.error("Couldn't clear your selection", { description: 'Try again.' });
+  }
+}
 
 const formOpen = ref(false);
 const editingDeck = ref<Deck | null>(null);
@@ -107,17 +141,26 @@ async function confirmDelete(): Promise<void> {
       <kt-button slot="actions" variant="primary" size="medium" icon="plus" @click="openCreate">New deck</kt-button>
     </kt-empty-state>
 
-    <div v-else class="grid">
-      <DeckCard
-        v-for="row in rows"
-        :key="row.deck.id"
-        :deck="row.deck"
-        mode="full"
-        :summary="row"
-        @edit="openEdit"
-        @delete="openDelete"
-      />
-    </div>
+    <template v-else>
+      <div class="study-line">
+        <p>{{ studyLine }}</p>
+        <kt-button v-if="studyingCount > 0" variant="secondary-no-bg" size="small" @click="clearStudy">Clear</kt-button>
+      </div>
+
+      <div class="grid">
+        <DeckCard
+          v-for="row in rows"
+          :key="row.deck.id"
+          :deck="row.deck"
+          mode="full"
+          :summary="row"
+          :studying="study.ids.value.includes(row.deck.id)"
+          @edit="openEdit"
+          @delete="openDelete"
+          @study="onStudy"
+        />
+      </div>
+    </template>
 
     <DeckFormModal :open="formOpen" :deck="editingDeck" @close="onFormClose" @saved="onFormSaved" />
 
@@ -135,5 +178,7 @@ async function confirmDelete(): Promise<void> {
 
 <style scoped>
 .decks { display: flex; flex-direction: column; gap: 24px; }
+.study-line { display: flex; align-items: center; gap: var(--gap-button); }
+.study-line p { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap-button); }
 </style>
