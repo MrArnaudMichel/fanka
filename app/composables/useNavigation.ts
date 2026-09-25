@@ -17,6 +17,7 @@ export function useNavigation(counts: Readonly<Ref<Readonly<Record<SessionMode, 
         { label: 'Today', href: '/', icon: 'house' },
         { label: 'Review', href: '/review', icon: 'play', badge: badge(counts.value.review.total) },
         { label: 'Writing', href: '/writing', icon: 'pen-line', badge: badge(counts.value.writing.total) },
+        { label: 'Practice', href: '/practice', icon: 'infinity' },
       ],
     },
     {

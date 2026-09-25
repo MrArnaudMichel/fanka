@@ -512,6 +512,20 @@ export const items = {
   },
 
   /**
+   * Every item endless practice can draw from in one direction: due or not,
+   * new or not, as long as it is not suspended and its card and deck are live
+   * — narrowed to `deckIds` when given, like `due()` and `fresh()`.
+   */
+  async pool(dir: Direction, deckIds?: ReadonlySet<string>): Promise<Item[]> {
+    const candidates = (await db.items.toArray()).filter((i) => !i.suspended && i.dir === dir);
+    const cardsById = byId(await db.cards.bulkGet(candidates.map((i) => i.cardId)));
+    const decksById = await decksByIdFor(cardsById);
+    return candidates.filter(
+      (i) => cardVisible(cardsById.get(i.cardId), decksById) && inDecks(cardsById.get(i.cardId), deckIds),
+    );
+  },
+
+  /**
    * The given ids, in the same order, filtered down to items that are still
    * visible: the row exists, is not suspended, and its card and deck are
    * both still live — the same rules `due()`/`fresh()` already apply, built

@@ -5,6 +5,8 @@ import {
   FileQuestion,
   Flame,
   House,
+  // Aliased: `Infinity` would shadow the global number.
+  Infinity as InfinityIcon,
   Layers,
   List,
   Move,
@@ -44,8 +46,8 @@ export default defineNuxtPlugin(async () => {
   // Upload is the Import nav entry, the Import empty-state action and the
   // import page's own primary action (Task 14). ChartLine is the Statistics
   // nav entry and its "no history yet" empty state; Flame is the streak
-  // stat's icon; PenLine is the Writing nav entry; Settings is the Settings
-  // nav entry (phase 3).
+  // stat's icon; PenLine is the Writing nav entry; Infinity is the Practice
+  // nav entry; Settings is the Settings nav entry (phase 3).
   registerIcons({
     ChartLine,
     Check,
@@ -53,6 +55,7 @@ export default defineNuxtPlugin(async () => {
     FileQuestion,
     Flame,
     House,
+    Infinity: InfinityIcon,
     Layers,
     List,
     Move,

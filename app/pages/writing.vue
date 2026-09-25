@@ -4,6 +4,7 @@ import type { Point } from '~core/chinese/strokes';
 import type { Grade } from '~core/srs/types';
 import type HanziPad from '~/components/HanziPad.vue';
 import { useDueCounts } from '~/composables/useDueCounts';
+import { usePracticeSession } from '~/composables/usePracticeSession';
 import { useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
 import { useStrokeData } from '~/composables/useStrokeData';
@@ -22,7 +23,16 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
  *   then Right / Wrong as before;
  * - otherwise the pad, one character at a time.
  */
-const session = useReviewSession('writing');
+/**
+ * `?endless=1` (from the Practice page) runs the same screen on an endless,
+ * unscheduled session instead: nothing is graded into the schedule, there is
+ * no progress to show and nothing to undo. Keyed on the full path so moving
+ * between the two modes remounts the page rather than keeping the old session.
+ */
+definePageMeta({ key: (route) => route.fullPath });
+const endless = useRoute().query.endless === '1';
+const practice = endless ? usePracticeSession('writing') : null;
+const session = practice ?? useReviewSession('writing');
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
 const { load: loadStrokes } = useStrokeData();
@@ -128,7 +138,7 @@ async function grade(value: Grade) {
     toaster.error("Couldn't save that answer", { description: 'Try again.' });
     return;
   }
-  await refresh();
+  if (!endless) await refresh();
 }
 
 async function undo() {
@@ -181,14 +191,19 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 
 <template>
   <div class="writing">
-    <kt-page-header heading="Writing" />
+    <kt-page-header :eyebrow="endless ? 'Endless practice' : undefined" heading="Writing" />
 
     <!--
       Undo and Leave sit with the count rather than in the page header's
       actions: at phone width kt-page-header wraps its actions onto a row
       of their own, which cost a card's worth of height for two icons.
     -->
-    <div class="progress">
+    <div v-if="practice" class="progress-row">
+      <span class="mono">{{ practice.seen.value }} seen · {{ practice.right.value }} right</span>
+      <kt-button variant="secondary-no-bg" size="small" icon="x" label="Leave practice" @click="navigateTo('/practice')" />
+    </div>
+
+    <div v-else class="progress">
       <div class="progress-row">
         <span class="mono">{{ session.position.value }} / {{ session.total.value }}</span>
         <span class="session-actions">
@@ -222,6 +237,13 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
     >
       <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retry">Retry</kt-button>
     </kt-empty-state>
+
+    <kt-empty-state
+      v-else-if="practice && session.total.value === 0"
+      icon="layers"
+      heading="Nothing to practise"
+      description="The decks you study have no cards yet. Add cards, or pick other decks to study."
+    />
 
     <kt-empty-state
       v-else-if="session.total.value === 0"
