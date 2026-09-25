@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatInterval } from '~core/srs/format';
 import type { Grade } from '~core/srs/types';
-import type { KtButtonVariant } from 'kanto-ui';
+import type { KtButtonVariant } from 'kanto-ds';
 
 /**
  * `intervals`, not `previews`: the composable anchors each grade's interval

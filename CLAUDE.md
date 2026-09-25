@@ -18,8 +18,8 @@ Design spec: `docs/superpowers/specs/2026-09-16-fanka-design.md`
   imports. They are tested first.
 - Pages never touch Dexie or a scheduler directly — always through a composable.
 - Traditional characters only in content. Never simplified.
-- **Kanto first.** Before building any interface element, check Kanto's 42
-  components (`node_modules/kanto-ui/dist/components`). A native interactive or structural
+- **Kanto first.** Before building any interface element, check Kanto's 44
+  components (`node_modules/kanto-ds/dist/components`). A native interactive or structural
   element in `app/` needs an entry with its reason in
   `test/integrity/native-elements.allowlist.ts`; the integrity test fails
   otherwise. A hand-built copy of a Kanto component receives none of the

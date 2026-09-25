@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toaster } from 'kanto-ui';
+import { toaster } from 'kanto-ds';
 import type { Point } from '~core/chinese/strokes';
 import type { Grade } from '~core/srs/types';
 import type HanziPad from '~/components/HanziPad.vue';

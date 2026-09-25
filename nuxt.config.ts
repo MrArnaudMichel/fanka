@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { isKantoElement } from 'kanto-ui/vue';
+import { isKantoElement } from 'kanto-ds/vue';
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
@@ -27,7 +27,7 @@ export default defineNuxtConfig({
       supabaseAnonKey: '',
     },
   },
-  css: ['kanto-ui/styles.css', '~/assets/css/fanka.css'],
+  css: ['kanto-ds/styles.css', '~/assets/css/fanka.css'],
   vue: {
     compilerOptions: { isCustomElement: isKantoElement },
   },

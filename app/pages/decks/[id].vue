@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { KtBreadcrumbItem, KtTab } from 'kanto-ui';
-import { toaster } from 'kanto-ui';
+import type { KtBreadcrumbItem, KtTab } from 'kanto-ds';
+import { toaster } from 'kanto-ds';
 import CardTable from '~/components/CardTable.vue';
 import DeckFields from '~/components/DeckFields.vue';
 import { useDecks } from '~/composables/useDecks';

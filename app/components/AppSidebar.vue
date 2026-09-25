@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KtNavItem, KtNavSection } from 'kanto-ui';
+import type { KtNavItem, KtNavSection } from 'kanto-ds';
 
 /** `dueTotal` is Review's: this button starts Review, not Writing. */
 defineProps<{ sections: KtNavSection[]; dueTotal: number }>();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isKantoElement } from 'kanto-ui/vue';
+import { isKantoElement } from 'kanto-ds/vue';
 
 describe('Kanto wiring', () => {
   it('recognises kt- tags as custom elements', () => {
@@ -13,7 +13,7 @@ describe('Kanto wiring', () => {
   });
 
   it('defines the elements when the vue entry is imported', async () => {
-    await import('kanto-ui/vue');
+    await import('kanto-ds/vue');
     expect(customElements.get('kt-button')).toBeTypeOf('function');
     expect(customElements.get('kt-card')).toBeTypeOf('function');
   });

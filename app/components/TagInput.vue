@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KtInputMenu, KtOption } from 'kanto-ui';
+import type { KtInputMenu, KtOption } from 'kanto-ds';
 import type { ComponentPublicInstance } from 'vue';
 
 /**

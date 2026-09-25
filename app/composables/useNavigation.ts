@@ -1,4 +1,4 @@
-import type { KtNavSection } from 'kanto-ui';
+import type { KtNavSection } from 'kanto-ds';
 import type { SessionMode } from '~core/db/session';
 import type { ModeCounts } from '~/composables/useDueCounts';
 
