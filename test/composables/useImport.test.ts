@@ -83,6 +83,24 @@ describe('useImport', () => {
     expect(await cards.forDeck('d1')).toHaveLength(1);
   });
 
+  it('commits every column of the documented CSV format, tags included', async () => {
+    await makeDeck();
+    const importer = useImport();
+    importer.targetDeckId.value = 'd1';
+    importer.load(
+      [
+        'hanzi,pinyin,zhuyin,translation,example,example pinyin,example translation,tags',
+        '電腦,diàn nǎo,ㄉㄧㄢˋ ㄋㄠˇ,computer,"這台電腦很快,也很便宜。","Zhè tái diànnǎo hěn kuài, yě hěn piányí.","This computer is fast, and cheap too.",tech;hsk1',
+      ].join('\n'),
+    );
+    importer.setMapping(importer.mapping.value!);
+    await importer.verify();
+
+    expect(await importer.commit()).toEqual({ created: 1, skipped: 0 });
+    const [card] = await cards.forDeck('d1');
+    expect(card).toMatchObject({ hanzi: '電腦', zhuyin: 'ㄉㄧㄢˋ ㄋㄠˇ', tags: ['tech', 'hsk1'] });
+  });
+
   it('rejects a source with fewer than one data row', () => {
     const importer = useImport();
     expect(() => importer.load('hanzi,pinyin,translation')).toThrow();

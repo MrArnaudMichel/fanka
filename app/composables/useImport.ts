@@ -108,7 +108,9 @@ async function commitBatch(deckId: string, batch: Validated[], now: number): Pro
         example: draft.example ?? '',
         examplePinyin: draft.examplePinyin ? normalisePinyinText(draft.examplePinyin) : '',
         exampleTranslation: draft.exampleTranslation ?? '',
-        tags: draft.tags ?? [],
+        // `draft` comes out of the reactive `results`, so `tags` is a Vue
+        // proxy; IndexedDB cannot structured-clone one (DataCloneError).
+        tags: [...(draft.tags ?? [])],
         note: '',
         createdAt: now,
         updatedAt: now,
