@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { toaster } from 'kanto-ds';
-import type { Point } from '~core/chinese/strokes';
+import type { CharacterStrokes, Point } from '~core/chinese/strokes';
 import type { Grade } from '~core/srs/types';
 import type HanziPad from '~/components/HanziPad.vue';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { usePracticeSession } from '~/composables/usePracticeSession';
-import { useReviewSession } from '~/composables/useReviewSession';
+import { SELF_GRADED, useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
 import { useStrokeData } from '~/composables/useStrokeData';
+import type { StrokeOrderEntry } from '~/composables/useStrokeOrderPlayer';
 import { useWritingAttempt } from '~/composables/useWritingAttempt';
 
 /**
@@ -16,8 +17,9 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
  * strokes against the Make Me a Hanzi data, and the verdict sets the grade.
  *
  * Three ways a card can be answered, in the order the template tries them:
- * - drawn and checked (`attempt.status === 'checked'`): the verdict, then
- *   Continue;
+ * - drawn and checked (`attempt.status === 'checked'`): two verdicts (the
+ *   character, which sets the grade, and the stroke order, which is only
+ *   logged), the stroke-order player, then Continue;
  * - revealed without a check — a character has no stroke data, or an undo
  *   brought back a card graded earlier, whose drawing is gone: the answer,
  *   then Right / Wrong as before;
@@ -113,15 +115,23 @@ function check(): void {
 const checked = computed(() => session.revealed.value && attempt.status.value === 'checked');
 const selfGraded = computed(() => session.revealed.value && attempt.status.value !== 'checked');
 
-const verdictHeading = computed(() => {
-  if (attempt.correct.value) return 'Right';
-  const wrong = attempt.firstWrong.value;
-  if (!wrong) return 'Wrong';
-  const prefix = attempt.characters.value.length > 1 ? `${wrong.character}: ` : '';
-  const { drawn: count, expected, strokeIndex } = wrong.check;
-  if (count !== expected) return `${prefix}wrong stroke count, ${count} of ${expected}`;
-  return `${prefix}stroke ${(strokeIndex ?? 0) + 1} doesn't match`;
-});
+/**
+ * A self-graded card (after an undo, or with nothing checked) still shows
+ * how its characters are written, when every one has stroke data.
+ */
+const answerStrokes = ref<StrokeOrderEntry[] | null>(null);
+watch(
+  () => [selfGraded.value, session.card.value?.hanzi] as const,
+  async ([on, hanzi]) => {
+    answerStrokes.value = null;
+    if (!on || !hanzi) return;
+    const characters = [...hanzi];
+    const models = await Promise.all(characters.map((c) => loadStrokes(c)));
+    if (!selfGraded.value || session.card.value?.hanzi !== hanzi) return;
+    if (models.some((m) => !m)) return;
+    answerStrokes.value = characters.map((character, i) => ({ character, model: models[i] as CharacterStrokes, highlight: null }));
+  },
+);
 
 onMounted(async () => {
   window.addEventListener('keydown', onKey);
@@ -131,8 +141,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 
 async function grade(value: Grade) {
   hasGraded.value = true;
+  const detail = checked.value ? { checked: true, writing: [...attempt.results.value] } : SELF_GRADED;
   try {
-    await session.grade(value);
+    await session.grade(value, detail);
   } catch (err) {
     console.error('writing: failed to save the grade', err);
     toaster.error("Couldn't save that answer", { description: 'Try again.' });
@@ -265,12 +276,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
       v-else-if="session.card.value && session.current.value && session.card.value.id === session.current.value.cardId"
     >
       <WritingCard :card="session.card.value" :revealed="session.revealed.value" :settings="settings">
-        <div v-if="checked" class="verdict">
-          <kt-alert :variant="attempt.correct.value ? 'success' : 'danger'" :heading="verdictHeading" />
-          <div class="overlays" :style="{ gridTemplateColumns: `repeat(${attempt.attempts.value.length}, minmax(0, 160px))` }">
-            <StrokeOverlay v-for="(a, i) in attempt.attempts.value" :key="i" :attempt="a" />
-          </div>
-        </div>
+        <WritingVerdict v-if="checked" :attempts="attempt.attempts.value" />
 
         <template v-else-if="!session.revealed.value">
           <div v-if="attempt.status.value === 'drawing'" class="pad-area">
@@ -287,6 +293,10 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
             No stroke data for {{ attempt.missing.value.join(' ') }} — grade yourself.
           </p>
           <kt-skeleton v-else class="pad-skeleton" height="100%" />
+        </template>
+
+        <template #answer-extra>
+          <StrokeOrderPanel v-if="answerStrokes" :entries="answerStrokes" />
         </template>
       </WritingCard>
 
@@ -339,8 +349,6 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 .pad-area, .pad-skeleton { max-width: min(100%, 420px, max(200px, calc(100dvh - 440px))); }
 .pad-skeleton { width: 100%; aspect-ratio: 1; }
 .note { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
-.verdict { display: flex; flex-direction: column; gap: var(--gap-form); width: 100%; }
-.overlays { display: grid; justify-content: center; gap: var(--gap-button); }
 .pad-controls { display: grid; grid-template-columns: auto auto 1fr; gap: var(--gap-button); }
 .hints {
   display: flex;

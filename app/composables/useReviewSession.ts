@@ -6,6 +6,11 @@ import { GRADES, type Grade, type SrsState, schedulerFor } from '~core/srs';
 import { buildQueue } from '~core/srs/queue';
 import { dueToday, startOfDay } from '~/composables/useDueCounts';
 
+// Pages may not import `~core/db` directly (the integrity test enforces
+// it); `writing.vue` needs `SELF_GRADED` for a self-graded card's grade, so
+// it is re-exported here instead.
+export { SELF_GRADED } from '~core/db/schema';
+
 /**
  * A session is a queue plus a cursor, both persisted after every grade.
  * Persisting rather than holding it in memory is what lets a phone be locked

@@ -30,6 +30,11 @@ defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
       <div v-if="revealed" class="answer fk-selectable" role="status" aria-live="polite" aria-atomic="true">
         <div class="hanzi">{{ card.hanzi }}</div>
         <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
+        <!--
+          `answer-extra` sits under the revealed answer — the stroke-order
+          player for a self-graded card.
+        -->
+        <slot name="answer-extra" />
       </div>
     </div>
   </kt-card>
