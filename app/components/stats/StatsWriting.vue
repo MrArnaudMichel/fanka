@@ -4,7 +4,7 @@ import { html } from 'lit';
 import type { CharacterStrokes } from '~core/chinese/strokes';
 import { type FilteredSnapshot, type MissedCharacter, type StatsWindow, rate, trimChart, writingSummary } from '~core/stats';
 import { useStrokeData } from '~/composables/useStrokeData';
-import { formatPercent, shortDate } from '~/utils/format';
+import { formatPercent, plural, shortDate } from '~/utils/format';
 
 const props = defineProps<{ data: FilteredSnapshot; window: StatsWindow; now: number }>();
 const s = computed(() => writingSummary(props.data.attempts, props.window, props.now));
@@ -62,8 +62,8 @@ async function openCharacter(event: CustomEvent<{ row: MissedCharacter }>): Prom
   <div v-else class="tab">
     <div class="tiles">
       <kt-stat label="Characters right" :value="formatPercent(rate(s.character))" :caption="`${s.character.total} drawn`" />
-      <kt-stat label="In stroke order" :value="formatPercent(rate(s.order))" :caption="`of ${s.order.total} right`" />
-      <kt-stat label="Checked by the app" :value="formatPercent(rate(s.checked))" :caption="`${s.checked.total} answers`" />
+      <kt-stat label="In stroke order" :value="formatPercent(rate(s.order))" :caption="s.order.total === 0 ? 'No right shapes yet' : `of ${s.order.total} right`" />
+      <kt-stat label="Checked by the app" :value="formatPercent(rate(s.checked))" :caption="plural(s.checked.total, 'answer')" />
     </div>
 
     <kt-card v-if="accuracyChart.labels.length >= 2">

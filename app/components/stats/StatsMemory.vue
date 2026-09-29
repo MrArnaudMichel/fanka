@@ -2,7 +2,7 @@
 import type { KtTableColumn, KtTableRow } from 'kanto-ds';
 import { html } from 'lit';
 import { type FilteredSnapshot, type HardItem, type StatsWindow, memorySummary, rate, trimChart } from '~core/stats';
-import { formatPercent, shortDate } from '~/utils/format';
+import { formatPercent, plural, shortDate } from '~/utils/format';
 
 const props = defineProps<{ data: FilteredSnapshot; window: StatsWindow; now: number }>();
 const s = computed(() => memorySummary(props.data, props.window, props.now));
@@ -66,8 +66,8 @@ function openCard(event: CustomEvent<{ row: HardItem }>): void {
 
   <div v-else class="tab">
     <div class="tiles">
-      <kt-stat label="Retention, young" :value="formatPercent(rate(s.retention.young))" :caption="`${s.retention.young.total} answers`" />
-      <kt-stat label="Retention, mature" :value="formatPercent(rate(s.retention.mature))" :caption="`${s.retention.mature.total} answers`" />
+      <kt-stat label="Retention, young" :value="formatPercent(rate(s.retention.young))" :caption="plural(s.retention.young.total, 'answer')" />
+      <kt-stat label="Retention, mature" :value="formatPercent(rate(s.retention.mature))" :caption="plural(s.retention.mature.total, 'answer')" />
       <kt-stat label="New" :value="String(s.cardStates.new)" />
       <kt-stat label="Learning" :value="String(s.cardStates.learning)" />
       <kt-stat label="Young" :value="String(s.cardStates.young)" />

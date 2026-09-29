@@ -15,10 +15,10 @@ const tabs = [
   { value: 'journal', label: 'Journal' },
 ];
 const windows = [
-  { value: '7d', label: '7 d' },
-  { value: '30d', label: '30 d' },
-  { value: '90d', label: '90 d' },
-  { value: '1y', label: '1 y' },
+  { value: '7d', label: '7 d' },
+  { value: '30d', label: '30 d' },
+  { value: '90d', label: '90 d' },
+  { value: '1y', label: '1 y' },
   { value: 'all', label: 'All' },
 ];
 const modes = [

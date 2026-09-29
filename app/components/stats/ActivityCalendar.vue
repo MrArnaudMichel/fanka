@@ -34,7 +34,7 @@ const width = computed(() => (Math.floor((props.days.length + (props.days[0]?.we
 
 <style scoped>
 .calendar { display: block; width: 100%; height: auto; }
-.level-0 { fill: var(--surface-field); }
+.level-0 { fill: var(--surface-hover); }
 .level-1 { fill: var(--color-primary-soft); }
 .level-2 { fill: color-mix(in srgb, var(--color-primary-base) 45%, var(--surface-field)); }
 .level-3 { fill: color-mix(in srgb, var(--color-primary-base) 75%, var(--surface-field)); }

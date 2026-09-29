@@ -7,7 +7,7 @@ const props = defineProps<{ data: FilteredSnapshot; window: StatsWindow; now: nu
 
 const s = computed(() => activitySummary(props.data.attempts, props.window, props.now));
 const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
-const minutes = (ms: number) => Math.round(ms / 60_000);
+const minutes = (ms: number) => Math.round(ms / 6_000) / 10;
 const hours = Array.from({ length: 24 }, (_, h) => String(h));
 </script>
 

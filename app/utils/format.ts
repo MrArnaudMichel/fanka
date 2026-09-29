@@ -14,6 +14,11 @@ export function formatPercent(value: number | null): string {
   return value === null ? '—' : `${Math.round(value * 100)}%`;
 }
 
+/** "1 answer", "3 answers" — a count with its noun, pluralised. */
+export function plural(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+}
+
 /** `9/23` from `2026-09-23` — short enough for 30 tick labels at phone width. */
 export function shortDate(key: string): string {
   return `${Number(key.slice(5, 7))}/${Number(key.slice(8, 10))}`;

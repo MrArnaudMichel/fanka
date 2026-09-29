@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, formatPercent, shortDate } from '~/utils/format';
+import { formatDuration, formatPercent, plural, shortDate } from '~/utils/format';
 
 describe('format', () => {
   it('formats durations', () => {
@@ -10,5 +10,8 @@ describe('format', () => {
   });
   it('shortens a day key', () => {
     expect(shortDate('2026-09-03')).toBe('9/3');
+  });
+  it('pluralises a count with its noun', () => {
+    expect([plural(0, 'answer'), plural(1, 'answer'), plural(2, 'answer')]).toEqual(['0 answers', '1 answer', '2 answers']);
   });
 });
