@@ -167,8 +167,9 @@ which records them on the attempt.
   - It plays once on mount.
   - Previous or next pauses it and steps one stroke.
   - The learner's faulty stroke is highlighted when reached.
-- Timing uses `--duration-*` tokens only. Under `prefers-reduced-motion`
-  nothing animates: strokes appear whole, step by step.
+- Timing uses `--duration-*` tokens only. Kanto sets them to `0s` under
+  `prefers-reduced-motion`, so nothing animates there: Replay shows the whole
+  character, and previous / next still step one stroke at a time.
 - Drawn in SVG, like `StrokeOverlay`. The integrity test does not watch
   SVG, so no allowlist entry is needed.
 
@@ -191,8 +192,9 @@ and the writing results when checked. Review-mode practice logs too, with
   filter, and calls them.
 - `useStats` exposes one loader per tab.
 - `/stats` becomes `kt-tabs` with four tabs, sharing a window control
-  (`kt-segmented-control`: 7 d, 30 d, 90 d, 1 y, All) and a deck filter
-  (`kt-select`, multiple).
+  (`kt-segmented-control`: 7 d, 30 d, 90 d, 1 y, All), a deck filter
+  (`kt-select`, one deck or all — Kanto's select has no multiple mode) and a
+  mode filter (`kt-segmented-control`: All, Review, Writing).
 
 Each tab shows a `kt-skeleton` while loading, its own `kt-empty-state` when
 there is nothing to show, and an error state with Retry, as today.
@@ -204,8 +206,9 @@ there is nothing to show, and an error state with Retry, as today.
 - A year calendar, one square per day, shaded by answer count. Kanto has no
   heatmap, so this is a hand-built SVG (`ActivityCalendar.vue`); its
   doc comment says why. Colours come from ramp tokens through semantic
-  aliases. No native interactive element: day details show through
-  `kt-tooltip`.
+  aliases. No native interactive element: each day's count is an SVG
+  `title`, which a tooltip per day (371 Kanto elements) would only
+  duplicate at a much higher cost.
 - Time studied per day: stacked bars, scheduled and practice.
 - Answers by hour of day: bars.
 - Answers by mode, review and writing: doughnut.
@@ -235,19 +238,24 @@ there is nothing to show, and an error state with Retry, as today.
 
 ### Journal
 
-- `kt-table` with `kt-pagination`, newest first. Columns: when, hanzi,
+- `kt-table`, paged by its own `page-size`, newest first. Columns: when, hanzi,
   deck, mode, source, grade, duration, writing verdicts.
 - Filters: mode, source, result (right / wrong), deck, and the shared
   window.
 - A row opens the card.
 
-The card page (`cards/[id]`) shows that card's answers from the attempts
-table.
+The card's detail panel in Browse (`CardDetailPanel`) builds its history
+from the attempts table, so practice answers and writing verdicts show there
+too. A row in Hardest cards or the Journal opens the card's page
+(`/cards/<id>`).
 
-**Performance.** One indexed scan of `attempts` by `at` per tab load, joined
-in memory with cards and items. At one learner's scale — tens of thousands
-of rows — no cache is needed. The journal pages in memory over the filtered
-scan.
+**Performance.** The page reads one snapshot of attempts, reviews, items,
+cards and decks when it opens; every filter change recomputes in memory from
+it. Streaks and the year calendar need the whole history anyway. At one
+learner's scale — tens of thousands of rows — no cache is needed.
+
+**Time.** A single answer counts for at most 60 seconds in time totals, so a
+card left on screen during a break does not inflate study time.
 
 ## Testing
 
