@@ -3,9 +3,10 @@
  * (`public/strokes/<character>.json`, built by `scripts/build-stroke-data.mjs`).
  *
  * The data describes each stroke by its median: the line through its middle,
- * in the order and direction it is written. A drawing is correct when it has
- * the same number of strokes and stroke *i* follows median *i* — so stroke
- * order and direction are enforced by construction, not by a separate rule.
+ * in the order and direction it is written. A drawing's *shape* is right
+ * when it has the same number of strokes and every drawn stroke follows a
+ * distinct median, in either direction. Its *order* is right when stroke
+ * *i* follows median *i*, forwards.
  *
  * The per-stroke test follows the approach of Hanzi Writer's quiz (MIT), and
  * starts from its thresholds; the tests in `test/chinese/strokes.test.ts`
@@ -24,13 +25,24 @@ export interface CharacterStrokes {
   medians: [number, number][][];
 }
 
+export type WritingError = 'stroke-count' | 'stroke-shape' | 'stroke-order' | 'stroke-direction';
+
 export interface StrokeCheck {
-  correct: boolean;
+  /** Right number of strokes, each following a distinct median, whatever the order. */
+  shapeCorrect: boolean;
+  /** Stroke i follows median i, forwards. False whenever the shape is wrong. */
+  orderCorrect: boolean;
+  /** The first fault: shape faults before order faults, order before direction. */
+  error: WritingError | null;
+  /** The model stroke at fault, or `null` (none, or an extra stroke). */
+  strokeIndex: number | null;
   /** Stroke count of the model. */
   expected: number;
   drawn: number;
-  /** Index of the first stroke that fails, or `null` when all match. */
-  firstMismatch: number | null;
+  /** match[i]: the model stroke drawn stroke i follows, or `null`. */
+  match: (number | null)[];
+  /** reversed[i]: drawn stroke i follows its median backwards. */
+  reversed: boolean[];
 }
 
 /** Side of the model box. */
@@ -49,21 +61,74 @@ export const LENGTH_MIN_RATIO = 0.35;
 
 const RESAMPLE_POINTS = 32;
 
+interface Fit {
+  cost: number;
+  reversed: boolean;
+}
+
+/** How well a stroke follows a median, trying both directions; `null` when neither passes. */
+function fit(stroke: Point[], median: Point[]): Fit | null {
+  const forward = strokeCost(stroke, median);
+  const backward = strokeCost([...stroke].reverse(), median);
+  if (forward === null && backward === null) return null;
+  if (backward === null || (forward !== null && forward <= backward)) return { cost: forward!, reversed: false };
+  return { cost: backward, reversed: true };
+}
+
 export function checkCharacter(drawn: Point[][], model: CharacterStrokes): StrokeCheck {
   const expected = model.medians.length;
   const medians = model.medians.map((median) => median.map(([x, y]) => ({ x, y })));
+  const match: (number | null)[] = drawn.map(() => null);
+  const reversed: boolean[] = drawn.map(() => false);
 
-  let firstMismatch: number | null = null;
-  for (let i = 0; i < Math.max(drawn.length, expected); i += 1) {
-    const stroke = drawn[i];
-    const median = medians[i];
-    if (!stroke || !median || !strokeMatches(stroke, median)) {
-      firstMismatch = i;
-      break;
+  // Fast path: stroke i follows median i. Keeps a correct drawing's verdict
+  // independent of how the greedy pass below would break near-ties.
+  const identity = drawn.length === expected ? drawn.map((stroke, i) => fit(stroke, medians[i]!)) : [];
+  if (drawn.length === expected && identity.every((f) => f !== null)) {
+    identity.forEach((f, i) => {
+      match[i] = i;
+      reversed[i] = f!.reversed;
+    });
+  } else {
+    // Greedy assignment, cheapest pair first; on equal cost, the pair
+    // closer to its expected position wins. At most ~30 strokes, so the
+    // n² pairs are cheap and an optimal assignment is not worth it.
+    const pairs: { i: number; j: number; cost: number; reversed: boolean }[] = [];
+    drawn.forEach((stroke, i) =>
+      medians.forEach((median, j) => {
+        const f = fit(stroke, median);
+        if (f) pairs.push({ i, j, cost: f.cost, reversed: f.reversed });
+      }),
+    );
+    pairs.sort((a, b) => a.cost - b.cost || Math.abs(a.i - a.j) - Math.abs(b.i - b.j));
+    const used = new Set<number>();
+    for (const p of pairs) {
+      if (match[p.i] !== null || used.has(p.j)) continue;
+      match[p.i] = p.j;
+      reversed[p.i] = p.reversed;
+      used.add(p.j);
     }
   }
 
-  return { correct: firstMismatch === null, expected, drawn: drawn.length, firstMismatch };
+  const used = new Set(match.filter((j): j is number => j !== null));
+  const firstUnmatchedMedian = medians.findIndex((_, j) => !used.has(j));
+  const base = { expected, drawn: drawn.length, match, reversed };
+
+  if (drawn.length !== expected) {
+    return { ...base, shapeCorrect: false, orderCorrect: false, error: 'stroke-count', strokeIndex: firstUnmatchedMedian === -1 ? null : firstUnmatchedMedian };
+  }
+  if (match.some((j) => j === null)) {
+    return { ...base, shapeCorrect: false, orderCorrect: false, error: 'stroke-shape', strokeIndex: firstUnmatchedMedian };
+  }
+  const outOfTurn = match.findIndex((j, i) => j !== i);
+  if (outOfTurn !== -1) {
+    return { ...base, shapeCorrect: true, orderCorrect: false, error: 'stroke-order', strokeIndex: outOfTurn };
+  }
+  const backwards = reversed.findIndex(Boolean);
+  if (backwards !== -1) {
+    return { ...base, shapeCorrect: true, orderCorrect: false, error: 'stroke-direction', strokeIndex: backwards };
+  }
+  return { ...base, shapeCorrect: true, orderCorrect: true, error: null, strokeIndex: null };
 }
 
 /**
@@ -80,22 +145,17 @@ export function toPadSpace(points: Point[]): Point[] {
   return points.map((p) => ({ x: p.x, y: MODEL_BASELINE - p.y }));
 }
 
-function strokeMatches(stroke: Point[], median: Point[]): boolean {
-  if (stroke.length === 0 || median.length === 0) return false;
-
-  const strokeLength = length(stroke);
-  const medianLength = length(median);
-  if (strokeLength < medianLength * LENGTH_MIN_RATIO) return false;
-
-  if (distance(stroke[0]!, median[0]!) > START_END_MAX) return false;
-  if (distance(stroke.at(-1)!, median.at(-1)!) > START_END_MAX) return false;
-
-  if (cosine(direction(stroke), direction(median)) < DIRECTION_MIN) return false;
-
+/** The mean distance between stroke and median, or `null` when a test fails. */
+function strokeCost(stroke: Point[], median: Point[]): number | null {
+  if (stroke.length === 0 || median.length === 0) return null;
+  if (length(stroke) < length(median) * LENGTH_MIN_RATIO) return null;
+  if (distance(stroke[0]!, median[0]!) > START_END_MAX) return null;
+  if (distance(stroke.at(-1)!, median.at(-1)!) > START_END_MAX) return null;
+  if (cosine(direction(stroke), direction(median)) < DIRECTION_MIN) return null;
   const a = resample(stroke, RESAMPLE_POINTS);
   const b = resample(median, RESAMPLE_POINTS);
   const mean = a.reduce((sum, p, i) => sum + distance(p, b[i]!), 0) / RESAMPLE_POINTS;
-  return mean <= AVG_DIST_MAX;
+  return mean <= AVG_DIST_MAX ? mean : null;
 }
 
 function distance(a: Point, b: Point): number {
@@ -144,4 +204,21 @@ function resample(points: Point[], count: number): Point[] {
   }
   out.push({ ...points.at(-1)! });
   return out;
+}
+
+export interface StrokeFrame {
+  /** The median in the y-down 1024 box, in writing order. */
+  median: Point[];
+  /** Its length, for a dash animation that draws it. */
+  length: number;
+  /** Where the stroke starts — where its number goes. */
+  start: Point;
+}
+
+/** What the stroke-order player draws, per stroke. */
+export function strokeOrderFrames(model: CharacterStrokes): StrokeFrame[] {
+  return model.medians.map((m) => {
+    const median = toPadSpace(m.map(([x, y]) => ({ x, y })));
+    return { median, length: length(median), start: median[0]! };
+  });
 }

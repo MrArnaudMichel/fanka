@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type CharacterStrokes, type Point, checkCharacter, toModelSpace } from '~core/chinese/strokes';
+import { type CharacterStrokes, type Point, checkCharacter, strokeOrderFrames, toModelSpace } from '~core/chinese/strokes';
 import 一 from '../fixtures/strokes/一.json';
 import 十 from '../fixtures/strokes/十.json';
 import 口 from '../fixtures/strokes/口.json';
@@ -40,58 +40,115 @@ function jitter(strokes: Point[][], amount: number): Point[][] {
 describe('checkCharacter', () => {
   it.each(Object.keys(MODELS))('accepts %s traced along its own medians', (character) => {
     const model = MODELS[character]!;
+    const n = model.medians.length;
     expect(checkCharacter(traced(model), model)).toEqual({
-      correct: true,
-      expected: model.medians.length,
-      drawn: model.medians.length,
-      firstMismatch: null,
+      shapeCorrect: true,
+      orderCorrect: true,
+      error: null,
+      strokeIndex: null,
+      expected: n,
+      drawn: n,
+      match: Array.from({ length: n }, (_, i) => i),
+      reversed: Array.from({ length: n }, () => false),
     });
   });
 
   it.each(Object.keys(MODELS))('accepts %s drawn with a shaky hand', (character) => {
     const model = MODELS[character]!;
-    expect(checkCharacter(jitter(traced(model), 40), model).correct).toBe(true);
+    expect(checkCharacter(jitter(traced(model), 40), model)).toMatchObject({ shapeCorrect: true, orderCorrect: true });
   });
 
-  it('rejects a stroke drawn backwards and points at it', () => {
+  it('accepts the shape of a stroke drawn backwards, and faults its direction', () => {
     const strokes = traced(MODELS.永!);
     strokes[2] = [...strokes[2]!].reverse();
-    expect(checkCharacter(strokes, MODELS.永!)).toMatchObject({ correct: false, firstMismatch: 2 });
+    expect(checkCharacter(strokes, MODELS.永!)).toMatchObject({
+      shapeCorrect: true,
+      orderCorrect: false,
+      error: 'stroke-direction',
+      strokeIndex: 2,
+    });
   });
 
-  it('rejects two strokes drawn in the wrong order', () => {
+  it('accepts the shape of two strokes swapped, and faults their order', () => {
     const strokes = traced(MODELS.十!);
-    expect(checkCharacter([strokes[1]!, strokes[0]!], MODELS.十!)).toMatchObject({ correct: false, firstMismatch: 0 });
+    expect(checkCharacter([strokes[1]!, strokes[0]!], MODELS.十!)).toMatchObject({
+      shapeCorrect: true,
+      orderCorrect: false,
+      error: 'stroke-order',
+      strokeIndex: 0,
+      match: [1, 0],
+    });
   });
 
-  it('rejects a missing stroke and reports the counts', () => {
+  it('faults order before direction when both are wrong', () => {
+    const strokes = traced(MODELS.十!);
+    expect(checkCharacter([[...strokes[1]!].reverse(), strokes[0]!], MODELS.十!)).toMatchObject({
+      shapeCorrect: true,
+      error: 'stroke-order',
+    });
+  });
+
+  it('finds the order fault further into a character', () => {
+    // 永's last two strokes fall left and right: distinct enough that
+    // swapping them can never pass as the model order.
+    const strokes = traced(MODELS.永!);
+    [strokes[3], strokes[4]] = [strokes[4]!, strokes[3]!];
+    expect(checkCharacter(strokes, MODELS.永!)).toMatchObject({ shapeCorrect: true, error: 'stroke-order', strokeIndex: 3 });
+  });
+
+  it('rejects a missing stroke, points at it and reports the counts', () => {
     const strokes = traced(MODELS.口!).slice(0, -1);
-    expect(checkCharacter(strokes, MODELS.口!)).toMatchObject({ correct: false, expected: 3, drawn: 2 });
+    expect(checkCharacter(strokes, MODELS.口!)).toMatchObject({
+      shapeCorrect: false,
+      orderCorrect: false,
+      error: 'stroke-count',
+      strokeIndex: 2,
+      expected: 3,
+      drawn: 2,
+    });
   });
 
   it('rejects an extra stroke', () => {
     const strokes = traced(MODELS.一!);
-    expect(checkCharacter([...strokes, strokes[0]!], MODELS.一!)).toMatchObject({ correct: false, expected: 1, drawn: 2 });
+    expect(checkCharacter([...strokes, strokes[0]!], MODELS.一!)).toMatchObject({
+      shapeCorrect: false,
+      error: 'stroke-count',
+      strokeIndex: null,
+      expected: 1,
+      drawn: 2,
+    });
   });
 
-  it('rejects a stroke drawn in the wrong place', () => {
+  it('rejects a stroke drawn in the wrong place and points at it', () => {
     const strokes = traced(MODELS.學!);
     strokes[5] = strokes[5]!.map((p) => ({ x: p.x + 300, y: p.y - 300 }));
-    expect(checkCharacter(strokes, MODELS.學!)).toMatchObject({ correct: false, firstMismatch: 5 });
+    expect(checkCharacter(strokes, MODELS.學!)).toMatchObject({ shapeCorrect: false, error: 'stroke-shape', strokeIndex: 5 });
   });
 
   it('rejects a dot where a line is expected', () => {
     const [median] = MODELS.一!.medians;
     const [x, y] = median![0]!;
-    expect(checkCharacter([[{ x, y }, { x: x + 10, y }]], MODELS.一!).correct).toBe(false);
+    expect(checkCharacter([[{ x, y }, { x: x + 10, y }]], MODELS.一!)).toMatchObject({ shapeCorrect: false, error: 'stroke-shape' });
   });
 
   it('rejects an empty drawing', () => {
-    expect(checkCharacter([], MODELS.一!)).toEqual({ correct: false, expected: 1, drawn: 0, firstMismatch: 0 });
+    expect(checkCharacter([], MODELS.一!)).toMatchObject({ shapeCorrect: false, error: 'stroke-count', strokeIndex: 0, drawn: 0 });
   });
 
   it('rejects 口 drawn as 十', () => {
-    expect(checkCharacter(traced(MODELS.十!), MODELS.口!).correct).toBe(false);
+    expect(checkCharacter(traced(MODELS.十!), MODELS.口!).shapeCorrect).toBe(false);
+  });
+});
+
+describe('strokeOrderFrames', () => {
+  it('gives each stroke its median in the y-down box, its length and its start', () => {
+    const model = MODELS.十!;
+    const frames = strokeOrderFrames(model);
+    expect(frames).toHaveLength(2);
+    const [x, y] = model.medians[0]![0]!;
+    expect(frames[0]!.start).toEqual({ x, y: 900 - y });
+    expect(frames[0]!.median).toHaveLength(model.medians[0]!.length);
+    expect(frames[0]!.length).toBeGreaterThan(100);
   });
 });
 

@@ -37,6 +37,14 @@ describe('useWritingAttempt', () => {
     expect(attempt.firstWrong.value?.character).toBe('十');
   });
 
+  it('counts a character with its strokes out of order as right', async () => {
+    const attempt = useWritingAttempt(load);
+    await attempt.start('十');
+    const [a, b] = drawn(DATA.十!);
+    attempt.submit([b!, a!]);
+    expect(attempt.correct.value).toBe(true);
+  });
+
   it('falls back when a character has no stroke data', async () => {
     const attempt = useWritingAttempt(load);
     await attempt.start('一口');

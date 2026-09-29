@@ -35,8 +35,8 @@ export function useWritingAttempt(load: Loader) {
   // has already moved on to the next one.
   let generation = 0;
 
-  const correct = computed(() => status.value === 'checked' && attempts.value.every((a) => a.check.correct));
-  const firstWrong = computed(() => attempts.value.find((a) => !a.check.correct) ?? null);
+  const correct = computed(() => status.value === 'checked' && attempts.value.every((a) => a.check.shapeCorrect));
+  const firstWrong = computed(() => attempts.value.find((a) => !a.check.shapeCorrect) ?? null);
 
   async function start(hanzi: string): Promise<void> {
     generation += 1;

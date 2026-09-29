@@ -118,9 +118,9 @@ const verdictHeading = computed(() => {
   const wrong = attempt.firstWrong.value;
   if (!wrong) return 'Wrong';
   const prefix = attempt.characters.value.length > 1 ? `${wrong.character}: ` : '';
-  const { drawn: count, expected, firstMismatch } = wrong.check;
+  const { drawn: count, expected, strokeIndex } = wrong.check;
   if (count !== expected) return `${prefix}wrong stroke count, ${count} of ${expected}`;
-  return `${prefix}stroke ${(firstMismatch ?? 0) + 1} doesn't match`;
+  return `${prefix}stroke ${(strokeIndex ?? 0) + 1} doesn't match`;
 });
 
 onMounted(async () => {
