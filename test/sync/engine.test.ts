@@ -286,5 +286,37 @@ describe('runSync', () => {
     expect(result.pulled.attempts).toBe(0);
     expect(await db.attempts.get('r1')).toEqual(local);
   });
+
+  it('derives a self-graded attempt for a pulled review that arrives with none', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['recognition'], NOW);
+    const transport = new FakeTransport();
+    transport.seed({ reviews: [aReview({ id: 'remote-review', itemId: 'c1:recognition', grade: 3, reviewedAt: NOW, durationMs: 2000 })] });
+
+    const result = await runSync(transport);
+
+    expect(result.pulled.attempts).toBe(1);
+    const derived = await db.attempts.get('remote-review');
+    expect(derived).toMatchObject({ id: 'remote-review', itemId: 'c1:recognition', cardId: 'c1', deckId: 'd1', mode: 'review', source: 'scheduled', grade: 3, correct: true, checked: false, writing: null });
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it('keeps the remote attempt, with its writing verdicts, over a derived one under the same review id', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard(), ['production'], NOW);
+    const writing: Attempt['writing'] = [{ character: '學', shapeCorrect: true, orderCorrect: false, error: 'stroke-order', strokeIndex: 2, expected: 7, drawn: 7 }];
+    const remoteAttempt: Attempt = { id: 'remote-review', itemId: 'c1:production', cardId: 'c1', deckId: 'd1', mode: 'writing', source: 'scheduled', grade: 3, correct: true, at: NOW, durationMs: 3000, checked: true, writing };
+    const transport = new FakeTransport();
+    transport.seed({
+      reviews: [aReview({ id: 'remote-review', itemId: 'c1:production', grade: 3, reviewedAt: NOW })],
+      attempts: [remoteAttempt],
+    });
+
+    const result = await runSync(transport);
+
+    expect(result.pulled.attempts).toBe(1);
+    expect(await db.attempts.get('remote-review')).toEqual(remoteAttempt);
+    expect(await db.outbox.count()).toBe(0);
+  });
 });
 

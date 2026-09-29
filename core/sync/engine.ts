@@ -1,5 +1,6 @@
 import type { Table } from 'dexie';
 
+import { attemptFromReview } from '~core/db/attempts';
 import { db } from '~core/db/db';
 import type { Attempt, Card, Deck, Item, OutboxEntry, Review } from '~core/db/schema';
 import type { EntityCounts, LocalChanges, RemoteChanges, SyncResult, SyncTransport } from './types';
@@ -32,6 +33,18 @@ async function mergeRow<T extends { id: string; updatedAt: number }>(table: Tabl
  * seen is inserted; one it already has is left untouched (record() never
  * updates a review row, so there is nothing to reconcile). Attempts follow
  * the same rule as reviews.
+ *
+ * A review can arrive with no attempt of its own — from a device still on
+ * the build that predates attempts, whose v3 backfill runs later and lands
+ * below this device's cursor by the time it does. Rather than lose that
+ * answer from Activity/Writing/Journal/Browse while Memory still counts it
+ * from `reviews`, this device derives the attempt itself with
+ * `attemptFromReview`, under the review's id, once per review that has none
+ * yet. Remote attempts are applied *first* so a real attempt (carrying
+ * writing verdicts) always wins over a derived, self-graded one landing
+ * under the same id in the same pull. A derived attempt gets no outbox
+ * entry: the device that owns the review pushes the canonical attempt row
+ * under the same id, and that push is a same-id upsert on the server.
  */
 async function applyRemote(remote: RemoteChanges): Promise<EntityCounts> {
   const counts: EntityCounts = { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 };
@@ -39,17 +52,26 @@ async function applyRemote(remote: RemoteChanges): Promise<EntityCounts> {
     for (const row of remote.decks) if (await mergeRow(db.decks, row)) counts.decks += 1;
     for (const row of remote.cards) if (await mergeRow(db.cards, row)) counts.cards += 1;
     for (const row of remote.items) if (await mergeRow(db.items, row)) counts.items += 1;
+    for (const row of remote.attempts) {
+      if (!(await db.attempts.get(row.id))) {
+        await db.attempts.put(row);
+        counts.attempts += 1;
+      }
+    }
     for (const row of remote.reviews) {
       const existing = await db.reviews.get(row.id);
       if (!existing) {
         await db.reviews.put(row);
         counts.reviews += 1;
       }
-    }
-    for (const row of remote.attempts) {
       if (!(await db.attempts.get(row.id))) {
-        await db.attempts.put(row);
-        counts.attempts += 1;
+        const item = await db.items.get(row.itemId);
+        const card = item ? await db.cards.get(item.cardId) : undefined;
+        const derived = attemptFromReview(row, item, card);
+        if (derived) {
+          await db.attempts.put(derived);
+          counts.attempts += 1;
+        }
       }
     }
     await db.syncState.put({ key: LAST_PULLED_AT_KEY, value: remote.at });

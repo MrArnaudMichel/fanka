@@ -244,6 +244,31 @@ function attemptToRow(a: Attempt, userId: string): AttemptRow {
   };
 }
 
+const PAGE_SIZE = 1000;
+
+/**
+ * Pages a query in blocks of `PAGE_SIZE`, looping until a short page ends
+ * it. PostgREST caps an unpaged `select` at 1000 rows, and with no
+ * `.order()` it is free to pick any 1000 — the v3 attempts backfill makes
+ * more than 1000 rows in one table plausible for a learner with a large
+ * history, so every table is paged the same way. `build` gets a fresh
+ * query for each page: `PostgrestFilterBuilder#order`/`#range` mutate the
+ * builder's URL in place (see `postgrest-js`), so reusing one builder
+ * across pages would pile up duplicate `order` clauses instead of paging.
+ */
+async function pageAll<Row>(build: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: { message: string } | null }>): Promise<Row[]> {
+  const rows: Row[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await build(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+    from += PAGE_SIZE;
+  }
+}
+
 /**
  * The `at` a pull returns is the max `updated_at`/`reviewed_at` among the
  * rows it actually fetched, not a true server clock reading (that would
@@ -265,24 +290,19 @@ function maxAt(since: number, values: number[]): number {
 export function createSupabaseTransport(client: SupabaseClient, userId: string): SyncTransport {
   return {
     async pull(since: number): Promise<RemoteChanges> {
-      const [decksRes, cardsRes, itemsRes, reviewsRes, attemptsRes] = await Promise.all([
-        client.from('decks').select('*').eq('user_id', userId).gt('updated_at', since),
-        client.from('cards').select('*').eq('user_id', userId).gt('updated_at', since),
-        client.from('items').select('*').eq('user_id', userId).gt('updated_at', since),
-        client.from('reviews').select('*').eq('user_id', userId).gt('reviewed_at', since),
-        client.from('attempts').select('*').eq('user_id', userId).gt('at', since),
+      const [deckRows, cardRows, itemRows, reviewRows, attemptRows] = await Promise.all([
+        pageAll<DeckRow>((from, to) => client.from('decks').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id').range(from, to)),
+        pageAll<CardRow>((from, to) => client.from('cards').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id').range(from, to)),
+        pageAll<ItemRow>((from, to) => client.from('items').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id').range(from, to)),
+        pageAll<ReviewRow>((from, to) => client.from('reviews').select('*').eq('user_id', userId).gt('reviewed_at', since).order('reviewed_at').order('id').range(from, to)),
+        pageAll<AttemptRow>((from, to) => client.from('attempts').select('*').eq('user_id', userId).gt('at', since).order('at').order('id').range(from, to)),
       ]);
-      if (decksRes.error) throw decksRes.error;
-      if (cardsRes.error) throw cardsRes.error;
-      if (itemsRes.error) throw itemsRes.error;
-      if (reviewsRes.error) throw reviewsRes.error;
-      if (attemptsRes.error) throw attemptsRes.error;
 
-      const decks = ((decksRes.data ?? []) as DeckRow[]).map(deckFromRow);
-      const cards = ((cardsRes.data ?? []) as CardRow[]).map(cardFromRow);
-      const items = ((itemsRes.data ?? []) as ItemRow[]).map(itemFromRow);
-      const reviews = ((reviewsRes.data ?? []) as ReviewRow[]).map(reviewFromRow);
-      const attempts = ((attemptsRes.data ?? []) as AttemptRow[]).map(attemptFromRow);
+      const decks = deckRows.map(deckFromRow);
+      const cards = cardRows.map(cardFromRow);
+      const items = itemRows.map(itemFromRow);
+      const reviews = reviewRows.map(reviewFromRow);
+      const attempts = attemptRows.map(attemptFromRow);
 
       const at = maxAt(since, [
         ...decks.map((d) => d.updatedAt),
