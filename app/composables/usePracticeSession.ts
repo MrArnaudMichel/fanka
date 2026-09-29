@@ -5,6 +5,11 @@ import { studyDeckFilter } from '~core/db/study-decks';
 import type { Grade, SrsState } from '~core/srs';
 import { pickNext, weightAfter } from '~core/srs/practice';
 
+/** How many cards endless practice in this mode would draw from right now. */
+export async function practicePoolSize(mode: SessionMode): Promise<number> {
+  return (await items.pool(MODE_DIRECTION[mode], await studyDeckFilter())).length;
+}
+
 /**
  * Endless practice in one direction, outside the schedule: cards are drawn
  * from the studied decks (`studyDeckFilter`) for as long as the learner keeps

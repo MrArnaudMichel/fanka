@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { usePracticeSession } from '~/composables/usePracticeSession';
+import { practicePoolSize, usePracticeSession } from '~/composables/usePracticeSession';
 import { db } from '~core/db/db';
 import { cards, decks, items } from '~core/db/repositories';
 import { SELF_GRADED } from '~core/db/schema';
@@ -44,6 +44,14 @@ describe('items.pool', () => {
 
   it('narrows to the given decks', async () => {
     expect((await items.pool('recognition', new Set(['d2']))).map((i) => i.cardId)).toEqual(['c']);
+  });
+});
+
+describe('practicePoolSize', () => {
+  it('counts every studied-deck item in the mode direction', async () => {
+    expect(await practicePoolSize('review')).toBe(3);
+    await saveStudyDeckIds(['d2']);
+    expect(await practicePoolSize('writing')).toBe(1);
   });
 });
 

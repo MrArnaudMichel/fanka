@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { practicePoolSize } from '~/composables/usePracticeSession';
+
 /**
  * Endless practice, outside the schedule: each mode opens its usual screen
  * with `?endless=1`, which swaps in `usePracticeSession`. Cards come from the
@@ -17,9 +19,23 @@ const MODES = [
     heading: 'Writing',
     description: 'See the meaning, draw the characters.',
     icon: 'pen-line',
-    variant: 'secondary',
+    variant: 'primary',
   },
 ] as const;
+
+/** Cards each mode's endless session would draw from; unknown until read. */
+const poolSizes = ref<Partial<Record<'review' | 'writing', number>>>({});
+
+onMounted(async () => {
+  try {
+    const [review, writing] = await Promise.all([practicePoolSize('review'), practicePoolSize('writing')]);
+    poolSizes.value = { review, writing };
+  } catch (err) {
+    console.error('practice: failed to count the card pool', err);
+  }
+});
+
+const poolText = (n: number) => `${n} card${n === 1 ? '' : 's'} in your studied decks`;
 </script>
 
 <template>
@@ -34,6 +50,7 @@ const MODES = [
       <p class="overline" slot="header">{{ heading }}</p>
       <div class="summary">
         <p class="description">{{ description }}</p>
+        <p v-if="poolSizes[mode] !== undefined" class="description pool">{{ poolText(poolSizes[mode]!) }}</p>
         <kt-button :variant="variant" size="large" :icon="icon" full-width @click="navigateTo(`/${mode}?endless=1`)">
           Practise {{ heading.toLowerCase() }}
         </kt-button>
@@ -47,5 +64,5 @@ const MODES = [
 .practice { display: flex; flex-direction: column; gap: 24px; }
 .overline { margin: 0; font: var(--font-title-overline); letter-spacing: var(--letter-spacing-overline); text-transform: uppercase; color: var(--text-muted); }
 .summary { display: flex; flex-direction: column; gap: var(--gap-form); }
-.description { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
+.description { margin: 0; font: var(--font-normal-regular); color: var(--text-muted); }
 </style>

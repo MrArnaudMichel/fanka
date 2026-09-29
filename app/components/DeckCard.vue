@@ -48,16 +48,17 @@ function onSelect(event: CustomEvent<{ value: string | number | null }>): void {
 }
 
 /**
- * No `color` on any segment: `kt-meter` assigns `--chart-series-N` by
- * position on its own, which is what keeps this from becoming a second place
- * a colour gets hard-coded.
+ * Mature and Young take no `color`: `kt-meter` assigns `--chart-series-N` by
+ * position, which keeps colour for the cards that are being learned. New is a
+ * neutral token, so a brand-new deck reads as untouched rather than as all
+ * mastered.
  */
 const meterSegments = computed<KtMeterSegment[]>(() => {
   if (!props.summary) return [];
   return [
     { label: 'Mature', value: props.summary.mature },
     { label: 'Young', value: props.summary.young },
-    { label: 'New', value: props.summary.fresh },
+    { label: 'New', value: props.summary.fresh, color: 'var(--border-field)' },
   ];
 });
 </script>
