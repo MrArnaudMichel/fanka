@@ -2,8 +2,9 @@
 import type { KtTimelineVariant } from 'kanto-ds';
 import PinyinText from '~/components/PinyinText.vue';
 import { type BrowseRow, STATE_META } from '~/composables/useBrowse';
-import type { Review } from '~core/db/schema';
+import type { Attempt } from '~core/db/schema';
 import type { Grade } from '~core/srs';
+import { attemptVerdict } from '~core/stats';
 
 /**
  * One card's details, in a side panel: fields, a review timeline, and the
@@ -13,7 +14,7 @@ import type { Grade } from '~core/srs';
  * (ruling 5); only a delete closes it, and that is `CardTable`'s call, not
  * this component's.
  */
-const props = defineProps<{ open: boolean; row: BrowseRow | null; historyRows: Review[]; historyLoading: boolean; historyError: boolean }>();
+const props = defineProps<{ open: boolean; row: BrowseRow | null; historyRows: Attempt[]; historyLoading: boolean; historyError: boolean }>();
 const emit = defineEmits<{ close: []; suspend: [cardId: string]; unsuspend: [cardId: string]; delete: [cardId: string] }>();
 
 const stateMeta = computed(() => (props.row ? STATE_META[props.row.state] : null));
@@ -32,8 +33,13 @@ const GRADE_META: Record<Grade, { label: string; variant: KtTimelineVariant }> =
   4: { label: 'Easy', variant: 'info' },
 };
 
-/** Newest first — kt-timeline.md's own example reads top-to-bottom as most-recent-first; `historyForCard` itself returns oldest first (Step 1's contract), so it is reversed only for display. */
+/** Newest first — kt-timeline.md's own example reads top-to-bottom as most-recent-first; `attempts.forCard` itself returns oldest first, so it is reversed only for display. */
 const timeline = computed(() => [...props.historyRows].reverse());
+
+/** "Writing · practice · Character right · order wrong" — mode, source, and the verdict when drawn. */
+function describe(a: Attempt): string {
+  return [a.mode === 'writing' ? 'Writing' : 'Review', a.source === 'practice' ? 'practice' : '', attemptVerdict(a)].filter(Boolean).join(' · ');
+}
 
 const MINUTE = 60_000;
 const HOUR = 3_600_000;
@@ -78,18 +84,20 @@ function onClose(): void {
       </div>
 
       <div class="history">
-        <p class="section-label">Review history</p>
+        <p class="section-label">History</p>
         <kt-skeleton v-if="historyLoading" height="120px" />
-        <p v-else-if="historyError" class="empty">Couldn't load the review history.</p>
-        <p v-else-if="timeline.length === 0" class="empty">No reviews yet.</p>
+        <p v-else-if="historyError" class="empty">Couldn't load the history.</p>
+        <p v-else-if="timeline.length === 0" class="empty">No answers yet.</p>
         <kt-timeline v-else compact>
           <kt-timeline-item
-            v-for="review in timeline"
-            :key="review.id"
-            :heading="GRADE_META[review.grade].label"
-            :time="relativeTime(review.reviewedAt)"
-            :variant="GRADE_META[review.grade].variant"
-          />
+            v-for="attempt in timeline"
+            :key="attempt.id"
+            :heading="GRADE_META[attempt.grade].label"
+            :time="relativeTime(attempt.at)"
+            :variant="GRADE_META[attempt.grade].variant"
+          >
+            {{ describe(attempt) }}
+          </kt-timeline-item>
         </kt-timeline>
       </div>
 

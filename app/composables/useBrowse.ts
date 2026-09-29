@@ -1,6 +1,6 @@
 import type { KtSortDirection } from 'kanto-ds';
-import { type CardRow, cards, items, reviews } from '~core/db/repositories';
-import type { Card, Direction, Item, Review } from '~core/db/schema';
+import { attempts, type CardRow, cards, items } from '~core/db/repositories';
+import type { Attempt, Card, Direction, Item } from '~core/db/schema';
 import type { ItemState } from '~core/srs';
 import { refreshDueCounts } from '~/composables/useDueCounts';
 
@@ -208,8 +208,9 @@ export function useBrowse(scope?: { deckId: string }) {
     await refreshDueCounts();
   }
 
-  function history(cardId: string): Promise<Review[]> {
-    return reviews.historyForCard(cardId);
+  /** Every answer on the card, scheduled and practice, oldest first — `attempts.forCard`'s own contract. */
+  function history(cardId: string): Promise<Attempt[]> {
+    return attempts.forCard(cardId);
   }
 
   return { rows, filter, sort, setSort, clearFilters, selected, loading, error, reload, suspend, unsuspend, move, remove, history };

@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBrowse } from '~/composables/useBrowse';
 import { db } from '~core/db/db';
-import { cards, decks, items, reviews } from '~core/db/repositories';
+import { attempts, cards, decks, items, reviews } from '~core/db/repositories';
 import type { Card, Deck, Item } from '~core/db/schema';
 import { itemId } from '~core/db/schema';
 
@@ -158,7 +158,7 @@ describe('useBrowse', () => {
     expect(await items.due(NOW)).toEqual([]);
   });
 
-  it('history returns reviews oldest first', async () => {
+  it('history returns attempts oldest first', async () => {
     await decks.put(aDeck());
     await cards.create(aCard({ id: 'c1' }), ['recognition'], NOW);
     const item = (await items.get(itemId('c1', 'recognition')))!;
@@ -172,7 +172,22 @@ describe('useBrowse', () => {
     await ready(browse);
 
     const history = await browse.history('c1');
-    expect(history.map((r) => r.reviewedAt)).toEqual([NOW, NOW + DAY, NOW + 2 * DAY]);
+    expect(history.map((a) => a.at)).toEqual([NOW, NOW + DAY, NOW + 2 * DAY]);
+  });
+
+  it('builds a card history from its attempts, practice included', async () => {
+    await decks.put(aDeck());
+    await cards.create(aCard({ id: 'c1' }), ['production'], NOW);
+    const item = (await items.get(itemId('c1', 'production')))!;
+
+    await reviews.record({ item, before: item, grade: 3, reviewedAt: NOW, durationMs: 1 });
+    await attempts.log({ item, grade: 1, at: NOW + 1, durationMs: 1, detail: { checked: false, writing: null } });
+
+    const browse = useBrowse();
+    await ready(browse);
+
+    const history = await browse.history('c1');
+    expect(history.map((a) => a.source)).toEqual(['scheduled', 'practice']);
   });
 
   it('scoping to a deck ignores the deck filter', async () => {

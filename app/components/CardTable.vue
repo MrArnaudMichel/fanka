@@ -7,7 +7,7 @@ import { type BrowseRow, type BrowseState, STATE_META, useBrowse } from '~/compo
 import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useDecks } from '~/composables/useDecks';
 import { toneColorToken } from '~core/chinese/tones';
-import type { Deck, Review } from '~core/db/schema';
+import type { Attempt, Deck } from '~core/db/schema';
 import { formatInterval } from '~core/srs/format';
 
 /**
@@ -195,7 +195,7 @@ function onSelectionChange(event: CustomEvent<{ selected: unknown[] }>): void {
 const tableEl = ref<HTMLElement | null>(null);
 const openCardId = ref<string | null>(null);
 const panelRow = computed<BrowseRow | null>(() => rows.value.find((r) => r.id === openCardId.value) ?? null);
-const historyRows = ref<Review[]>([]);
+const historyRows = ref<Attempt[]>([]);
 const historyLoading = ref(false);
 const historyError = ref(false);
 
