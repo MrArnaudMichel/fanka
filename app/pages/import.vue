@@ -445,7 +445,7 @@ const stepDescription = computed(() => {
     </section>
 
     <section v-else-if="step === 2" class="step">
-      <kt-toggle ref="headerToggle" :checked="draftHasHeader" label="First row is a header" @kt-change="onHasHeaderToggle" />
+      <kt-toggle ref="headerToggle" size="small" :checked="draftHasHeader" @kt-change="onHasHeaderToggle">First row is a header</kt-toggle>
 
       <div class="columns">
         <div v-for="(target, index) in draftColumns" :key="index" class="column-row">

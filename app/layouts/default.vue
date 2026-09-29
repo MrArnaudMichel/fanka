@@ -106,12 +106,15 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
    the two are never shown at once. */
 .mobile-header { display: none; }
 @media (max-width: 899px) {
-  .mobile-header {
-    display: block;
-    /* Keeps the sticky header's content clear of the status bar: the host
-       element itself sticks at `top: 0` (kt-header's own shadow style), so
-       this padding becomes blank space under the status bar rather than
-       shifting the sticky position. */
+  .mobile-header { display: block; }
+  /*
+    Keeps the bar clear of the status bar on Android's edge-to-edge WebView.
+    The padding goes on the inner <header> (`base`), not on the host: the
+    host is transparent, so padding there left a clear strip under the
+    status bar through which scrolled content showed. `base` carries the
+    header's translucent, blurred background, so the strip is blurred too.
+  */
+  .mobile-header::part(base) {
     padding-top: env(safe-area-inset-top);
   }
   /*

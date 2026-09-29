@@ -226,13 +226,20 @@ const loading = computed(() => !ready.value);
             @kt-change="(e: CustomEvent) => (hanziFont = e.detail.value)"
           />
         </kt-label-input>
-        <kt-toggle :checked="showZhuyin" label="Show zhuyin" @kt-change="(e: CustomEvent) => (showZhuyin = e.detail.checked)" />
-        <kt-toggle :checked="toneColors" label="Colour pinyin by tone" @kt-change="(e: CustomEvent) => (toneColors = e.detail.checked)" />
+        <!-- kt-toggle's `label` is only an accessible name; the visible label is its slot. -->
+        <kt-toggle size="small" :checked="showZhuyin" @kt-change="(e: CustomEvent) => (showZhuyin = e.detail.checked)">
+          Show zhuyin
+        </kt-toggle>
+        <kt-toggle size="small" :checked="toneColors" @kt-change="(e: CustomEvent) => (toneColors = e.detail.checked)">
+          Colour pinyin by tone
+        </kt-toggle>
         <kt-toggle
+          size="small"
           :checked="hidePinyinUntilRevealed"
-          label="Hide the pinyin hint in writing practice"
           @kt-change="(e: CustomEvent) => (hidePinyinUntilRevealed = e.detail.checked)"
-        />
+        >
+          Hide the pinyin hint in writing practice
+        </kt-toggle>
       </kt-form>
 
       <div class="actions">
