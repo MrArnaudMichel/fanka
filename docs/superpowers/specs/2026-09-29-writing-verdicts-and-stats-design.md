@@ -1,7 +1,7 @@
 # Fanka — writing verdicts, stroke-order player, statistics and journal
 
 **Date:** 2026-09-29
-**Status:** approved; not yet implemented
+**Status:** approved; implemented
 **Parent spec:** `docs/superpowers/specs/2026-09-16-fanka-design.md`
 
 Three changes, requested together:
