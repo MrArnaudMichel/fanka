@@ -1,5 +1,6 @@
+import { buildAttempt } from './attempts';
 import { db } from './db';
-import { type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, itemId } from './schema';
+import { type Attempt, type AttemptDetail, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { type Grade, type ItemState, type SrsState, newSrsState } from '~core/srs';
 
@@ -565,12 +566,14 @@ export interface RecordedReview {
   grade: Grade;
   reviewedAt: number;
   durationMs: number;
+  /** How the answer was judged; self-graded when absent. */
+  detail?: AttemptDetail;
 }
 
 export const reviews = {
-  async record({ item, before, grade, reviewedAt, durationMs }: RecordedReview): Promise<string> {
+  async record({ item, before, grade, reviewedAt, durationMs, detail = SELF_GRADED }: RecordedReview): Promise<string> {
     const reviewId = uid();
-    await db.transaction('rw', db.items, db.reviews, db.outbox, async () => {
+    await db.transaction('rw', db.items, db.reviews, db.cards, db.attempts, db.outbox, async () => {
       // The caller's `before` is typed as `SrsState`, which has no
       // `updatedAt`, and a caller may legally pass a bare SrsState (not a
       // previously-fetched Item) — so it is never a trustworthy source for
@@ -591,6 +594,12 @@ export const reviews = {
       await db.reviews.put(review);
       await db.outbox.put(outboxEntry('item', item.id, 'put', reviewedAt));
       await db.outbox.put(outboxEntry('review', reviewId, 'put', reviewedAt));
+
+      const card = await db.cards.get(item.cardId);
+      await db.attempts.put(
+        buildAttempt({ id: reviewId, item, deckId: card?.deckId ?? '', source: 'scheduled', grade, at: reviewedAt, durationMs, detail }),
+      );
+      await db.outbox.put(outboxEntry('attempt', reviewId, 'put', reviewedAt));
     });
     return reviewId;
   },
@@ -610,7 +619,7 @@ export const reviews = {
    * record write.
    */
   async undo(reviewId: string): Promise<void> {
-    await db.transaction('rw', db.items, db.reviews, db.outbox, async () => {
+    await db.transaction('rw', db.items, db.reviews, db.attempts, db.outbox, async () => {
       const review = await db.reviews.get(reviewId);
       if (!review) return;
       const item = await db.items.get(review.itemId);
@@ -620,6 +629,8 @@ export const reviews = {
       }
       await db.reviews.delete(reviewId);
       await db.outbox.put(outboxEntry('review', reviewId, 'delete', Date.now()));
+      await db.attempts.delete(reviewId);
+      await db.outbox.put(outboxEntry('attempt', reviewId, 'delete', Date.now()));
     });
   },
 
@@ -631,6 +642,30 @@ export const reviews = {
     const perItem = await Promise.all(cardItems.map((item) => db.reviews.where('itemId').equals(item.id).toArray()));
     return perItem.flat().sort((a, b) => a.reviewedAt - b.reviewedAt);
   },
+};
+
+export interface LoggedAttempt {
+  item: Item;
+  grade: Grade;
+  at: number;
+  durationMs: number;
+  detail: AttemptDetail;
+}
+
+export const attempts = {
+  /** A practice answer: logged for the journal and statistics, never scheduled, never undone. */
+  async log({ item, grade, at, durationMs, detail }: LoggedAttempt): Promise<string> {
+    const id = uid();
+    await db.transaction('rw', db.cards, db.attempts, db.outbox, async () => {
+      const card = await db.cards.get(item.cardId);
+      await db.attempts.put(buildAttempt({ id, item, deckId: card?.deckId ?? '', source: 'practice', grade, at, durationMs, detail }));
+      await db.outbox.put(outboxEntry('attempt', id, 'put', at));
+    });
+    return id;
+  },
+
+  /** Every answer on a card, both directions and both sources, oldest first. */
+  forCard: (cardId: string): Promise<Attempt[]> => db.attempts.where('cardId').equals(cardId).sortBy('at'),
 };
 
 const DAY_MS = 86_400_000;

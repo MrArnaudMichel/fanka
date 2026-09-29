@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 
-import type { Card, Deck, Item, OutboxEntry, Review } from './schema';
+import { attemptFromReview } from './attempts';
+import type { Attempt, Card, Deck, Item, OutboxEntry, Review } from './schema';
 
 export interface SettingsRow {
   key: string;
@@ -29,6 +30,7 @@ export class FankaDatabase extends Dexie {
   cards!: Table<Card, string>;
   items!: Table<Item, string>;
   reviews!: Table<Review, string>;
+  attempts!: Table<Attempt, string>;
   strokes!: Table<StrokeRow, string>;
   settings!: Table<SettingsRow, string>;
   outbox!: Table<OutboxEntry, string>;
@@ -57,6 +59,25 @@ export class FankaDatabase extends Dexie {
     this.version(2).stores({
       syncState: 'key',
     });
+    // Every answer, from any session. The upgrade gives each existing review
+    // its attempt under the review's own id, so two devices that both
+    // upgrade produce the same rows and sync never duplicates them.
+    this.version(3)
+      .stores({ attempts: 'id, at, itemId, cardId, deckId, mode, source' })
+      .upgrade(async (tx) => {
+        const itemsById = new Map((await tx.table<Item>('items').toArray()).map((i) => [i.id, i]));
+        const cardsById = new Map((await tx.table<Card>('cards').toArray()).map((c) => [c.id, c]));
+        const rows: Attempt[] = [];
+        for (const review of await tx.table<Review>('reviews').toArray()) {
+          const item = itemsById.get(review.itemId);
+          const attempt = attemptFromReview(review, item, item ? cardsById.get(item.cardId) : undefined);
+          if (attempt) rows.push(attempt);
+        }
+        await tx.table<Attempt>('attempts').bulkPut(rows);
+        await tx.table<OutboxEntry>('outbox').bulkPut(
+          rows.map((a) => ({ id: crypto.randomUUID(), entity: 'attempt' as const, entityId: a.id, op: 'put' as const, at: a.at })),
+        );
+      });
   }
 }
 

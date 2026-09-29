@@ -1,4 +1,5 @@
 import type { PinyinSyllable } from '~core/chinese/pinyin';
+import type { WritingError } from '~core/chinese/strokes';
 import type { Grade, SrsState } from '~core/srs';
 
 export type Direction = 'recognition' | 'production';
@@ -70,9 +71,58 @@ export interface Review {
   before: SrsState & { updatedAt: number };
 }
 
+/** Which screen an answer came from: Review asks recognition, Writing production. */
+export type StudyMode = 'review' | 'writing';
+
+export const DIRECTION_MODE: Record<Direction, StudyMode> = { recognition: 'review', production: 'writing' };
+
+/** A scheduled answer moved an item; a practice answer did not. */
+export type AttemptSource = 'scheduled' | 'practice';
+
+/** The checker's verdict on one drawn character. */
+export interface WritingResult {
+  character: string;
+  shapeCorrect: boolean;
+  /** False too when the order could not be judged (wrong stroke count or shape). */
+  orderCorrect: boolean;
+  error: WritingError | null;
+  strokeIndex: number | null;
+  expected: number;
+  drawn: number;
+}
+
+/** How an answer was judged: by the app from a drawing, or by the learner. */
+export interface AttemptDetail {
+  checked: boolean;
+  /** One per character when `checked`; otherwise `null`. */
+  writing: WritingResult[] | null;
+}
+
+export const SELF_GRADED: AttemptDetail = { checked: false, writing: null };
+
+/**
+ * Append-only, one per answer, from any session — the journal and the
+ * statistics read this. `reviews` stays the scheduler's own history (exact
+ * undo); a scheduled answer writes both, under the same id.
+ */
+export interface Attempt extends AttemptDetail {
+  /** The review's id for a scheduled answer; a fresh uuid for practice. */
+  id: string;
+  itemId: string;
+  cardId: string;
+  /** The card's deck when the answer was given; a later move does not rewrite history. */
+  deckId: string;
+  mode: StudyMode;
+  source: AttemptSource;
+  grade: Grade;
+  correct: boolean;
+  at: number;
+  durationMs: number;
+}
+
 export interface OutboxEntry {
   id: string;
-  entity: 'deck' | 'card' | 'item' | 'review';
+  entity: 'deck' | 'card' | 'item' | 'review' | 'attempt';
   entityId: string;
   op: 'put' | 'delete';
   at: number;
