@@ -20,6 +20,8 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
  * - drawn and checked (`attempt.status === 'checked'`): two verdicts (the
  *   character, which sets the grade, and the stroke order, which is only
  *   logged), the stroke-order player, then Continue;
+ * - given up ("I don't know"): the answer and the stroke-order player, then
+ *   Continue, which grades Again;
  * - revealed without a check — a character has no stroke data, or an undo
  *   brought back a card graded earlier, whose drawing is gone: the answer,
  *   then Right / Wrong as before;
@@ -112,22 +114,44 @@ function check(): void {
   if (attempt.status.value === 'checked') session.reveal();
 }
 
+/**
+ * "I don't know": the learner gives up on the card before checking. It is
+ * cleared whenever another item comes on screen — including the same item
+ * brought back by an undo, which returns revealed and is self-graded.
+ */
+const gaveUp = ref(false);
+watch(
+  () => [session.current.value?.id, session.revealed.value] as const,
+  ([id, revealed], [previousId]) => {
+    if (id !== previousId || !revealed) gaveUp.value = false;
+  },
+);
+
+function giveUp(): void {
+  if (session.busy.value || attempt.status.value !== 'drawing') return;
+  gaveUp.value = true;
+  session.reveal();
+}
+
 const checked = computed(() => session.revealed.value && attempt.status.value === 'checked');
-const selfGraded = computed(() => session.revealed.value && attempt.status.value !== 'checked');
+const unchecked = computed(() => session.revealed.value && attempt.status.value !== 'checked');
+const givenUp = computed(() => unchecked.value && gaveUp.value);
+const selfGraded = computed(() => unchecked.value && !gaveUp.value);
 
 /**
- * A self-graded card (after an undo, or with nothing checked) still shows
- * how its characters are written, when every one has stroke data.
+ * An answer shown without a check (given up, after an undo, or with no
+ * stroke data to check against) still shows how its characters are
+ * written, when every one has stroke data.
  */
 const answerStrokes = ref<StrokeOrderEntry[] | null>(null);
 watch(
-  () => [selfGraded.value, session.card.value?.hanzi] as const,
+  () => [unchecked.value, session.card.value?.hanzi] as const,
   async ([on, hanzi]) => {
     answerStrokes.value = null;
     if (!on || !hanzi) return;
     const characters = [...hanzi];
     const models = await Promise.all(characters.map((c) => loadStrokes(c)));
-    if (!selfGraded.value || session.card.value?.hanzi !== hanzi) return;
+    if (!unchecked.value || session.card.value?.hanzi !== hanzi) return;
     if (models.some((m) => !m)) return;
     answerStrokes.value = characters.map((character, i) => ({ character, model: models[i] as CharacterStrokes, highlight: null }));
   },
@@ -173,6 +197,11 @@ function onKey(event: KeyboardEvent) {
       event.preventDefault();
       void grade(attempt.correct.value ? 3 : 1);
     }
+  } else if (givenUp.value) {
+    if (event.key === 'Enter' || event.code === 'Space') {
+      event.preventDefault();
+      void grade(1);
+    }
   } else if (selfGraded.value) {
     if (event.code === 'Space' || event.key === 'Enter') {
       event.preventDefault();
@@ -185,6 +214,9 @@ function onKey(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
       check();
+    } else if (event.key.toLowerCase() === 'n') {
+      event.preventDefault();
+      giveUp();
     }
   } else if (attempt.status.value === 'unsupported' && (event.code === 'Space' || event.key === 'Enter')) {
     event.preventDefault();
@@ -302,10 +334,23 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 
       <div class="actions fk-session-actions">
         <VerdictButtons v-if="checked" :correct="attempt.correct.value" :busy="session.busy.value" @grade="grade" />
+        <kt-button
+          v-else-if="givenUp"
+          variant="primary"
+          size="large"
+          full-width
+          :disabled="session.busy.value"
+          @click="grade(1)"
+        >
+          Continue
+        </kt-button>
         <WritingButtons v-else-if="selfGraded" :busy="session.busy.value" @grade="grade" />
         <div v-else-if="attempt.status.value === 'drawing'" class="pad-controls">
           <kt-button variant="secondary" size="large" icon="undo-2" label="Undo stroke" :disabled="drawn.length === 0" @click="pad?.undo()" />
           <kt-button variant="secondary" size="large" icon="x" label="Clear" :disabled="drawn.length === 0" @click="pad?.clear()" />
+          <kt-button variant="secondary" size="large" icon="circle-help" :disabled="session.busy.value" @click="giveUp">
+            I don't know
+          </kt-button>
           <kt-button variant="primary" size="large" icon="check" full-width :disabled="drawn.length === 0 || session.busy.value" @click="check">
             Check
           </kt-button>
@@ -319,8 +364,10 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
         <p v-if="selfGraded" class="hints fk-keyboard-only">
           <kt-kbd>Space</kt-kbd> right <kt-kbd>X</kt-kbd> wrong <kt-kbd>U</kt-kbd> undo
         </p>
-        <p v-else-if="checked" class="hints fk-keyboard-only"><kt-kbd>Enter</kt-kbd> continue <kt-kbd>U</kt-kbd> undo</p>
-        <p v-else-if="attempt.status.value === 'drawing'" class="hints fk-keyboard-only"><kt-kbd>Enter</kt-kbd> check</p>
+        <p v-else-if="checked || givenUp" class="hints fk-keyboard-only"><kt-kbd>Enter</kt-kbd> continue <kt-kbd>U</kt-kbd> undo</p>
+        <p v-else-if="attempt.status.value === 'drawing'" class="hints fk-keyboard-only">
+          <kt-kbd>Enter</kt-kbd> check <kt-kbd>N</kt-kbd> don't know
+        </p>
       </div>
     </template>
 
@@ -349,7 +396,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 .pad-area, .pad-skeleton { max-width: min(100%, 420px, max(200px, calc(100dvh - 440px))); }
 .pad-skeleton { width: 100%; aspect-ratio: 1; }
 .note { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
-.pad-controls { display: grid; grid-template-columns: auto auto 1fr; gap: var(--gap-button); }
+.pad-controls { display: grid; grid-template-columns: auto auto auto 1fr; gap: var(--gap-button); }
 .hints {
   display: flex;
   justify-content: center;

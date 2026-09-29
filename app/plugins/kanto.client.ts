@@ -3,6 +3,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   Clock,
   Ellipsis,
   FileQuestion,
@@ -56,11 +57,13 @@ export default defineNuxtPlugin(async () => {
   // ChevronLeft/ChevronRight are the stroke-order player's replay and
   // previous/next stroke actions (Task 5). Trophy and Clock are the
   // Statistics Activity tab's best-streak and time-studied tiles (Task 11).
+  // CircleHelp is Writing's "I don't know" action.
   registerIcons({
     ChartLine,
     Check,
     ChevronLeft,
     ChevronRight,
+    CircleHelp,
     Clock,
     Ellipsis,
     FileQuestion,
