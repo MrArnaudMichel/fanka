@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { KtTableColumn, KtTableRow } from 'kanto-ds';
 import { html } from 'lit';
-import { type FilteredSnapshot, type HardItem, type StatsWindow, memorySummary, rate } from '~core/stats';
+import { type FilteredSnapshot, type HardItem, type StatsWindow, memorySummary, rate, trimChart } from '~core/stats';
 import { formatPercent, shortDate } from '~/utils/format';
 
 const props = defineProps<{ data: FilteredSnapshot; window: StatsWindow; now: number }>();
@@ -13,10 +13,26 @@ const s = computed(() => memorySummary(props.data, props.window, props.now));
  * floor of the range) while `undefined`/`NaN` produces a stray point at the
  * plot's origin (verified against the compiled renderer). Falling back to 0
  * reproduces exactly what a raw `null` would already do, so this is not a
- * behaviour change, just a type-safe way to write it down. See
- * docs/deferred-minors.md for the real gap this leaves.
+ * behaviour change, just a type-safe way to write it down.
+ *
+ * `retentionChart` below runs the series through `trimChart` first, which
+ * drops a bucket where neither line has a point and a line that has no
+ * point anywhere left — so the only 0 `pct(null)` can still draw is a
+ * bucket where the *other* line has a real point and this one does not.
+ * See docs/deferred-minors.md for that remaining gap.
  */
 const pct = (v: number | null) => (v === null ? 0 : Math.round(v * 100));
+
+/** At least two points to read as a line; the tiles above already give the window's one-number figure. */
+const retentionChart = computed(() =>
+  trimChart(
+    s.value.retentionSeries.map((p) => shortDate(p.key)),
+    [
+      { name: 'Young', values: s.value.retentionSeries.map((p) => p.young) },
+      { name: 'Mature', values: s.value.retentionSeries.map((p) => p.mature) },
+    ],
+  ),
+);
 
 const columns: KtTableColumn[] = [
   { key: 'hanzi', label: 'Card' },
@@ -41,7 +57,14 @@ function openCard(event: CustomEvent<{ row: HardItem }>): void {
 </script>
 
 <template>
-  <div class="tab">
+  <kt-empty-state
+    v-if="data.items.length === 0 && data.reviews.length === 0"
+    icon="chart-line"
+    heading="Nothing scheduled yet"
+    description="Add cards and review them to see how your memory holds."
+  />
+
+  <div v-else class="tab">
     <div class="tiles">
       <kt-stat label="Retention, young" :value="formatPercent(rate(s.retention.young))" :caption="`${s.retention.young.total} answers`" />
       <kt-stat label="Retention, mature" :value="formatPercent(rate(s.retention.mature))" :caption="`${s.retention.mature.total} answers`" />
@@ -51,17 +74,14 @@ function openCard(event: CustomEvent<{ row: HardItem }>): void {
       <kt-stat label="Mature" :value="String(s.cardStates.mature)" />
     </div>
 
-    <kt-card v-if="s.retentionSeries.length">
+    <kt-card v-if="retentionChart.labels.length >= 2">
       <div slot="header" class="card-heading">Retention, %</div>
       <kt-chart
         type="line"
         label="Retention"
         height="220"
-        :labels="s.retentionSeries.map((p) => shortDate(p.key))"
-        :series="[
-          { name: 'Young', values: s.retentionSeries.map((p) => pct(p.young)) },
-          { name: 'Mature', values: s.retentionSeries.map((p) => pct(p.mature)) },
-        ]"
+        :labels="retentionChart.labels"
+        :series="retentionChart.series.map((series) => ({ name: series.name, values: series.values.map(pct) }))"
       />
     </kt-card>
 

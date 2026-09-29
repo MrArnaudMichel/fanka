@@ -27,6 +27,6 @@ describe('useStats', () => {
   it('offers live decks only', async () => {
     const s = useStats();
     await s.load();
-    expect(s.deckOptions.value).toEqual([{ value: 'd1', label: 'd1' }]);
+    expect(s.deckOptions.value).toEqual([{ id: 'd1', label: 'd1' }]);
   });
 });

@@ -47,19 +47,42 @@ export interface Bucket {
  * Where a time series puts its points: one per day for 7 and 30 days, one
  * per 7 days otherwise, counted back from today so the newest bucket is
  * always whole and the oldest is clipped to the window. All starts on the
- * day of the first answer, and has no buckets without one.
+ * day of the first answer, and has no buckets without one. `step` overrides
+ * the default granularity — retention and writing accuracy are weekly lines
+ * even inside the 7 d/30 d windows (see `memorySummary`/`writingSummary`).
  */
-export function timeBuckets(window: StatsWindow, now: number, earliest: number | null): Bucket[] {
+export function timeBuckets(window: StatsWindow, now: number, earliest: number | null, step?: 1 | 7): Bucket[] {
   const end = addDays(startOfDayLocal(now), 1);
   if (window === 'all' && earliest === null) return [];
   const start = window === 'all' ? startOfDayLocal(earliest!) : windowStart(window, now);
-  const step = window === '7d' || window === '30d' ? 1 : 7;
+  const s = step ?? (window === '7d' || window === '30d' ? 1 : 7);
   const buckets: Bucket[] = [];
-  for (let cursor = end; cursor > start; cursor = addDays(cursor, -step)) {
-    const bucketStart = Math.max(start, addDays(cursor, -step));
+  for (let cursor = end; cursor > start; cursor = addDays(cursor, -s)) {
+    const bucketStart = Math.max(start, addDays(cursor, -s));
     buckets.unshift({ key: dayKey(bucketStart), start: bucketStart, end: cursor });
   }
   return buckets;
+}
+
+export interface ChartSeries {
+  name: string;
+  values: (number | null)[];
+}
+
+/**
+ * What a `kt-chart` line should draw for a set of named series over the same
+ * labels: a bucket where every series is `null` is dropped (label included),
+ * and a series left entirely `null` after that is dropped too. `kt-chart`
+ * has no gap support (see `StatsMemory.vue`'s `pct`), so this is what keeps
+ * an empty stat from drawing a flat 0% line instead of not being drawn.
+ */
+export function trimChart(labels: readonly string[], series: readonly ChartSeries[]): { labels: string[]; series: ChartSeries[] } {
+  const keep = labels.map((_, i) => series.some((s) => s.values[i] !== null));
+  const trimmedLabels = labels.filter((_, i) => keep[i]);
+  const trimmedSeries = series
+    .map((s) => ({ name: s.name, values: s.values.filter((_, i) => keep[i]) }))
+    .filter((s) => s.values.some((v) => v !== null));
+  return { labels: trimmedLabels, series: trimmedSeries };
 }
 
 /** Index of the bucket holding `at`, or -1. Binary search: buckets are sorted and contiguous. */

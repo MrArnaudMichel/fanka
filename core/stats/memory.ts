@@ -64,7 +64,7 @@ export function memorySummary(
 ): MemorySummary {
   const windowed = f.reviews.filter((r) => inWindow(r.reviewedAt, window, now));
   const earliest = windowed.reduce<number | null>((min, r) => (min === null || r.reviewedAt < min ? r.reviewedAt : min), null);
-  const buckets = timeBuckets(window, now, earliest);
+  const buckets = timeBuckets(window, now, earliest, 7);
   const perBucket = buckets.map(() => ({ young: { right: 0, total: 0 }, mature: { right: 0, total: 0 } }));
 
   const retention = { young: { right: 0, total: 0 }, mature: { right: 0, total: 0 } };

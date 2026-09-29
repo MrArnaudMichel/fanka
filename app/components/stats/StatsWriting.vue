@@ -2,14 +2,25 @@
 import type { KtTableColumn, KtTableRow } from 'kanto-ds';
 import { html } from 'lit';
 import type { CharacterStrokes } from '~core/chinese/strokes';
-import { type FilteredSnapshot, type MissedCharacter, type StatsWindow, rate, writingSummary } from '~core/stats';
+import { type FilteredSnapshot, type MissedCharacter, type StatsWindow, rate, trimChart, writingSummary } from '~core/stats';
 import { useStrokeData } from '~/composables/useStrokeData';
 import { formatPercent, shortDate } from '~/utils/format';
 
 const props = defineProps<{ data: FilteredSnapshot; window: StatsWindow; now: number }>();
 const s = computed(() => writingSummary(props.data.attempts, props.window, props.now));
-/** See StatsMemory.vue's `pct` for why a missing bucket falls back to 0 rather than `null`. */
+/** See StatsMemory.vue's `pct` for why a missing bucket falls back to 0 rather than `null`, and `accuracyChart` for why that is now the only case left. */
 const pct = (v: number | null) => (v === null ? 0 : Math.round(v * 100));
+
+/** At least two points to read as a line; the tiles above already give the window's one-number figure. */
+const accuracyChart = computed(() =>
+  trimChart(
+    s.value.series.map((p) => shortDate(p.key)),
+    [
+      { name: 'Character', values: s.value.series.map((p) => p.character) },
+      { name: 'Stroke order', values: s.value.series.map((p) => p.order) },
+    ],
+  ),
+);
 
 const ERROR_LABELS = { 'stroke-count': 'Stroke count', 'stroke-shape': 'Stroke shape', 'stroke-order': 'Stroke order', 'stroke-direction': 'Stroke direction' } as const;
 
@@ -55,17 +66,14 @@ async function openCharacter(event: CustomEvent<{ row: MissedCharacter }>): Prom
       <kt-stat label="Checked by the app" :value="formatPercent(rate(s.checked))" :caption="`${s.checked.total} answers`" />
     </div>
 
-    <kt-card v-if="s.series.length">
+    <kt-card v-if="accuracyChart.labels.length >= 2">
       <div slot="header" class="card-heading">Accuracy, %</div>
       <kt-chart
         type="line"
         label="Writing accuracy"
         height="220"
-        :labels="s.series.map((p) => shortDate(p.key))"
-        :series="[
-          { name: 'Character', values: s.series.map((p) => pct(p.character)) },
-          { name: 'Stroke order', values: s.series.map((p) => pct(p.order)) },
-        ]"
+        :labels="accuracyChart.labels"
+        :series="accuracyChart.series.map((series) => ({ name: series.name, values: series.values.map(pct) }))"
       />
     </kt-card>
 

@@ -1,3 +1,4 @@
+import type { KtOption } from 'kanto-ds';
 import { stats } from '~core/db/repositories';
 import { type FilteredSnapshot, type StatsFilter, type StatsSnapshot, applyFilter } from '~core/stats';
 
@@ -18,11 +19,11 @@ export function useStats() {
     snapshot.value ? applyFilter(snapshot.value, { deckId: filter.deckId, mode: filter.mode }) : null,
   );
 
-  const deckOptions = computed(() =>
+  const deckOptions = computed<KtOption[]>(() =>
     (snapshot.value?.decks ?? [])
       .filter((d) => d.deletedAt === null)
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((d) => ({ value: d.id, label: d.name })),
+      .map((d) => ({ id: d.id, label: d.name })),
   );
 
   async function load(): Promise<void> {

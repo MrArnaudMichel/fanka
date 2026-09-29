@@ -36,7 +36,7 @@ const add = (r: Ratio, right: boolean) => {
 export function writingSummary(attempts: readonly Attempt[], window: StatsWindow, now: number): WritingSummary {
   const writing = attempts.filter((a) => a.mode === 'writing' && inWindow(a.at, window, now));
   const earliest = writing.reduce<number | null>((min, a) => (min === null || a.at < min ? a.at : min), null);
-  const buckets = timeBuckets(window, now, earliest);
+  const buckets = timeBuckets(window, now, earliest, 7);
   const perBucket = buckets.map(() => ({ character: { right: 0, total: 0 }, order: { right: 0, total: 0 } }));
 
   const character = { right: 0, total: 0 };
