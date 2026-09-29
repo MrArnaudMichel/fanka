@@ -28,21 +28,25 @@ function onStudy(event: CustomEvent<{ checked: boolean }>): void {
 
 const dropdownOptions: KtOption[] = [
   { id: 'browse', label: 'Browse cards' },
+  { id: 'details', label: 'Deck details' },
   { id: 'edit', label: 'Edit' },
   { id: 'delete', label: 'Delete' },
 ];
 
 /**
- * "Browse cards" navigates directly rather than emitting — unlike Edit and
- * Delete, it does not open anything on this page, so there is nothing for a
- * parent to own. It now opens the deck detail page (ruling 2,
- * task-13-report.md), which opens on its Cards tab by default — the same
- * scoped table Browse itself uses, just reached through the deck rather than
- * a `?deck=<id>` filter. `/browse?deck=<id>` stays supported; it is simply no
- * longer linked from here.
+ * Clicking the card, or "Browse cards", opens Browse filtered to this deck —
+ * the filter stays one the learner can change there. "Deck details" opens
+ * the deck's own page (its cards and settings tabs). Both navigate directly
+ * rather than emitting: unlike Edit and Delete they open nothing on this
+ * page, so there is nothing for a parent to own.
  */
+function browseCards(): void {
+  void navigateTo(`/browse?deck=${encodeURIComponent(props.deck.id)}`);
+}
+
 function onSelect(event: CustomEvent<{ value: string | number | null }>): void {
-  if (event.detail.value === 'browse') navigateTo(`/decks/${props.deck.id}`);
+  if (event.detail.value === 'browse') browseCards();
+  else if (event.detail.value === 'details') navigateTo(`/decks/${props.deck.id}`);
   else if (event.detail.value === 'edit') emit('edit', props.deck);
   else if (event.detail.value === 'delete') emit('delete', props.deck);
 }
@@ -64,11 +68,18 @@ const meterSegments = computed<KtMeterSegment[]>(() => {
 </script>
 
 <template>
-  <kt-card>
+  <kt-card clickable @kt-card-click="browseCards">
     <div class="row" :class="{ full: mode === 'full' }" :slot="mode === 'full' ? 'header' : undefined">
+      <!--
+        .stop on click and keydown: the whole card is clickable (it opens
+        Browse), so ticking the box or opening the menu — by pointer, Enter or
+        Space — must not also count as a click on the card.
+      -->
       <kt-checkbox
         v-if="mode === 'full'"
         class="study"
+        @click.stop
+        @keydown.stop
         size="small"
         :checked="studying"
         :label="`Study ${deck.name}`"
@@ -88,7 +99,15 @@ const meterSegments = computed<KtMeterSegment[]>(() => {
         its viewport at narrow widths, even though nothing was ever opened —
         see task-10-report.md, "Fix round 1".
       -->
-      <kt-dropdown v-if="mode === 'full'" class="menu" align="end" :options="dropdownOptions" @kt-select="onSelect">
+      <kt-dropdown
+        v-if="mode === 'full'"
+        class="menu"
+        align="end"
+        :options="dropdownOptions"
+        @kt-select="onSelect"
+        @click.stop
+        @keydown.stop
+      >
         <kt-button slot="trigger" variant="secondary-no-bg" size="small" icon="ellipsis" label="Deck actions" />
       </kt-dropdown>
     </div>

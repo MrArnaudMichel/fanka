@@ -10,8 +10,8 @@ test('renaming a deck from its Settings tab survives a reload', async ({ page })
   await page.goto('/decks');
   await expect(page.getByRole('heading', { name: 'Decks', level: 1 })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Deck actions' }).first().click();
-  await page.getByRole('menuitem', { name: 'Browse cards' }).click();
+  await page.getByRole('button', { name: 'Deck actions', exact: true }).first().click();
+  await page.getByRole('menuitem', { name: 'Deck details' }).click();
   await page.waitForURL(/\/decks\/[^/?]+$/);
 
   await page.getByRole('tab', { name: 'Settings' }).click();
