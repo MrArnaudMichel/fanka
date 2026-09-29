@@ -3,6 +3,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Ellipsis,
   FileQuestion,
   Flame,
@@ -23,6 +24,7 @@ import {
   SquarePen,
   Trash2,
   TriangleAlert,
+  Trophy,
   Undo2,
   Upload,
   X,
@@ -52,12 +54,14 @@ export default defineNuxtPlugin(async () => {
   // stat's icon; PenLine is the Writing nav entry; Infinity is the Practice
   // nav entry; Settings is the Settings nav entry (phase 3). RotateCcw and
   // ChevronLeft/ChevronRight are the stroke-order player's replay and
-  // previous/next stroke actions (Task 5).
+  // previous/next stroke actions (Task 5). Trophy and Clock are the
+  // Statistics Activity tab's best-streak and time-studied tiles (Task 11).
   registerIcons({
     ChartLine,
     Check,
     ChevronLeft,
     ChevronRight,
+    Clock,
     Ellipsis,
     FileQuestion,
     Flame,
@@ -77,6 +81,7 @@ export default defineNuxtPlugin(async () => {
     SquarePen,
     Trash2,
     TriangleAlert,
+    Trophy,
     Undo2,
     Upload,
     X,

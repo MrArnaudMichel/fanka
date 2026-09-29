@@ -1,97 +1,57 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import StatsActivity from '~/components/stats/StatsActivity.vue';
 import { useStats } from '~/composables/useStats';
-import type { StatsSummary } from '~core/db/repositories';
 
-const { summary } = useStats();
+const { loading, loadError, filter, filtered, deckOptions, now, load } = useStats();
 
-const loading = ref(true);
-const loadError = ref(false);
-const data = ref<StatsSummary | null>(null);
-
-async function load(): Promise<void> {
-  loading.value = true;
-  loadError.value = false;
-  try {
-    data.value = await summary();
-  } catch (err) {
-    console.error('stats: failed to load the summary', err);
-    loadError.value = true;
-  } finally {
-    loading.value = false;
-  }
-}
+const tab = ref<'activity' | 'memory' | 'writing' | 'journal'>('activity');
+const tabs = [
+  { value: 'activity', label: 'Activity' },
+  { value: 'memory', label: 'Memory' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'journal', label: 'Journal' },
+];
+const windows = [
+  { value: '7d', label: '7 d' },
+  { value: '30d', label: '30 d' },
+  { value: '90d', label: '90 d' },
+  { value: '1y', label: '1 y' },
+  { value: 'all', label: 'All' },
+];
+const modes = [
+  { value: 'all', label: 'All' },
+  { value: 'review', label: 'Review' },
+  { value: 'writing', label: 'Writing' },
+];
 
 onMounted(load);
-
-const hasHistory = computed(() => (data.value?.reviewsPerDay ?? []).some((d) => d.count > 0));
-
-/** `9/23` from `2026-09-23` — short enough for 30 tick labels on a phone width. */
-const dayLabels = computed(() => (data.value?.reviewsPerDay ?? []).map((d) => `${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8, 10))}`));
-const dayCounts = computed(() => (data.value?.reviewsPerDay ?? []).map((d) => d.count));
-
-const answerLabels = ['Again', 'Hard', 'Good', 'Easy'];
-const answerSeries = computed(() => {
-  const mix = data.value?.answerMix;
-  return [{ name: 'Reviews', values: mix ? [mix.again, mix.hard, mix.good, mix.easy] : [0, 0, 0, 0] }];
-});
-
-const streakLabel = computed(() => {
-  const days = data.value?.streakDays ?? 0;
-  return `${days} day${days === 1 ? '' : 's'}`;
-});
 </script>
 
 <template>
   <div class="stats">
-    <kt-page-header eyebrow="Progress" heading="Statistics" description="Review activity and where your cards stand." />
+    <kt-page-header eyebrow="Progress" heading="Statistics" description="Activity, memory, writing and every answer you gave." />
 
     <kt-skeleton v-if="loading" height="200px" />
 
-    <kt-empty-state
-      v-else-if="loadError"
-      icon="triangle-alert"
-      heading="Couldn't load your stats"
-      description="Something went wrong reading the database. Try again."
-    >
+    <kt-empty-state v-else-if="loadError" icon="triangle-alert" heading="Couldn't load your stats" description="Something went wrong reading the database. Try again.">
       <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="load">Retry</kt-button>
     </kt-empty-state>
 
-    <template v-else-if="data">
-      <div class="tiles">
-        <kt-stat label="Current streak" :value="streakLabel" icon="flame" />
-        <kt-stat label="New" :value="String(data.cardStates.new)" />
-        <kt-stat label="Learning" :value="String(data.cardStates.learning)" />
-        <kt-stat label="Young" :value="String(data.cardStates.young)" />
-        <kt-stat label="Mature" :value="String(data.cardStates.mature)" />
+    <template v-else-if="filtered">
+      <div class="filters">
+        <kt-segmented-control size="small" label="Period" :options="windows" :value="filter.window" @kt-change="(e: CustomEvent) => (filter.window = e.detail.value)" />
+        <kt-segmented-control size="small" label="Mode" :options="modes" :value="filter.mode ?? 'all'" @kt-change="(e: CustomEvent) => (filter.mode = e.detail.value === 'all' ? null : e.detail.value)" />
+        <kt-select size="small" label="Deck" placeholder="All decks" clearable :options="deckOptions" :value="filter.deckId" @kt-change="(e: CustomEvent) => (filter.deckId = e.detail?.value ?? null)" />
       </div>
 
-      <kt-empty-state
-        v-if="!hasHistory"
-        icon="chart-line"
-        heading="No review history yet"
-        description="Study a few cards to see your activity here."
-      >
-        <kt-button slot="actions" variant="primary" size="medium" icon="play" @click="navigateTo('/review')">Start reviewing</kt-button>
-      </kt-empty-state>
+      <kt-tabs label="Statistics" :tabs="tabs" :value="tab" @kt-change="(e: CustomEvent) => (tab = e.detail.value)" />
 
-      <template v-else>
-        <kt-card>
-          <div slot="header" class="card-heading">Reviews per day, last 30 days</div>
-          <kt-chart type="area" label="Reviews per day" height="220" :labels="dayLabels" :series="[{ name: 'Reviews', values: dayCounts }]" />
-        </kt-card>
-
-        <kt-card>
-          <div slot="header" class="card-heading">Answer mix</div>
-          <kt-chart type="doughnut" label="Answer mix" height="220" center-label="Reviews" :labels="answerLabels" :series="answerSeries" />
-        </kt-card>
-      </template>
+      <StatsActivity v-if="tab === 'activity'" :data="filtered" :window="filter.window" :now="now" />
     </template>
   </div>
 </template>
 
 <style scoped>
 .stats { display: flex; flex-direction: column; gap: var(--gap-card); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--gap-button); }
-.card-heading { font: var(--font-title-h6); color: var(--text-body); }
+.filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--gap-button); }
 </style>

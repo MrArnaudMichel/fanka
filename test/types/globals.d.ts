@@ -11,6 +11,7 @@ export {};
 
 declare global {
   const ref: typeof import('vue').ref;
+  const shallowRef: typeof import('vue').shallowRef;
   const readonly: typeof import('vue').readonly;
   const computed: typeof import('vue').computed;
   const reactive: typeof import('vue').reactive;

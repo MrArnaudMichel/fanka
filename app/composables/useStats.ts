@@ -1,13 +1,43 @@
-import { type StatsSummary, stats } from '~core/db/repositories';
+import { stats } from '~core/db/repositories';
+import { type FilteredSnapshot, type StatsFilter, type StatsSnapshot, applyFilter } from '~core/stats';
 
 /**
- * The Statistics page's one seam into the database (see `CLAUDE.md`: pages
- * never touch Dexie or a repository directly). Unlike `useSettings` or
- * `useDueCounts`, this holds no shared state — each call reads a fresh
- * snapshot, which is all a stats screen needs.
+ * The Statistics page's one seam into the database (pages never touch Dexie
+ * or a repository directly). Reads one snapshot when the page opens; the
+ * filter recomputes everything from it in memory. Holds no shared state —
+ * each page visit reads afresh.
  */
 export function useStats() {
-  return {
-    summary: (now = Date.now()): Promise<StatsSummary> => stats.summary(now),
-  };
+  const snapshot = shallowRef<StatsSnapshot | null>(null);
+  const loading = ref(true);
+  const loadError = ref(false);
+  const now = ref(Date.now());
+  const filter = reactive<StatsFilter>({ window: '30d', deckId: null, mode: null });
+
+  const filtered = computed<FilteredSnapshot | null>(() =>
+    snapshot.value ? applyFilter(snapshot.value, { deckId: filter.deckId, mode: filter.mode }) : null,
+  );
+
+  const deckOptions = computed(() =>
+    (snapshot.value?.decks ?? [])
+      .filter((d) => d.deletedAt === null)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((d) => ({ value: d.id, label: d.name })),
+  );
+
+  async function load(): Promise<void> {
+    loading.value = true;
+    loadError.value = false;
+    try {
+      snapshot.value = await stats.snapshot();
+      now.value = Date.now();
+    } catch (err) {
+      console.error('stats: failed to load the snapshot', err);
+      loadError.value = true;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return { loading, loadError, filter, filtered, deckOptions, now, load };
 }
