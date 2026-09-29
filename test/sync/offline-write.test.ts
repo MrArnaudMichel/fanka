@@ -18,7 +18,7 @@ class FakeTransport implements SyncTransport {
   pushCalls: LocalChanges[] = [];
 
   async pull(since: number): Promise<RemoteChanges> {
-    return { decks: [], cards: [], items: [], reviews: [], at: since };
+    return { decks: [], cards: [], items: [], reviews: [], attempts: [], at: since };
   }
 
   async push(changes: LocalChanges): Promise<{ at: number }> {

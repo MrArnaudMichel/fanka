@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { Card, Deck, Direction, Item, PartOfSpeech, Review } from '~core/db/schema';
+import type { Attempt, Card, Deck, Direction, Item, PartOfSpeech, Review } from '~core/db/schema';
 import type { ItemState } from '~core/srs';
 import type { LocalChanges, RemoteChanges, SyncTransport } from './types';
 
@@ -213,6 +213,37 @@ function reviewToRow(review: Review, userId: string): ReviewRow {
   };
 }
 
+interface AttemptRow {
+  id: string;
+  user_id: string;
+  item_id: string;
+  card_id: string;
+  deck_id: string;
+  mode: Attempt['mode'];
+  source: Attempt['source'];
+  grade: number;
+  correct: boolean;
+  at: number;
+  duration_ms: number;
+  checked: boolean;
+  writing: Attempt['writing'];
+}
+
+function attemptFromRow(row: AttemptRow): Attempt {
+  return {
+    id: row.id, itemId: row.item_id, cardId: row.card_id, deckId: row.deck_id, mode: row.mode, source: row.source,
+    grade: row.grade as Attempt['grade'], correct: row.correct, at: row.at, durationMs: row.duration_ms,
+    checked: row.checked, writing: row.writing,
+  };
+}
+
+function attemptToRow(a: Attempt, userId: string): AttemptRow {
+  return {
+    id: a.id, user_id: userId, item_id: a.itemId, card_id: a.cardId, deck_id: a.deckId, mode: a.mode, source: a.source,
+    grade: a.grade, correct: a.correct, at: a.at, duration_ms: a.durationMs, checked: a.checked, writing: a.writing,
+  };
+}
+
 /**
  * The `at` a pull returns is the max `updated_at`/`reviewed_at` among the
  * rows it actually fetched, not a true server clock reading (that would
@@ -234,30 +265,34 @@ function maxAt(since: number, values: number[]): number {
 export function createSupabaseTransport(client: SupabaseClient, userId: string): SyncTransport {
   return {
     async pull(since: number): Promise<RemoteChanges> {
-      const [decksRes, cardsRes, itemsRes, reviewsRes] = await Promise.all([
+      const [decksRes, cardsRes, itemsRes, reviewsRes, attemptsRes] = await Promise.all([
         client.from('decks').select('*').eq('user_id', userId).gt('updated_at', since),
         client.from('cards').select('*').eq('user_id', userId).gt('updated_at', since),
         client.from('items').select('*').eq('user_id', userId).gt('updated_at', since),
         client.from('reviews').select('*').eq('user_id', userId).gt('reviewed_at', since),
+        client.from('attempts').select('*').eq('user_id', userId).gt('at', since),
       ]);
       if (decksRes.error) throw decksRes.error;
       if (cardsRes.error) throw cardsRes.error;
       if (itemsRes.error) throw itemsRes.error;
       if (reviewsRes.error) throw reviewsRes.error;
+      if (attemptsRes.error) throw attemptsRes.error;
 
       const decks = ((decksRes.data ?? []) as DeckRow[]).map(deckFromRow);
       const cards = ((cardsRes.data ?? []) as CardRow[]).map(cardFromRow);
       const items = ((itemsRes.data ?? []) as ItemRow[]).map(itemFromRow);
       const reviews = ((reviewsRes.data ?? []) as ReviewRow[]).map(reviewFromRow);
+      const attempts = ((attemptsRes.data ?? []) as AttemptRow[]).map(attemptFromRow);
 
       const at = maxAt(since, [
         ...decks.map((d) => d.updatedAt),
         ...cards.map((c) => c.updatedAt),
         ...items.map((i) => i.updatedAt),
         ...reviews.map((r) => r.reviewedAt),
+        ...attempts.map((a) => a.at),
       ]);
 
-      return { decks, cards, items, reviews, at };
+      return { decks, cards, items, reviews, attempts, at };
     },
 
     async push(changes: LocalChanges): Promise<{ at: number }> {
@@ -298,6 +333,16 @@ export function createSupabaseTransport(client: SupabaseClient, userId: string):
           .from('reviews')
           .upsert(
             changes.reviews.map((r) => reviewToRow(r, userId)),
+            { onConflict: 'user_id,id', ignoreDuplicates: true },
+          );
+        if (error) throw error;
+      }
+      if (changes.attempts.length > 0) {
+        // Insert-only, like reviews: a retried push is ON CONFLICT DO NOTHING.
+        const { error } = await client
+          .from('attempts')
+          .upsert(
+            changes.attempts.map((a) => attemptToRow(a, userId)),
             { onConflict: 'user_id,id', ignoreDuplicates: true },
           );
         if (error) throw error;

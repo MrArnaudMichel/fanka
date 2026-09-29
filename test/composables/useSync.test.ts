@@ -21,7 +21,10 @@ const { calls, runSync } = vi.hoisted(() => {
         calls.push({
           resolve: () => {
             done();
-            resolve({ pushed: { decks: 0, cards: 0, items: 0, reviews: 0 }, pulled: { decks: 0, cards: 0, items: 0, reviews: 0 } });
+            resolve({
+              pushed: { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 },
+              pulled: { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 },
+            });
           },
           reject: (err: Error) => {
             done();

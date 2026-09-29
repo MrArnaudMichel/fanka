@@ -1,17 +1,18 @@
-import type { Card, Deck, Item, Review } from '~core/db/schema';
+import type { Attempt, Card, Deck, Item, Review } from '~core/db/schema';
 
 /**
  * The entity kinds the outbox — and therefore sync — tracks. `OutboxEntry`
  * has no `'settings'` variant, so `Settings` is not synced yet; see the
  * report for why.
  */
-export type SyncEntity = 'deck' | 'card' | 'item' | 'review';
+export type SyncEntity = 'deck' | 'card' | 'item' | 'review' | 'attempt';
 
 export interface RemoteChanges {
   decks: Deck[];
   cards: Card[];
   items: Item[];
   reviews: Review[];
+  attempts: Attempt[];
   /**
    * The transport's own clock at the moment of this pull — not necessarily
    * the max `updatedAt` among the returned rows, so a row committed between
@@ -26,6 +27,7 @@ export interface LocalChanges {
   cards: Card[];
   items: Item[];
   reviews: Review[];
+  attempts: Attempt[];
 }
 
 /**
@@ -34,12 +36,12 @@ export interface LocalChanges {
  * `core/sync/supabase.ts` — the one file allowed to implement this.
  */
 export interface SyncTransport {
-  /** Every row touched (created, edited or soft-deleted) since `since` (epoch ms), across all four entities. */
+  /** Every row touched (created, edited or soft-deleted) since `since` (epoch ms), across all five entities. */
   pull(since: number): Promise<RemoteChanges>;
   /**
    * Upserts the given rows for `decks`/`cards`/`items`; inserts
-   * `reviews` (insert-only — the transport must not attempt to update an
-   * existing review row).
+   * `reviews` and `attempts` (insert-only — the transport must not attempt
+   * to update an existing review or attempt row).
    */
   push(changes: LocalChanges): Promise<{ at: number }>;
 }
@@ -49,6 +51,7 @@ export interface EntityCounts {
   cards: number;
   items: number;
   reviews: number;
+  attempts: number;
 }
 
 export interface SyncResult {
