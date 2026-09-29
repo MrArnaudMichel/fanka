@@ -1,6 +1,8 @@
 import {
   ChartLine,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Ellipsis,
   FileQuestion,
   Flame,
@@ -15,6 +17,7 @@ import {
   Play,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings,
   SquarePen,
@@ -47,10 +50,14 @@ export default defineNuxtPlugin(async () => {
   // import page's own primary action (Task 14). ChartLine is the Statistics
   // nav entry and its "no history yet" empty state; Flame is the streak
   // stat's icon; PenLine is the Writing nav entry; Infinity is the Practice
-  // nav entry; Settings is the Settings nav entry (phase 3).
+  // nav entry; Settings is the Settings nav entry (phase 3). RotateCcw and
+  // ChevronLeft/ChevronRight are the stroke-order player's replay and
+  // previous/next stroke actions (Task 5).
   registerIcons({
     ChartLine,
     Check,
+    ChevronLeft,
+    ChevronRight,
     Ellipsis,
     FileQuestion,
     Flame,
@@ -64,6 +71,7 @@ export default defineNuxtPlugin(async () => {
     Play,
     Plus,
     RefreshCw,
+    RotateCcw,
     Search,
     Settings,
     SquarePen,
