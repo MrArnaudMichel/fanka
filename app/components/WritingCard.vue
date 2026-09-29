@@ -30,12 +30,17 @@ defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
       <div v-if="revealed" class="answer fk-selectable" role="status" aria-live="polite" aria-atomic="true">
         <div class="hanzi">{{ card.hanzi }}</div>
         <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
-        <!--
-          `answer-extra` sits under the revealed answer — the stroke-order
-          player for a self-graded card.
-        -->
-        <slot name="answer-extra" />
       </div>
+      <!--
+        `answer-extra` sits under the revealed answer — the stroke-order
+        player for a self-graded card. Kept outside the live region above:
+        its "n / total" counter changes on every stroke during autoplay, and
+        being inside `aria-atomic` would re-announce the whole answer each
+        time.
+      -->
+      <template v-if="revealed">
+        <slot name="answer-extra" />
+      </template>
     </div>
   </kt-card>
 </template>

@@ -86,7 +86,10 @@ creates an insert-only table with the same row-level policies as `reviews`,
 indexed on `(user_id, at)`. A pull fetches attempts by `at`; a push upserts
 with `ignoreDuplicates`. As with reviews, a local undo of an attempt that
 already reached the server is not propagated — the same known hazard the
-`reviews.undo` comment documents.
+`reviews.undo` comment documents. `supabase/migrations/0002_attempts.sql`
+must be applied to the Supabase project before a build off this branch
+ships — `pull` queries `attempts` unconditionally, so without it every
+sync fails, not just attempts.
 
 ## 2. Checker: shape and order apart
 

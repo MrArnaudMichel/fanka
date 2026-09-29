@@ -209,7 +209,7 @@ watch(openCardId, async (id) => {
   try {
     historyRows.value = await history(id);
   } catch (err) {
-    console.error('CardTable: failed to load the review history', err);
+    console.error('CardTable: failed to load the card history', err);
     historyError.value = true;
   } finally {
     historyLoading.value = false;
