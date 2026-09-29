@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import StatsActivity from '~/components/stats/StatsActivity.vue';
+import StatsJournal from '~/components/stats/StatsJournal.vue';
+import StatsMemory from '~/components/stats/StatsMemory.vue';
+import StatsWriting from '~/components/stats/StatsWriting.vue';
 import { useStats } from '~/composables/useStats';
 
 const { loading, loadError, filter, filtered, deckOptions, now, load } = useStats();
@@ -47,6 +50,9 @@ onMounted(load);
       <kt-tabs label="Statistics" :tabs="tabs" :value="tab" @kt-change="(e: CustomEvent) => (tab = e.detail.value)" />
 
       <StatsActivity v-if="tab === 'activity'" :data="filtered" :window="filter.window" :now="now" />
+      <StatsMemory v-else-if="tab === 'memory'" :data="filtered" :window="filter.window" :now="now" />
+      <StatsWriting v-else-if="tab === 'writing'" :data="filtered" :window="filter.window" :now="now" />
+      <StatsJournal v-else :data="filtered" :window="filter.window" :now="now" />
     </template>
   </div>
 </template>
