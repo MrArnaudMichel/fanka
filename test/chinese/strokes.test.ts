@@ -80,6 +80,16 @@ describe('checkCharacter', () => {
     });
   });
 
+  it('faults 學 with its first two strokes swapped, even though each fits the other median closely enough for the identity fast path', () => {
+    const strokes = traced(MODELS.學!);
+    expect(checkCharacter([strokes[1]!, strokes[0]!, ...strokes.slice(2)], MODELS.學!)).toMatchObject({
+      shapeCorrect: true,
+      orderCorrect: false,
+      error: 'stroke-order',
+      strokeIndex: 0,
+    });
+  });
+
   it('faults order before direction when both are wrong', () => {
     const strokes = traced(MODELS.十!);
     expect(checkCharacter([[...strokes[1]!].reverse(), strokes[0]!], MODELS.十!)).toMatchObject({

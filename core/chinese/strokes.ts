@@ -59,6 +59,17 @@ export const DIRECTION_MIN = 0;
 /** Shortest a stroke may be, as a share of its median's length. */
 export const LENGTH_MIN_RATIO = 0.35;
 
+/**
+ * Below this fraction of the identity assignment's total cost, the greedy
+ * assignment wins even when the identity assignment (stroke i follows
+ * median i) is itself valid. Two strokes drawn close together and swapped
+ * can each fit the other's median within the per-stroke thresholds, so a
+ * valid identity assignment is not always the intended one; a greedy
+ * assignment this much cheaper is. Keeps a shaky but correctly ordered
+ * drawing's verdict, since jitter raises both assignments' cost together.
+ */
+export const GREEDY_COST_RATIO = 0.7;
+
 const RESAMPLE_POINTS = 32;
 
 interface Fit {
@@ -81,33 +92,51 @@ export function checkCharacter(drawn: Point[][], model: CharacterStrokes): Strok
   const match: (number | null)[] = drawn.map(() => null);
   const reversed: boolean[] = drawn.map(() => false);
 
-  // Fast path: stroke i follows median i. Keeps a correct drawing's verdict
-  // independent of how the greedy pass below would break near-ties.
+  // Identity: stroke i follows median i. Computed alongside the greedy
+  // assignment below, never taken as a shortcut — two strokes drawn close
+  // together and swapped can each fit the other's median within the
+  // per-stroke thresholds, so a valid identity assignment is not proof it's
+  // the intended one.
   const identity = drawn.length === expected ? drawn.map((stroke, i) => fit(stroke, medians[i]!)) : [];
-  if (drawn.length === expected && identity.every((f) => f !== null)) {
+  const identityValid = drawn.length === expected && identity.every((f): f is Fit => f !== null);
+
+  // Greedy assignment, cheapest pair first; on equal cost, the pair closer
+  // to its expected position wins. At most ~30 strokes, so the n² pairs are
+  // cheap and an optimal assignment is not worth it.
+  const pairs: { i: number; j: number; cost: number; reversed: boolean }[] = [];
+  drawn.forEach((stroke, i) =>
+    medians.forEach((median, j) => {
+      const f = fit(stroke, median);
+      if (f) pairs.push({ i, j, cost: f.cost, reversed: f.reversed });
+    }),
+  );
+  pairs.sort((a, b) => a.cost - b.cost || Math.abs(a.i - a.j) - Math.abs(b.i - b.j));
+  const greedyMatch: (number | null)[] = drawn.map(() => null);
+  const greedyReversed: boolean[] = drawn.map(() => false);
+  const greedyCosts: number[] = drawn.map(() => 0);
+  const usedMedians = new Set<number>();
+  for (const p of pairs) {
+    if (greedyMatch[p.i] !== null || usedMedians.has(p.j)) continue;
+    greedyMatch[p.i] = p.j;
+    greedyReversed[p.i] = p.reversed;
+    greedyCosts[p.i] = p.cost;
+    usedMedians.add(p.j);
+  }
+  const greedyComplete = greedyMatch.every((j) => j !== null);
+  const greedyTotalCost = greedyCosts.reduce((sum, c) => sum + c, 0);
+  const identityTotalCost = identityValid ? identity.reduce((sum, f) => sum + f!.cost, 0) : 0;
+  const greedyClearlyCheaper = greedyComplete && identityValid && greedyTotalCost < identityTotalCost * GREEDY_COST_RATIO;
+
+  if (identityValid && !greedyClearlyCheaper) {
     identity.forEach((f, i) => {
       match[i] = i;
       reversed[i] = f!.reversed;
     });
   } else {
-    // Greedy assignment, cheapest pair first; on equal cost, the pair
-    // closer to its expected position wins. At most ~30 strokes, so the
-    // n² pairs are cheap and an optimal assignment is not worth it.
-    const pairs: { i: number; j: number; cost: number; reversed: boolean }[] = [];
-    drawn.forEach((stroke, i) =>
-      medians.forEach((median, j) => {
-        const f = fit(stroke, median);
-        if (f) pairs.push({ i, j, cost: f.cost, reversed: f.reversed });
-      }),
-    );
-    pairs.sort((a, b) => a.cost - b.cost || Math.abs(a.i - a.j) - Math.abs(b.i - b.j));
-    const used = new Set<number>();
-    for (const p of pairs) {
-      if (match[p.i] !== null || used.has(p.j)) continue;
-      match[p.i] = p.j;
-      reversed[p.i] = p.reversed;
-      used.add(p.j);
-    }
+    greedyMatch.forEach((j, i) => {
+      match[i] = j;
+      reversed[i] = greedyReversed[i]!;
+    });
   }
 
   const used = new Set(match.filter((j): j is number => j !== null));
