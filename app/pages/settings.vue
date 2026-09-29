@@ -3,11 +3,13 @@ import { toaster } from 'kanto-ds';
 import type { KtOption } from 'kanto-ds';
 import { computed, reactive, ref, watch } from 'vue';
 import { useAuth } from '~/composables/useAuth';
+import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useSettings } from '~/composables/useSettings';
 import { useSync } from '~/composables/useSync';
 import type { Algorithm } from '~core/srs';
 
 const { settings, ready, update } = useSettings();
+const { compact } = useCompactLayout();
 
 const { user: authUser, loading: authLoading, error: authError, signIn, signOut } = useAuth();
 const { status: syncStatus, lastSyncedAt, error: syncError, syncNow } = useSync();
@@ -242,8 +244,8 @@ const loading = computed(() => !ready.value);
         </kt-toggle>
       </kt-form>
 
-      <div class="actions">
-        <kt-button type="submit" variant="primary" size="medium" :disabled="saving || loading">Save</kt-button>
+      <div class="actions fk-session-actions">
+        <kt-button type="submit" variant="primary" size="medium" :full-width="compact" :disabled="saving || loading">Save</kt-button>
       </div>
     </form>
   </div>
@@ -253,6 +255,11 @@ const loading = computed(() => !ready.value);
 .settings { display: flex; flex-direction: column; gap: var(--gap-card); }
 form { display: flex; flex-direction: column; gap: var(--gap-card); }
 .actions { display: flex; justify-content: flex-end; }
+/* From the shell's breakpoint up, Save sits inline at the end of the form
+   rather than stuck to the viewport. */
+@media (min-width: 900px) {
+  .actions.fk-session-actions { position: static; padding: 0; background: none; flex-direction: row; }
+}
 .account-status { display: flex; flex-direction: column; gap: var(--gap-element); }
 .account-status p { margin: 0; color: var(--text-body); font: var(--font-normal-regular); }
 .account-status .muted { color: var(--text-muted); }

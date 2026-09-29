@@ -122,6 +122,20 @@ const importHref = computed(() => {
 const { compact } = useCompactLayout();
 
 /**
+ * On a phone the checkbox column costs a column on every row, so rows are
+ * not selectable until "Select" turns selection mode on; "Done" turns it off
+ * and clears what was picked. Above the breakpoint the table is always
+ * selectable.
+ */
+const selecting = ref(false);
+const selectable = computed(() => !compact.value || selecting.value);
+
+function toggleSelecting(): void {
+  selecting.value = !selecting.value;
+  if (!selecting.value) selected.value = [];
+}
+
+/**
  * On a phone, two columns: the hanzi, and pinyin over translation in one
  * cell (`renderCell`'s `translation` branch). Five columns at 390px wrapped
  * every cell onto two lines. Deck, state and due stay one tap away, in the
@@ -373,6 +387,12 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
       <kt-segmented-control label="Direction" :options="DIRECTION_OPTIONS" :value="directionValue" @kt-change="onDirectionChange" />
     </div>
 
+    <div v-if="compact && rows.length > 0" class="select-row">
+      <kt-button variant="secondary" size="small" @click="toggleSelecting">
+        {{ selecting ? 'Done' : 'Select' }}
+      </kt-button>
+    </div>
+
     <div v-if="selected.length > 0" class="bulk-bar">
       <span class="bulk-count">{{ plural(selected.length, 'card') }} selected</span>
       <kt-button v-if="canSuspend" variant="secondary" size="small" icon="pause" @click="onBulkSuspend">Suspend</kt-button>
@@ -432,7 +452,7 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
       :renderCell="renderCell"
       :sort-key="sort.key"
       :sort-direction="sort.direction"
-      selectable
+      :selectable="selectable"
       selection-mode="multiple"
       :selected="selected"
       page-size="25"
@@ -488,6 +508,7 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
   .filters .state-filter { flex: 1 1 100%; }
 }
 
+.select-row { display: flex; justify-content: flex-end; }
 .bulk-bar {
   display: flex;
   align-items: center;

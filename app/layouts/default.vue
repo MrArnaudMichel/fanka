@@ -8,6 +8,12 @@ const { sections } = useNavigation(counts);
 const reviewTotal = computed(() => counts.value.review.total);
 const route = useRoute();
 
+/** The current page's nav label; "Fanka" for routes the menu does not list (e.g. /cards/:id). */
+const pageTitle = computed(() => {
+  const items = sections.value.flatMap((section) => section.items);
+  return items.find((item) => item.href === activeHref.value)?.label ?? 'Fanka';
+});
+
 const header = ref<KtHeader>();
 const menu = ref<HTMLElement | null>(null);
 const main = ref<HTMLElement | null>(null);
@@ -49,7 +55,7 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
     <kt-header ref="header" class="mobile-header" sticky label="Fanka">
       <span slot="brand" class="brand">
         <span class="mark" aria-hidden="true">繁</span>
-        <span class="name">FANKA</span>
+        <span class="name">{{ pageTitle }}</span>
       </span>
 
       <!--
@@ -130,9 +136,11 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
   }
 }
 
-.brand { display: flex; align-items: center; gap: 8px; font: var(--font-title-h6); letter-spacing: 4px; color: var(--text-body); }
+.brand { display: flex; align-items: center; gap: 8px; min-width: 0; font: var(--font-title-h6); color: var(--text-body); }
+.brand .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .mark {
+  flex: none;
   width: 24px;
   height: 24px;
   border-radius: var(--border-radius);
