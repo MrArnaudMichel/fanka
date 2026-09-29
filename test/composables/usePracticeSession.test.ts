@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { usePracticeSession } from '~/composables/usePracticeSession';
 import { db } from '~core/db/db';
 import { cards, decks, items } from '~core/db/repositories';
+import { SELF_GRADED } from '~core/db/schema';
 import { saveStudyDeckIds } from '~core/db/study-decks';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
@@ -97,5 +98,25 @@ describe('usePracticeSession', () => {
     await session.start();
     expect(session.total.value).toBe(0);
     expect(session.current.value).toBeNull();
+  });
+
+  it('logs each answer as a practice attempt and leaves the schedule alone', async () => {
+    const session = usePracticeSession('writing');
+    await session.start();
+    const item = session.current.value!;
+    session.reveal();
+    await session.grade(1, { checked: true, writing: [] });
+    const logged = await db.attempts.toArray();
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toMatchObject({ itemId: item.id, source: 'practice', mode: 'writing', grade: 1, correct: false, checked: true, writing: [] });
+    expect(await db.reviews.count()).toBe(0);
+    expect(await db.items.get(item.id)).toEqual(item);
+  });
+
+  it('logs a self-graded answer when no detail is given', async () => {
+    const session = usePracticeSession('review');
+    await session.start();
+    await session.grade(3);
+    expect((await db.attempts.toArray())[0]).toMatchObject({ mode: 'review', ...SELF_GRADED });
   });
 });

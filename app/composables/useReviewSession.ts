@@ -1,5 +1,5 @@
 import { cards, items, reviews } from '~core/db/repositories';
-import type { Card, Item } from '~core/db/schema';
+import { type AttemptDetail, type Card, type Item, SELF_GRADED } from '~core/db/schema';
 import { type LogEntry, MODE_DIRECTION, type SessionMode, clearSession, loadSession, saveSession } from '~core/db/session';
 import { loadSettings } from '~core/db/settings';
 import { GRADES, type Grade, type SrsState, schedulerFor } from '~core/srs';
@@ -350,7 +350,7 @@ export function useReviewSession(mode: SessionMode) {
     revealed.value = true;
   }
 
-  async function gradeCore(value: Grade): Promise<void> {
+  async function gradeCore(value: Grade, detail: AttemptDetail): Promise<void> {
     const item = current.value;
     if (!item) return;
 
@@ -367,6 +367,7 @@ export function useReviewSession(mode: SessionMode) {
       grade: value,
       reviewedAt: at,
       durationMs: at - shownAt.value,
+      detail,
     });
 
     log.value = [...log.value, { reviewId, itemId: item.id, grade: value }];
@@ -393,14 +394,18 @@ export function useReviewSession(mode: SessionMode) {
     syncTimer();
   }
 
-  async function grade(value: Grade): Promise<void> {
+  /**
+   * `detail` says how the answer was judged; Writing passes the checker's
+   * verdicts, everything else is self-graded.
+   */
+  async function grade(value: Grade, detail: AttemptDetail = SELF_GRADED): Promise<void> {
     // Dropped only when the tail of the chain is itself an unfinished
     // grade — a genuine double-tap. If anything else (an undo, most
     // usefully) has been queued since, this grade is a new intent, not a
     // duplicate, and must go through even while the original grade is
     // still ahead of it in the chain.
     if (tailKind === 'grade') return;
-    await enqueue(() => gradeCore(value), 'grade');
+    await enqueue(() => gradeCore(value, detail), 'grade');
   }
 
   /**

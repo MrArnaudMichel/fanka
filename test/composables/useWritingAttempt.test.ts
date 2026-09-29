@@ -52,6 +52,19 @@ describe('useWritingAttempt', () => {
     expect(attempt.missing.value).toEqual(['口']);
   });
 
+  it('reports a verdict per character for the log', async () => {
+    const attempt = useWritingAttempt(load);
+    await attempt.start('十一');
+    const [a, b] = drawn(DATA.十!);
+    attempt.submit([b!, a!]);
+    attempt.submit(drawn(DATA.一!));
+    expect(attempt.results.value).toEqual([
+      { character: '十', shapeCorrect: true, orderCorrect: false, error: 'stroke-order', strokeIndex: 0, expected: 2, drawn: 2 },
+      { character: '一', shapeCorrect: true, orderCorrect: true, error: null, strokeIndex: null, expected: 1, drawn: 1 },
+    ]);
+    expect(attempt.firstOrderFault.value?.character).toBe('十');
+  });
+
   it('ignores a slow load for a card it has already moved past', async () => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));

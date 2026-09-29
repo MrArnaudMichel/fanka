@@ -739,4 +739,14 @@ describe('useReviewSession modes', () => {
     expect(resumedReview.index.value).toBe(2);
     expect(resumedWriting.index.value).toBe(0);
   });
+
+  it('passes a checked drawing through to the attempt', async () => {
+    const session = createSession('writing');
+    await session.start();
+    const writing = [{ character: '學', shapeCorrect: true, orderCorrect: false, error: 'stroke-direction' as const, strokeIndex: 1, expected: 8, drawn: 8 }];
+    session.reveal();
+    await session.grade(3, { checked: true, writing });
+    const [attempt] = await db.attempts.toArray();
+    expect(attempt).toMatchObject({ source: 'scheduled', mode: 'writing', checked: true, writing });
+  });
 });

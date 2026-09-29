@@ -1,5 +1,5 @@
-import { cards, items } from '~core/db/repositories';
-import type { Card, Item } from '~core/db/schema';
+import { attempts, cards, items } from '~core/db/repositories';
+import { type AttemptDetail, type Card, type Item, SELF_GRADED } from '~core/db/schema';
 import { MODE_DIRECTION, type SessionMode } from '~core/db/session';
 import { studyDeckFilter } from '~core/db/study-decks';
 import type { Grade, SrsState } from '~core/srs';
@@ -8,9 +8,9 @@ import { pickNext, weightAfter } from '~core/srs/practice';
 /**
  * Endless practice in one direction, outside the schedule: cards are drawn
  * from the studied decks (`studyDeckFilter`) for as long as the learner keeps
- * going, missed ones more often (`pickNext`). Nothing is written — no review
- * log, no item update — and nothing is persisted, so leaving the page ends
- * the session.
+ * going, missed ones more often (`pickNext`). Nothing is scheduled — no
+ * review, no item update — but every answer is logged as a practice attempt
+ * for the journal and statistics.
  *
  * Returns the fields of `useReviewSession` that `review.vue` and
  * `writing.vue` read, so either page can run on it in its endless mode:
@@ -25,6 +25,7 @@ export function usePracticeSession(mode: SessionMode) {
   const busy = ref(false);
   const seen = ref(0);
   const right = ref(0);
+  const shownAt = ref(Date.now());
 
   const weights = new Map<string, number>();
   const recent: string[] = [];
@@ -34,6 +35,7 @@ export function usePracticeSession(mode: SessionMode) {
     card.value = item ? ((await cards.get(item.cardId)) ?? null) : null;
     current.value = item;
     revealed.value = false;
+    shownAt.value = Date.now();
   }
 
   function next(): Promise<void> {
@@ -54,11 +56,15 @@ export function usePracticeSession(mode: SessionMode) {
     }
   }
 
-  async function grade(value: Grade): Promise<void> {
+  async function grade(value: Grade, detail: AttemptDetail = SELF_GRADED): Promise<void> {
     const item = current.value;
     if (!item || busy.value) return;
     busy.value = true;
     try {
+      const at = Date.now();
+      // Logged first: a failed write surfaces to the page (a toast) and the
+      // card stays on screen, rather than the answer silently vanishing.
+      await attempts.log({ item, grade: value, at, durationMs: at - shownAt.value, detail });
       const correct = value > 1;
       weights.set(item.id, weightAfter(weights.get(item.id) ?? 1, correct));
       recent.push(item.id);

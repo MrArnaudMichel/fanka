@@ -1,4 +1,5 @@
 import { type CharacterStrokes, type Point, type StrokeCheck, checkCharacter, toModelSpace } from '~core/chinese/strokes';
+import type { WritingResult } from '~core/db/schema';
 
 /** Side of `HanziPad`'s viewBox: strokes arrive in this y-down box. */
 export const PAD_SIZE = 1024;
@@ -37,6 +38,18 @@ export function useWritingAttempt(load: Loader) {
 
   const correct = computed(() => status.value === 'checked' && attempts.value.every((a) => a.check.shapeCorrect));
   const firstWrong = computed(() => attempts.value.find((a) => !a.check.shapeCorrect) ?? null);
+  const firstOrderFault = computed(() => attempts.value.find((a) => a.check.shapeCorrect && !a.check.orderCorrect) ?? null);
+  const results = computed<WritingResult[]>(() =>
+    attempts.value.map(({ character, check }) => ({
+      character,
+      shapeCorrect: check.shapeCorrect,
+      orderCorrect: check.orderCorrect,
+      error: check.error,
+      strokeIndex: check.strokeIndex,
+      expected: check.expected,
+      drawn: check.drawn,
+    })),
+  );
 
   async function start(hanzi: string): Promise<void> {
     generation += 1;
@@ -87,6 +100,8 @@ export function useWritingAttempt(load: Loader) {
     attempts: readonly(attempts),
     correct,
     firstWrong,
+    firstOrderFault,
+    results,
     start,
     submit,
     reset,
