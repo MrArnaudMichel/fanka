@@ -121,6 +121,7 @@ async function retrySeed(): Promise<void> {
   <div class="today">
     <kt-page-header eyebrow="Dashboard" heading="Today" />
 
+    <div class="modes">
     <kt-card v-for="{ mode, heading, href, secondsPerCard } in MODES" :key="mode">
       <p class="overline" slot="header">{{ heading }}</p>
       <div class="summary">
@@ -131,7 +132,7 @@ async function retrySeed(): Promise<void> {
         </div>
         <p class="eta">
           <template v-if="counts[mode].total > 0">
-            {{ counts[mode].total }} card{{ counts[mode].total === 1 ? '' : 's' }} due · about
+            {{ counts[mode].total }} card{{ counts[mode].total === 1 ? '' : 's' }} today · about
             {{ minutes(counts[mode].total, secondsPerCard) }} min
           </template>
           <template v-else>Nothing due right now</template>
@@ -147,7 +148,7 @@ async function retrySeed(): Promise<void> {
         -->
         <kt-button
           ref="startButtons"
-          :variant="mode === 'review' ? 'primary' : 'secondary'"
+          variant="primary"
           size="large"
           :icon="mode === 'review' ? 'play' : 'pen-line'"
           full-width
@@ -159,6 +160,7 @@ async function retrySeed(): Promise<void> {
         </kt-button>
       </div>
     </kt-card>
+    </div>
 
     <kt-skeleton v-if="loadingDecks" height="120px" />
 
@@ -203,6 +205,11 @@ async function retrySeed(): Promise<void> {
    reaching for it. */
 .today { display: flex; flex-direction: column; gap: 24px; }
 .overline { margin: 0; font: var(--font-title-overline); letter-spacing: var(--letter-spacing-overline); text-transform: uppercase; color: var(--text-muted); }
+.modes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+/* Same 900px breakpoint as the shell: the sidebar appears, and there is room for two. */
+@media (min-width: 900px) {
+  .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .summary { display: flex; flex-direction: column; gap: var(--gap-form); }
 /* 12px matches --gap-drag-drop by value only — that token names an
    interaction this grid has nothing to do with, so a literal is the

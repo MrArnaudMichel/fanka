@@ -48,9 +48,10 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
   justify-content: center;
   gap: var(--gap-card);
   padding: var(--padding-card);
-  /* Tall enough that the hanzi reads as the card's one subject, short
-     enough on a phone that Show answer stays in view without scrolling. */
-  min-height: min(320px, 38dvh);
+  /* The card sizes to its content (the hanzi, then the answer). The floor
+     only keeps a one-character word from collapsing to a sliver; the same
+     documented clamp exception as the hanzi sizes below. */
+  min-height: min(200px, 26dvh);
   text-align: center;
 }
 
