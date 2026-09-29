@@ -3,6 +3,7 @@ import { db } from './db';
 import { type Attempt, type AttemptDetail, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { type Grade, type ItemState, type SrsState, newSrsState } from '~core/srs';
+import { MATURE_DAYS as MATURE_SCHEDULED_DAYS } from '~core/stats/memory';
 
 function uid(): string {
   return crypto.randomUUID();
@@ -97,9 +98,6 @@ export interface DeckSummary {
 
 /** A card's row `state` is its least-advanced unsuspended item's state; `new` < `learning` = `relearning` < `review`. */
 const STATE_RANK: Record<ItemState, number> = { new: 0, learning: 1, relearning: 1, review: 2 };
-
-/** The scheduling threshold above which a `review` item counts as mature rather than young. */
-const MATURE_SCHEDULED_DAYS = 21;
 
 export interface CardFilter {
   deckId?: string;
