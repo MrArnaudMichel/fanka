@@ -257,14 +257,14 @@ test('deleting a deck drops Today’s counts and a new session never shows one o
   const { controlHanzi } = await seedDueCardsForDeletion(page, { deckId, deckName, cardId, hanzi: targetHanzi });
 
   await page.reload();
-  await expect(page.getByText('2 cards due · about 1 min')).toBeVisible();
+  await expect(page.getByText('2 cards today · about 1 min')).toBeVisible();
 
   await page.goto('/decks');
   await expect(page.getByRole('heading', { name: 'Decks', level: 1 })).toBeVisible();
   const deckCard = page.locator('kt-card', { hasText: deckName });
   await expect(deckCard).toBeVisible();
 
-  await deckCard.getByRole('button', { name: 'Deck actions' }).click();
+  await deckCard.getByRole('button', { name: 'Deck actions', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
 
   const dialog = page.getByRole('alertdialog');
@@ -274,7 +274,7 @@ test('deleting a deck drops Today’s counts and a new session never shows one o
   await expect(deckCard).toHaveCount(0);
 
   await page.goto('/');
-  await expect(page.getByText('1 card due · about 1 min')).toBeVisible();
+  await expect(page.getByText('1 card today · about 1 min')).toBeVisible();
 
   const startButton = page.getByRole('button', { name: 'Start review', exact: true });
   await expect(startButton).toBeEnabled();

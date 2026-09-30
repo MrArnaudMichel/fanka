@@ -242,7 +242,7 @@ test('a learner can finish a session and return to Today', async ({ page }) => {
   // seconds each round to zero minutes; the estimate never says less than one.
   await page.reload();
   // Review's summary is the first of the two; Writing's shows the same count.
-  await expect(page.getByText('2 cards due · about 1 min').first()).toBeVisible();
+  await expect(page.getByText('2 cards today · about 1 min').first()).toBeVisible();
   await startButton.click();
   await expect(page).toHaveURL(/\/review$/);
 
