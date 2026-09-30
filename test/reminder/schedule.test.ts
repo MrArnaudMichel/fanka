@@ -43,7 +43,8 @@ describe('nextReminder', () => {
 
   it('keeps the wall-clock time across a DST change', () => {
     // Whatever the runner's zone, a local-date step lands on 19:00 the next day.
-    for (const [y, m, d] of [[2026, 3, 28], [2026, 3, 29], [2026, 10, 24], [2026, 10, 25], [2026, 11, 1]]) {
+    const days: [number, number, number][] = [[2026, 3, 28], [2026, 3, 29], [2026, 10, 24], [2026, 10, 25], [2026, 11, 1]];
+    for (const [y, m, d] of days) {
       const r = nextReminder(local(y, m, d, 20), '19:00', 2, false);
       expect(r).not.toBeNull();
       const at = new Date(r!.at);

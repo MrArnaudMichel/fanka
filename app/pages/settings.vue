@@ -4,6 +4,7 @@ import type { KtOption } from 'kanto-ds';
 import { computed, reactive, ref, watch } from 'vue';
 import { useAuth } from '~/composables/useAuth';
 import { useCompactLayout } from '~/composables/useCompactLayout';
+import { useReminder } from '~/composables/useReminder';
 import { useSettings } from '~/composables/useSettings';
 import { useSync } from '~/composables/useSync';
 import type { Algorithm } from '~core/srs';
@@ -53,6 +54,25 @@ const hidePinyinUntilRevealed = ref(false);
 const strokeFeedback = ref(true);
 const autoPlayAudio = ref(false);
 
+const reminderEnabled = ref(false);
+const reminderTime = ref('19:00');
+const reminderDenied = ref(false);
+const { native: reminderAvailable, requestPermission } = useReminder();
+
+async function onReminderToggle(event: CustomEvent<{ checked: boolean }>): Promise<void> {
+  reminderEnabled.value = event.detail.checked;
+  reminderDenied.value = false;
+  if (!event.detail.checked) return;
+  if (!(await requestPermission())) {
+    reminderEnabled.value = false;
+    reminderDenied.value = true;
+  }
+}
+
+function onReminderTimeChange(event: CustomEvent<{ value: string }>): void {
+  if (event.detail.value) reminderTime.value = event.detail.value;
+}
+
 const saving = ref(false);
 
 /**
@@ -77,6 +97,8 @@ watch(
     hidePinyinUntilRevealed.value = settings.value.hidePinyinUntilRevealed;
     strokeFeedback.value = settings.value.strokeFeedback;
     autoPlayAudio.value = settings.value.autoPlayAudio;
+    reminderEnabled.value = settings.value.reminderEnabled;
+    reminderTime.value = settings.value.reminderTime;
   },
   { immediate: true },
 );
@@ -127,6 +149,8 @@ async function onSave(): Promise<void> {
       hidePinyinUntilRevealed: hidePinyinUntilRevealed.value,
       strokeFeedback: strokeFeedback.value,
       autoPlayAudio: autoPlayAudio.value,
+      reminderEnabled: reminderEnabled.value,
+      reminderTime: reminderTime.value,
     });
     toaster.success('Settings saved');
   } catch (err) {
@@ -254,6 +278,24 @@ const loading = computed(() => !ready.value);
         <kt-toggle size="small" :checked="autoPlayAudio" @kt-change="(e: CustomEvent) => (autoPlayAudio = e.detail.checked)">
           Play pronunciation when the answer is shown
         </kt-toggle>
+      </kt-form>
+
+      <kt-form
+        v-if="reminderAvailable"
+        heading="Reminder"
+        description="A daily notification with how many cards are due."
+        :loading="loading"
+        loading-fields="2"
+      >
+        <kt-toggle size="small" :checked="reminderEnabled" @kt-change="onReminderToggle">Daily reminder</kt-toggle>
+        <kt-alert
+          v-if="reminderDenied"
+          variant="warning"
+          description="Notifications are blocked. Turn them on for Fanka in Android settings, under Apps, then Notifications."
+        />
+        <kt-label-input v-show="reminderEnabled" label="Reminder time">
+          <kt-input type="time" name="reminder-time" :value="reminderTime" @kt-change="onReminderTimeChange" />
+        </kt-label-input>
       </kt-form>
 
       <div class="actions fk-session-actions">

@@ -18,6 +18,10 @@ export interface Settings {
   hanziFont: 'serif' | 'sans';
   theme: 'dark' | 'light' | 'auto';
   reminders: { enabled: boolean; hour: number; minute: number };
+  /** Daily notification on the Android app; off until the learner allows notifications. */
+  reminderEnabled: boolean;
+  /** Local time of the daily reminder, "HH:MM". */
+  reminderTime: string;
   offlineStrokeCache: boolean;
 }
 
@@ -36,6 +40,8 @@ export const DEFAULT_SETTINGS: Settings = {
   hanziFont: 'serif',
   theme: 'dark',
   reminders: { enabled: true, hour: 19, minute: 0 },
+  reminderEnabled: false,
+  reminderTime: '19:00',
   offlineStrokeCache: true,
 };
 
