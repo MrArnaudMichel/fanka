@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type CharacterStrokes, type Point, checkCharacter, strokeOrderFrames, toModelSpace } from '~core/chinese/strokes';
+import { type CharacterStrokes, type Point, checkCharacter, checkStroke, strokeOrderFrames, toModelSpace } from '~core/chinese/strokes';
 import 一 from '../fixtures/strokes/一.json';
 import 十 from '../fixtures/strokes/十.json';
 import 口 from '../fixtures/strokes/口.json';
@@ -147,6 +147,35 @@ describe('checkCharacter', () => {
 
   it('rejects 口 drawn as 十', () => {
     expect(checkCharacter(traced(MODELS.十!), MODELS.口!).shapeCorrect).toBe(false);
+  });
+});
+
+describe('checkStroke', () => {
+  it.each(Object.keys(MODELS))('accepts each stroke of %s traced along its median', (character) => {
+    const model = MODELS[character]!;
+    traced(model).forEach((stroke, i) => expect(checkStroke(stroke, model, i)).toEqual({ matches: true, reversed: false }));
+  });
+
+  it('accepts a stroke drawn backwards along its median, and says so', () => {
+    const stroke = [...traced(MODELS.永!)[2]!].reverse();
+    expect(checkStroke(stroke, MODELS.永!, 2)).toEqual({ matches: true, reversed: true });
+  });
+
+  it("rejects another stroke's median where the two are far apart", () => {
+    const [horizontal, vertical] = traced(MODELS.十!);
+    expect(checkStroke(vertical!, MODELS.十!, 0).matches).toBe(false);
+    expect(checkStroke(horizontal!, MODELS.十!, 1).matches).toBe(false);
+  });
+
+  it('rejects a stroke moved far off its median', () => {
+    const stroke = traced(MODELS.學!)[5]!.map((p) => ({ x: p.x + 300, y: p.y - 300 }));
+    expect(checkStroke(stroke, MODELS.學!, 5).matches).toBe(false);
+  });
+
+  it('rejects an index outside the model', () => {
+    const [stroke] = traced(MODELS.一!);
+    expect(checkStroke(stroke!, MODELS.一!, 1)).toEqual({ matches: false, reversed: false });
+    expect(checkStroke(stroke!, MODELS.一!, -1)).toEqual({ matches: false, reversed: false });
   });
 });
 

@@ -86,6 +86,21 @@ function fit(stroke: Point[], median: Point[]): Fit | null {
   return { cost: backward, reversed: true };
 }
 
+/**
+ * Whether one drawn stroke (model space) follows median `index`, in either
+ * direction — the per-stroke test `checkCharacter` uses, for checking a
+ * character one stroke at a time. `reversed` when it follows it backwards.
+ */
+export function checkStroke(stroke: Point[], model: CharacterStrokes, index: number): { matches: boolean; reversed: boolean } {
+  const median = model.medians[index];
+  if (!median) return { matches: false, reversed: false };
+  const f = fit(
+    stroke,
+    median.map(([x, y]) => ({ x, y })),
+  );
+  return f ? { matches: true, reversed: f.reversed } : { matches: false, reversed: false };
+}
+
 export function checkCharacter(drawn: Point[][], model: CharacterStrokes): StrokeCheck {
   const expected = model.medians.length;
   const medians = model.medians.map((median) => median.map(([x, y]) => ({ x, y })));
