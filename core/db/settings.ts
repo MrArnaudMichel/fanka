@@ -11,6 +11,8 @@ export interface Settings {
   hidePinyinUntilRevealed: boolean;
   /** Writing checks each stroke as it is drawn, instead of the whole character on Check. */
   strokeFeedback: boolean;
+  /** Say the hanzi aloud when the answer is shown in Review and Writing. */
+  autoPlayAudio: boolean;
   autoplayStrokes: boolean;
   audio: boolean;
   hanziFont: 'serif' | 'sans';
@@ -28,6 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   toneColors: true,
   hidePinyinUntilRevealed: false,
   strokeFeedback: true,
+  autoPlayAudio: false,
   autoplayStrokes: true,
   audio: true,
   hanziFont: 'serif',

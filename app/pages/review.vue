@@ -4,6 +4,7 @@ import { useDueCounts } from '~/composables/useDueCounts';
 import { usePracticeSession } from '~/composables/usePracticeSession';
 import { useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
+import { useSpeech } from '~/composables/useSpeech';
 import type { Grade } from '~core/srs/types';
 
 /**
@@ -18,6 +19,16 @@ const practice = endless ? usePracticeSession('review') : null;
 const session = practice ?? useReviewSession('review');
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
+
+// Speaking is the page's job so the P key, auto-play and the card's buttons
+// share one engine and cancel each other.
+const { supported: canSpeak, speak } = useSpeech();
+watch(
+  () => session.revealed.value,
+  (now, before) => {
+    if (now && !before && settings.value.autoPlayAudio && session.card.value) void speak(session.card.value.hanzi);
+  },
+);
 
 /**
  * The composable exposes no "has start()/restore() settled yet" flag —
@@ -153,6 +164,9 @@ function onKey(event: KeyboardEvent) {
   } else if (practice && session.revealed.value && event.key.toLowerCase() === 'x') {
     event.preventDefault();
     void grade(1);
+  } else if (session.revealed.value && event.key.toLowerCase() === 'p') {
+    event.preventDefault();
+    if (session.card.value) void speak(session.card.value.hanzi);
   } else if (event.key.toLowerCase() === 'u') {
     event.preventDefault();
     void undo();
@@ -242,6 +256,8 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
         :item="session.current.value"
         :revealed="session.revealed.value"
         :settings="settings"
+        :can-speak="canSpeak"
+        @speak="speak"
       />
       <div class="actions fk-session-actions">
         <ShowAnswerButton

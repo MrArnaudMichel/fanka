@@ -80,7 +80,7 @@ const interval = (grade: Grade) => {
   </div>
   <p class="hints fk-keyboard-only">
     <kt-kbd>1</kt-kbd><kt-kbd>2</kt-kbd><kt-kbd>3</kt-kbd><kt-kbd>4</kt-kbd> to grade
-    <kt-kbd>U</kt-kbd> undo
+    <kt-kbd>P</kt-kbd> play <kt-kbd>U</kt-kbd> undo
   </p>
 </template>
 

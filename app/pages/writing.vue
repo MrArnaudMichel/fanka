@@ -7,6 +7,7 @@ import { useDueCounts } from '~/composables/useDueCounts';
 import { usePracticeSession } from '~/composables/usePracticeSession';
 import { SELF_GRADED, useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
+import { useSpeech } from '~/composables/useSpeech';
 import { useStrokeData } from '~/composables/useStrokeData';
 import type { StrokeOrderEntry } from '~/composables/useStrokeOrderPlayer';
 import { useWritingAttempt } from '~/composables/useWritingAttempt';
@@ -45,6 +46,16 @@ const practice = endless ? usePracticeSession('writing') : null;
 const session = practice ?? useReviewSession('writing');
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
+
+// Speaking is the page's job so the P key, auto-play and the card's buttons
+// share one engine and cancel each other.
+const { supported: canSpeak, speak } = useSpeech();
+watch(
+  () => session.revealed.value,
+  (now, before) => {
+    if (now && !before && settings.value.autoPlayAudio && session.card.value) void speak(session.card.value.hanzi);
+  },
+);
 const { load: loadStrokes } = useStrokeData();
 const attempt = useWritingAttempt(loadStrokes, { live: () => settings.value.strokeFeedback });
 
@@ -256,6 +267,11 @@ function onKey(event: KeyboardEvent) {
     session.reveal();
   }
 
+  if (session.revealed.value && event.key.toLowerCase() === 'p' && !event.defaultPrevented) {
+    event.preventDefault();
+    if (session.card.value) void speak(session.card.value.hanzi);
+  }
+
   if (event.key.toLowerCase() === 'u' && !event.defaultPrevented) {
     event.preventDefault();
     void undo();
@@ -340,7 +356,13 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
     <template
       v-else-if="session.card.value && session.current.value && session.card.value.id === session.current.value.cardId"
     >
-      <WritingCard :card="session.card.value" :revealed="session.revealed.value" :settings="settings">
+      <WritingCard
+        :card="session.card.value"
+        :revealed="session.revealed.value"
+        :settings="settings"
+        :can-speak="canSpeak"
+        @speak="speak"
+      >
         <WritingVerdict v-if="checked" :attempts="attempt.attempts.value" />
 
         <template v-else-if="!session.revealed.value">
@@ -418,9 +440,9 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
           @reveal="session.reveal()"
         />
         <p v-if="selfGraded" class="hints fk-keyboard-only">
-          <kt-kbd>Space</kt-kbd> right <kt-kbd>X</kt-kbd> wrong <kt-kbd>U</kt-kbd> undo
+          <kt-kbd>Space</kt-kbd> right <kt-kbd>X</kt-kbd> wrong <kt-kbd>P</kt-kbd> play <kt-kbd>U</kt-kbd> undo
         </p>
-        <p v-else-if="checked || givenUp" class="hints fk-keyboard-only"><kt-kbd>Enter</kt-kbd> continue <kt-kbd>U</kt-kbd> undo</p>
+        <p v-else-if="checked || givenUp" class="hints fk-keyboard-only"><kt-kbd>Enter</kt-kbd> continue <kt-kbd>P</kt-kbd> play <kt-kbd>U</kt-kbd> undo</p>
         <p v-else-if="attempt.status.value === 'drawing' && attempt.live.value" class="hints fk-keyboard-only">
           <kt-kbd>N</kt-kbd> don't know
         </p>

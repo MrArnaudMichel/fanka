@@ -51,6 +51,7 @@ const showZhuyin = ref(false);
 const toneColors = ref(true);
 const hidePinyinUntilRevealed = ref(false);
 const strokeFeedback = ref(true);
+const autoPlayAudio = ref(false);
 
 const saving = ref(false);
 
@@ -75,6 +76,7 @@ watch(
     toneColors.value = settings.value.toneColors;
     hidePinyinUntilRevealed.value = settings.value.hidePinyinUntilRevealed;
     strokeFeedback.value = settings.value.strokeFeedback;
+    autoPlayAudio.value = settings.value.autoPlayAudio;
   },
   { immediate: true },
 );
@@ -124,6 +126,7 @@ async function onSave(): Promise<void> {
       toneColors: toneColors.value,
       hidePinyinUntilRevealed: hidePinyinUntilRevealed.value,
       strokeFeedback: strokeFeedback.value,
+      autoPlayAudio: autoPlayAudio.value,
     });
     toaster.success('Settings saved');
   } catch (err) {
@@ -247,6 +250,9 @@ const loading = computed(() => !ready.value);
         </kt-toggle>
         <kt-toggle size="small" :checked="strokeFeedback" @kt-change="(e: CustomEvent) => (strokeFeedback = e.detail.checked)">
           Stroke-by-stroke feedback in writing
+        </kt-toggle>
+        <kt-toggle size="small" :checked="autoPlayAudio" @kt-change="(e: CustomEvent) => (autoPlayAudio = e.detail.checked)">
+          Play pronunciation when the answer is shown
         </kt-toggle>
       </kt-form>
 

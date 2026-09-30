@@ -6,7 +6,8 @@ import type { Settings } from '~core/db/settings';
  * Review shows recognition items only (see `SessionMode`): the hanzi alone,
  * and the learner recalls its pinyin and meaning before revealing them.
  */
-defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>();
+defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings; canSpeak: boolean }>();
+defineEmits<{ speak: [text: string] }>();
 </script>
 
 <template>
@@ -19,14 +20,34 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
       <div class="hanzi">{{ card.hanzi }}</div>
 
       <div v-if="revealed" class="answer" role="status" aria-live="polite" aria-atomic="true">
-        <PinyinText :syllables="card.pinyin" :colored="settings.toneColors" size="28px" />
+        <div class="pinyin-row">
+          <PinyinText :syllables="card.pinyin" :colored="settings.toneColors" size="28px" />
+          <kt-button
+            variant="secondary-no-bg"
+            size="small"
+            icon="volume-2"
+            :label="canSpeak ? 'Play pronunciation' : 'No Chinese voice on this device'"
+            :disabled="!canSpeak"
+            @click="$emit('speak', card.hanzi)"
+          />
+        </div>
         <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
         <p class="meaning">{{ card.translation }}</p>
         <div class="tags">
           <kt-badge v-for="tag in card.tags" :key="tag" variant="tag" tone="neutral" size="small" :label="tag" />
         </div>
         <div v-if="card.example" class="example">
-          <p class="overline">Example</p>
+          <div class="example-head">
+            <p class="overline">Example</p>
+            <kt-button
+              variant="secondary-no-bg"
+              size="small"
+              icon="volume-2"
+              :label="canSpeak ? 'Play pronunciation' : 'No Chinese voice on this device'"
+              :disabled="!canSpeak"
+              @click="$emit('speak', card.example)"
+            />
+          </div>
           <p class="example-hanzi">{{ card.example }}</p>
           <p class="example-pinyin">{{ card.examplePinyin }}</p>
           <p class="example-translation">{{ card.exampleTranslation }}</p>
@@ -87,6 +108,10 @@ defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings }>()
 }
 
 .zhuyin { font-family: var(--fk-font-hanzi-sans); font-size: 18px; color: var(--text-muted); letter-spacing: 2px; }
+.pinyin-row, .example-head { display: flex; align-items: center; gap: var(--gap-button); }
+.pinyin-row { justify-content: center; }
+.example-head { justify-content: space-between; }
+.example-head .overline { margin: 0; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
 
 .example {

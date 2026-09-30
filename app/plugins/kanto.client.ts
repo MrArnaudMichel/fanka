@@ -28,6 +28,7 @@ import {
   Trophy,
   Undo2,
   Upload,
+  Volume2,
   X,
 } from 'lucide';
 import { registerIcons } from 'kanto-ds/icons';
@@ -57,7 +58,8 @@ export default defineNuxtPlugin(async () => {
   // ChevronLeft/ChevronRight are the stroke-order player's replay and
   // previous/next stroke actions (Task 5). Trophy and Clock are the
   // Statistics Activity tab's best-streak and time-studied tiles (Task 11).
-  // CircleHelp is Writing's "I don't know" action.
+  // CircleHelp is Writing's "I don't know" action. Volume2 is the
+  // play-pronunciation button on the Review and Writing cards.
   registerIcons({
     ChartLine,
     Check,
@@ -87,6 +89,7 @@ export default defineNuxtPlugin(async () => {
     Trophy,
     Undo2,
     Upload,
+    Volume2,
     X,
   });
 

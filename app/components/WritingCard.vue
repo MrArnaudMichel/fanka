@@ -8,7 +8,8 @@ import type { Settings } from '~core/db/settings';
  * slot holds whatever sits between prompt and answer — the drawing pad, or
  * the verdict once the drawing is checked.
  */
-defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
+defineProps<{ card: Card; revealed: boolean; settings: Settings; canSpeak: boolean }>();
+defineEmits<{ speak: [text: string] }>();
 </script>
 
 <template>
@@ -28,7 +29,17 @@ defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
       <slot />
 
       <div v-if="revealed" class="answer fk-selectable" role="status" aria-live="polite" aria-atomic="true">
-        <div class="hanzi">{{ card.hanzi }}</div>
+        <div class="hanzi-row">
+          <div class="hanzi">{{ card.hanzi }}</div>
+          <kt-button
+            variant="secondary-no-bg"
+            size="small"
+            icon="volume-2"
+            :label="canSpeak ? 'Play pronunciation' : 'No Chinese voice on this device'"
+            :disabled="!canSpeak"
+            @click="$emit('speak', card.hanzi)"
+          />
+        </div>
         <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
       </div>
       <!--
@@ -75,6 +86,8 @@ defineProps<{ card: Card; revealed: boolean; settings: Settings }>();
   border-top: var(--border-width) solid var(--border-subtle);
   padding-top: var(--padding-card);
 }
+
+.hanzi-row { display: flex; align-items: center; gap: var(--gap-button); }
 
 .hanzi {
   font-family: var(--fk-font-hanzi);
