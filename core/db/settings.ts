@@ -9,6 +9,8 @@ export interface Settings {
   showZhuyin: boolean;
   toneColors: boolean;
   hidePinyinUntilRevealed: boolean;
+  /** Writing checks each stroke as it is drawn, instead of the whole character on Check. */
+  strokeFeedback: boolean;
   autoplayStrokes: boolean;
   audio: boolean;
   hanziFont: 'serif' | 'sans';
@@ -25,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showZhuyin: false,
   toneColors: true,
   hidePinyinUntilRevealed: false,
+  strokeFeedback: true,
   autoplayStrokes: true,
   audio: true,
   hanziFont: 'serif',

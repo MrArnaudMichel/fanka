@@ -1,4 +1,4 @@
-import type { MaybeRefOrGetter } from 'vue';
+import { type MaybeRefOrGetter, toValue } from 'vue';
 import { type CharacterStrokes, type Point, type StrokeCheck, checkCharacter, checkStroke, toModelSpace } from '~core/chinese/strokes';
 import type { WritingResult } from '~core/db/schema';
 

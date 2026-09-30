@@ -45,11 +45,20 @@ async function mediansFor(page: Page, character: string): Promise<Median[]> {
   return page.evaluate(async (path) => (await (await fetch(path)).json()).medians, `/strokes/${file}`);
 }
 
-/** `heading` is a property (Kanto data goes in as properties), not an attribute. */
-const heading = (page: Page) => page.locator('kt-alert').evaluate((el) => (el as HTMLElement & { heading: string }).heading);
+/**
+ * The verdict alert's heading — `nth` 0 for the character, 1 for the stroke
+ * order. `heading` is a property (Kanto data goes in as properties), not an
+ * attribute.
+ */
+const heading = (page: Page, nth = 0) =>
+  page.locator('kt-alert').nth(nth).evaluate((el) => (el as HTMLElement & { heading: string }).heading);
 
-/** Draws each median on the pad, model space (1024, y up from 900) to screen. */
-async function draw(page: Page, medians: Median[], reversed = false): Promise<void> {
+/**
+ * Draws each median on the pad, model space (1024, y up from 900) to screen.
+ * `live`: stroke-by-stroke feedback is on, so the pad is replaced as soon
+ * as the character's last stroke is accepted and there is no ink to count.
+ */
+async function draw(page: Page, medians: Median[], reversed = false, live = false): Promise<void> {
   const ink = page.locator('svg.pad polyline');
   // Each character gets a fresh pad: wait for it to be empty, so no stroke
   // lands on the previous character's pad while it is being replaced.
@@ -69,10 +78,46 @@ async function draw(page: Page, medians: Median[], reversed = false): Promise<vo
     for (const p of points.slice(1)) await page.mouse.move(p.x, p.y, { steps: 4 });
     await page.mouse.up();
   }
-  await expect(ink).toHaveCount(medians.length);
+  if (!live) await expect(ink).toHaveCount(medians.length);
 }
 
-async function openWriting(page: Page): Promise<string> {
+/** A short stroke in the pad's top-left corner, far from any median. */
+async function scribble(page: Page): Promise<void> {
+  const box = (await page.locator('svg.pad').boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.04, box.y + box.height * 0.04);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.12, box.y + box.height * 0.06, { steps: 4 });
+  await page.mouse.up();
+}
+
+/** Stroke-by-stroke feedback is on by default; the whole-character Check needs it off. */
+async function setStrokeFeedback(page: Page, on: boolean): Promise<void> {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Start writing', exact: true })).toBeEnabled();
+  await page.evaluate(
+    (value) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open('fanka');
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction('settings', 'readwrite');
+          const store = tx.objectStore('settings');
+          const get = store.get('settings');
+          get.onsuccess = () => store.put({ key: 'settings', value: { ...(get.result?.value ?? {}), strokeFeedback: value } });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+    on,
+  );
+}
+
+async function openWriting(page: Page, live = false): Promise<string> {
+  await setStrokeFeedback(page, live);
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Start writing', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Start writing', exact: true }).click();
@@ -90,7 +135,7 @@ test('drawing the right strokes in order is checked as right, and Continue moves
     await check.click();
   }
 
-  await expect.poll(() => heading(page)).toBe('Right');
+  await expect.poll(() => heading(page)).toBe('Character: Right');
   await expect(page.locator('.answer .hanzi')).toHaveText(hanzi);
   await expect(page.getByRole('button', { name: 'Count it as right' })).toHaveCount(0);
 
@@ -99,7 +144,7 @@ test('drawing the right strokes in order is checked as right, and Continue moves
   await expect(page.locator('svg.pad')).toBeVisible();
 });
 
-test('strokes drawn backwards are checked as wrong and name the first bad stroke', async ({ page }) => {
+test('strokes drawn backwards keep the character right and fault the stroke order', async ({ page }) => {
   const hanzi = await openWriting(page);
   const check = page.getByRole('button', { name: 'Check', exact: true });
 
@@ -108,8 +153,8 @@ test('strokes drawn backwards are checked as wrong and name the first bad stroke
     await check.click();
   }
 
-  await expect.poll(() => heading(page)).toMatch(/stroke 1 doesn't match$/);
-  await expect(page.getByRole('button', { name: 'Count it as right' })).toBeVisible();
+  await expect.poll(() => heading(page)).toBe('Character: Right');
+  await expect.poll(() => heading(page, 1)).toMatch(/stroke 1 drawn backwards$/);
 });
 
 test('Undo stroke and Clear empty the pad before a check', async ({ page }) => {
@@ -126,6 +171,31 @@ test('Undo stroke and Clear empty the pad before a check', async ({ page }) => {
   await page.getByRole('button', { name: 'Clear' }).click();
   await expect(ink).toHaveCount(0);
   await expect(check).toBeDisabled();
+});
+
+test('stroke by stroke: right strokes need no Check, and the verdict follows the last one', async ({ page }) => {
+  const hanzi = await openWriting(page, true);
+  await expect(page.getByRole('button', { name: 'Check', exact: true })).toHaveCount(0);
+
+  for (const character of hanzi) await draw(page, await mediansFor(page, character), false, true);
+
+  await expect.poll(() => heading(page)).toBe('Character: Right');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.progress').getByText(/^2 \/ \d+$/)).toBeVisible();
+});
+
+test('stroke by stroke: a wrong stroke is taken off the pad, and three show the expected one', async ({ page }) => {
+  await openWriting(page, true);
+  const ink = page.locator('svg.pad polyline');
+
+  await scribble(page);
+  await expect(page.locator('svg.pad polyline.rejected')).toHaveCount(1);
+  await expect(ink).toHaveCount(0);
+  await expect(page.locator('svg.pad path.hint')).toHaveCount(0);
+
+  await scribble(page);
+  await scribble(page);
+  await expect(page.locator('svg.pad path.hint')).toHaveCount(1);
 });
 
 test('Review shows the hanzi alone until the answer is revealed', async ({ page }) => {

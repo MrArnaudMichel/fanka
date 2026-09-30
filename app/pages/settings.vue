@@ -50,6 +50,7 @@ const hanziFont = ref<'serif' | 'sans'>('serif');
 const showZhuyin = ref(false);
 const toneColors = ref(true);
 const hidePinyinUntilRevealed = ref(false);
+const strokeFeedback = ref(true);
 
 const saving = ref(false);
 
@@ -73,6 +74,7 @@ watch(
     showZhuyin.value = settings.value.showZhuyin;
     toneColors.value = settings.value.toneColors;
     hidePinyinUntilRevealed.value = settings.value.hidePinyinUntilRevealed;
+    strokeFeedback.value = settings.value.strokeFeedback;
   },
   { immediate: true },
 );
@@ -121,6 +123,7 @@ async function onSave(): Promise<void> {
       showZhuyin: showZhuyin.value,
       toneColors: toneColors.value,
       hidePinyinUntilRevealed: hidePinyinUntilRevealed.value,
+      strokeFeedback: strokeFeedback.value,
     });
     toaster.success('Settings saved');
   } catch (err) {
@@ -216,7 +219,7 @@ const loading = computed(() => !ready.value);
         </kt-label-input>
       </kt-form>
 
-      <kt-form heading="Display" description="Theme and how cards are shown during review." :loading="loading" loading-fields="5">
+      <kt-form heading="Display" description="Theme and how cards are shown during review." :loading="loading" loading-fields="6">
         <kt-label-input label="Theme">
           <kt-select :options="themeOptions" :value="theme" :clearable="false" @kt-change="(e: CustomEvent) => (theme = e.detail.value)" />
         </kt-label-input>
@@ -241,6 +244,9 @@ const loading = computed(() => !ready.value);
           @kt-change="(e: CustomEvent) => (hidePinyinUntilRevealed = e.detail.checked)"
         >
           Hide the pinyin hint in writing practice
+        </kt-toggle>
+        <kt-toggle size="small" :checked="strokeFeedback" @kt-change="(e: CustomEvent) => (strokeFeedback = e.detail.checked)">
+          Stroke-by-stroke feedback in writing
         </kt-toggle>
       </kt-form>
 

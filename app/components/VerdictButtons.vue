@@ -6,12 +6,14 @@ import type { Grade } from '~core/srs/types';
  * (Good), Wrong is 1 (Again), as `WritingButtons` grades them — and it is
  * recorded only on Continue, so Undo in the page header behaves as it does
  * in Review. After a Wrong verdict, "Count it as right" grades 3 instead: the
- * checker can reject a character a teacher would accept.
+ * checker can reject a character a teacher would accept. `rightGrade`
+ * replaces 3 for a right verdict — stroke-by-stroke writing grades 2 (Hard)
+ * when a hint was needed.
  *
  * Mounts in the same instant the Check button unmounts, so it takes focus
  * the way `GradeButtons` does, for the same reason.
  */
-const props = defineProps<{ correct: boolean; busy: boolean }>();
+const props = withDefaults(defineProps<{ correct: boolean; busy: boolean; rightGrade?: Grade }>(), { rightGrade: 3 });
 const emit = defineEmits<{ grade: [Grade] }>();
 
 const continueButton = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
@@ -40,7 +42,7 @@ useFocusWhenEnabled(
       size="large"
       full-width
       :disabled="busy"
-      @click="emit('grade', correct ? 3 : 1)"
+      @click="emit('grade', correct ? rightGrade : 1)"
     >
       Continue
     </kt-button>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Point } from '~core/chinese/strokes';
+import { MODEL_BASELINE, type Point } from '~core/chinese/strokes';
 import { PAD_SIZE } from '~/composables/useWritingAttempt';
 
 /**
@@ -10,13 +10,22 @@ import { PAD_SIZE } from '~/composables/useWritingAttempt';
  *
  * `touch-action: none` on the pad alone keeps a stroke from scrolling the
  * page, while the rest of the page still scrolls normally.
+ *
+ * For stroke-by-stroke feedback, `stroke` announces each finished stroke;
+ * `reject()` takes the last one back off the pad, flashing it in the danger
+ * colour as it goes, and `hint` (one model stroke's SVG path, y-up as in the
+ * stroke data) is drawn faintly under the ink.
  */
-const emit = defineEmits<{ 'strokes-change': [Point[][]] }>();
+defineProps<{ hint?: string | null }>();
+const emit = defineEmits<{ 'strokes-change': [Point[][]]; stroke: [Point[]] }>();
 
 const svg = ref<SVGSVGElement>();
 const strokes = ref<Point[][]>([]);
 const current = ref<Point[] | null>(null);
 let activePointer: number | null = null;
+/** The stroke just refused, while it flashes; keyed so a second refusal restarts the flash. */
+const rejected = ref<{ stroke: Point[]; key: number } | null>(null);
+const flip = `scale(1, -1) translate(0, -${MODEL_BASELINE})`;
 
 function toPad(event: PointerEvent): Point {
   const box = svg.value!.getBoundingClientRect();
@@ -50,6 +59,14 @@ function onUp(event: PointerEvent): void {
   if (!stroke || stroke.length === 0) return;
   strokes.value = [...strokes.value, stroke];
   emit('strokes-change', strokes.value);
+  emit('stroke', stroke);
+}
+
+function reject(): void {
+  const last = strokes.value.at(-1);
+  if (!last) return;
+  rejected.value = { stroke: last, key: (rejected.value?.key ?? 0) + 1 };
+  undo();
 }
 
 function undo(): void {
@@ -64,7 +81,7 @@ function clear(): void {
 
 const points = (stroke: Point[]) => stroke.map((p) => `${p.x},${p.y}`).join(' ');
 
-defineExpose({ undo, clear });
+defineExpose({ undo, clear, reject });
 </script>
 
 <template>
@@ -80,7 +97,15 @@ defineExpose({ undo, clear });
     @pointercancel="onUp"
   >
     <HanziGrid />
+    <path v-if="hint" class="hint" :d="hint" :transform="flip" />
     <polyline v-for="(stroke, i) in strokes" :key="i" class="ink" :points="points(stroke)" />
+    <polyline
+      v-if="rejected"
+      :key="`rejected-${rejected.key}`"
+      class="ink rejected"
+      :points="points(rejected.stroke)"
+      @animationend="rejected = null"
+    />
     <polyline v-if="current" class="ink" :points="points(current)" />
   </svg>
 </template>
@@ -106,4 +131,13 @@ defineExpose({ undo, clear });
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* The expected stroke, shown after repeated misses: faint, under the ink. */
+.hint { fill: var(--color-primary-soft); }
+
+.ink.rejected {
+  stroke: var(--color-danger-base);
+  animation: fk-reject-flash calc(var(--duration-normal) * 3) ease-in forwards;
+}
+@keyframes fk-reject-flash { to { opacity: 0; } }
 </style>

@@ -26,6 +26,12 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
  *   brought back a card graded earlier, whose drawing is gone: the answer,
  *   then Right / Wrong as before;
  * - otherwise the pad, one character at a time.
+ *
+ * With stroke-by-stroke feedback on (the default), there is no Check: each
+ * stroke is checked as it ends, a wrong one flashes and is taken back off
+ * the pad, and the verdict follows the word's last stroke. Every character
+ * so drawn is right, so Continue grades Good — or Hard when a hint (the
+ * expected stroke, shown after three misses in a row) was needed.
  */
 /**
  * `?endless=1` (from the Practice page) runs the same screen on an endless,
@@ -40,7 +46,7 @@ const session = practice ?? useReviewSession('writing');
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
 const { load: loadStrokes } = useStrokeData();
-const attempt = useWritingAttempt(loadStrokes);
+const attempt = useWritingAttempt(loadStrokes, { live: () => settings.value.strokeFeedback });
 
 const loading = ref(true);
 const hasGraded = ref(false);
@@ -109,10 +115,37 @@ watch(attempt.position, () => {
 });
 
 function check(): void {
-  if (drawn.value.length === 0 || session.busy.value) return;
+  if (drawn.value.length === 0 || session.busy.value || attempt.live.value) return;
   attempt.submit(drawn.value);
   if (attempt.status.value === 'checked') session.reveal();
 }
+
+/** Stroke-by-stroke feedback: each stroke is checked as the pad lets go of it. */
+function onStroke(stroke: Point[]): void {
+  if (!attempt.live.value) return;
+  if (attempt.addStroke(stroke) === 'rejected') pad.value?.reject();
+  else if (attempt.status.value === 'checked') session.reveal();
+}
+
+function undoStroke(): void {
+  pad.value?.undo();
+  attempt.undoStroke();
+}
+
+function clearPad(): void {
+  pad.value?.clear();
+  attempt.restartCharacter();
+}
+
+/** The expected stroke's outline, once the learner has missed it three times running. */
+const hintPath = computed(() => {
+  const at = attempt.hint.value;
+  const model = attempt.model.value;
+  return at === null || !model ? null : (model.strokes[at] ?? null);
+});
+
+/** A checked drawing's grade when right: stroke-by-stroke, a hint makes it Hard. */
+const rightGrade = computed<Grade>(() => (attempt.live.value && attempt.hintsUsed.value ? 2 : 3));
 
 /**
  * "I don't know": the learner gives up on the card before checking. It is
@@ -195,7 +228,7 @@ function onKey(event: KeyboardEvent) {
   if (checked.value) {
     if (event.key === 'Enter' || event.code === 'Space') {
       event.preventDefault();
-      void grade(attempt.correct.value ? 3 : 1);
+      void grade(attempt.correct.value ? rightGrade.value : 1);
     }
   } else if (givenUp.value) {
     if (event.key === 'Enter' || event.code === 'Space') {
@@ -211,7 +244,7 @@ function onKey(event: KeyboardEvent) {
       void grade(1);
     }
   } else if (attempt.status.value === 'drawing') {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !attempt.live.value) {
       event.preventDefault();
       check();
     } else if (event.key.toLowerCase() === 'n') {
@@ -318,7 +351,9 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
             <HanziPad
               ref="pad"
               :key="`${session.current.value.id}:${attempt.position.value}`"
+              :hint="hintPath"
               @strokes-change="(strokes: Point[][]) => (drawn = strokes)"
+              @stroke="onStroke"
             />
           </div>
           <p v-else-if="attempt.status.value === 'unsupported'" class="note">
@@ -333,7 +368,13 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
       </WritingCard>
 
       <div class="actions fk-session-actions">
-        <VerdictButtons v-if="checked" :correct="attempt.correct.value" :busy="session.busy.value" @grade="grade" />
+        <VerdictButtons
+          v-if="checked"
+          :correct="attempt.correct.value"
+          :right-grade="rightGrade"
+          :busy="session.busy.value"
+          @grade="grade"
+        />
         <kt-button
           v-else-if="givenUp"
           variant="primary"
@@ -345,13 +386,28 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
           Continue
         </kt-button>
         <WritingButtons v-else-if="selfGraded" :busy="session.busy.value" @grade="grade" />
-        <div v-else-if="attempt.status.value === 'drawing'" class="pad-controls">
-          <kt-button variant="secondary" size="large" icon="undo-2" label="Undo stroke" :disabled="drawn.length === 0" @click="pad?.undo()" />
-          <kt-button variant="secondary" size="large" icon="x" label="Clear" :disabled="drawn.length === 0" @click="pad?.clear()" />
-          <kt-button variant="secondary" size="large" icon="circle-help" :disabled="session.busy.value" @click="giveUp">
+        <div v-else-if="attempt.status.value === 'drawing'" class="pad-controls" :class="{ live: attempt.live.value }">
+          <kt-button variant="secondary" size="large" icon="undo-2" label="Undo stroke" :disabled="drawn.length === 0" @click="undoStroke" />
+          <kt-button variant="secondary" size="large" icon="x" label="Clear" :disabled="drawn.length === 0" @click="clearPad" />
+          <kt-button
+            variant="secondary"
+            size="large"
+            icon="circle-help"
+            :full-width="attempt.live.value"
+            :disabled="session.busy.value"
+            @click="giveUp"
+          >
             I don't know
           </kt-button>
-          <kt-button variant="primary" size="large" icon="check" full-width :disabled="drawn.length === 0 || session.busy.value" @click="check">
+          <kt-button
+            v-if="!attempt.live.value"
+            variant="primary"
+            size="large"
+            icon="check"
+            full-width
+            :disabled="drawn.length === 0 || session.busy.value"
+            @click="check"
+          >
             Check
           </kt-button>
         </div>
@@ -365,6 +421,9 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
           <kt-kbd>Space</kt-kbd> right <kt-kbd>X</kt-kbd> wrong <kt-kbd>U</kt-kbd> undo
         </p>
         <p v-else-if="checked || givenUp" class="hints fk-keyboard-only"><kt-kbd>Enter</kt-kbd> continue <kt-kbd>U</kt-kbd> undo</p>
+        <p v-else-if="attempt.status.value === 'drawing' && attempt.live.value" class="hints fk-keyboard-only">
+          <kt-kbd>N</kt-kbd> don't know
+        </p>
         <p v-else-if="attempt.status.value === 'drawing'" class="hints fk-keyboard-only">
           <kt-kbd>Enter</kt-kbd> check <kt-kbd>N</kt-kbd> don't know
         </p>
@@ -397,6 +456,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 .pad-skeleton { width: 100%; aspect-ratio: 1; }
 .note { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 .pad-controls { display: grid; grid-template-columns: auto auto auto 1fr; gap: var(--gap-button); }
+.pad-controls.live { grid-template-columns: auto auto 1fr; }
 .hints {
   display: flex;
   justify-content: center;
