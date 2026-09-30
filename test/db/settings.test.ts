@@ -32,11 +32,12 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS.desiredRetention).toBe(0.9);
   });
 
-  it('merges a partial reminders object field by field', async () => {
-    await db.settings.put({ key: 'settings', value: { reminders: { hour: 8 } } });
+  it('drops unknown stored keys, such as the retired audio and reminders fields', async () => {
+    await db.settings.put({ key: 'settings', value: { newPerDay: 7, audio: true, reminders: { hour: 8 } } });
     const loaded = await loadSettings();
-    expect(loaded.reminders.hour).toBe(8);
-    expect(loaded.reminders.enabled).toBe(DEFAULT_SETTINGS.reminders.enabled);
-    expect(loaded.reminders.minute).toBe(DEFAULT_SETTINGS.reminders.minute);
+    expect(loaded.newPerDay).toBe(7);
+    expect(loaded).not.toHaveProperty('audio');
+    expect(loaded).not.toHaveProperty('reminders');
+    expect(Object.keys(loaded).sort()).toEqual(Object.keys(DEFAULT_SETTINGS).sort());
   });
 });

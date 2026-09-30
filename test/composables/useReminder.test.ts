@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REMINDER_ID, type ReminderEngine, useReminder } from '~/composables/useReminder';
+import { useDueCounts } from '~/composables/useDueCounts';
 import { useSettings } from '~/composables/useSettings';
 import { db } from '~core/db/db';
 
@@ -19,6 +20,13 @@ function fakeEngine(granted = true) {
 }
 
 const NOW = new Date(2026, 8, 16, 8, 0).getTime();
+
+// Every useReminder() call starts a fire-and-forget due-count refresh; let it
+// finish before the next beforeEach deletes the database under it.
+afterEach(async () => {
+  await useDueCounts().refresh();
+  await vi.waitFor(() => new Promise((resolve) => setTimeout(resolve, 10)));
+});
 
 beforeEach(async () => {
   await db.delete();

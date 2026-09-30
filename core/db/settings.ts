@@ -14,10 +14,8 @@ export interface Settings {
   /** Say the hanzi aloud when the answer is shown in Review and Writing. */
   autoPlayAudio: boolean;
   autoplayStrokes: boolean;
-  audio: boolean;
   hanziFont: 'serif' | 'sans';
   theme: 'dark' | 'light' | 'auto';
-  reminders: { enabled: boolean; hour: number; minute: number };
   /** Daily notification on the Android app; off until the learner allows notifications. */
   reminderEnabled: boolean;
   /** Local time of the daily reminder, "HH:MM". */
@@ -36,10 +34,8 @@ export const DEFAULT_SETTINGS: Settings = {
   strokeFeedback: true,
   autoPlayAudio: false,
   autoplayStrokes: true,
-  audio: true,
   hanziFont: 'serif',
   theme: 'dark',
-  reminders: { enabled: true, hour: 19, minute: 0 },
   reminderEnabled: false,
   reminderTime: '19:00',
   offlineStrokeCache: true,
@@ -49,17 +45,18 @@ const KEY = 'settings';
 
 /**
  * Merged over the defaults on every read, so a release that adds a setting
- * does not need a migration and an older stored record stays valid.
- *
- * The top-level spread only merges one level deep, so `reminders` — the only
- * nested object today — is merged by hand below. If a second nested-object
- * setting is added, it needs the same manual treatment or the top-level
- * spread will silently replace it wholesale instead of filling in new keys.
+ * does not need a migration and an older stored record stays valid. Stored
+ * keys that are no longer settings are dropped. Settings are flat; a nested
+ * setting would need a hand-written merge here.
  */
 export async function loadSettings(): Promise<Settings> {
   const row = await db.settings.get(KEY);
   const stored = (row?.value ?? {}) as Partial<Settings>;
-  return { ...DEFAULT_SETTINGS, ...stored, reminders: { ...DEFAULT_SETTINGS.reminders, ...stored.reminders } };
+  const merged: Settings = { ...DEFAULT_SETTINGS };
+  for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]) {
+    if (key in stored) (merged as unknown as Record<string, unknown>)[key] = stored[key];
+  }
+  return merged;
 }
 
 /**
