@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Card } from '~core/db/schema';
 import type { DeepReadonly } from 'vue';
+import type { Card } from '~core/db/schema';
 import type { Settings } from '~core/db/settings';
 
 /**

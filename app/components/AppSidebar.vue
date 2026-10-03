@@ -94,12 +94,8 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
   }
 }
 
-.search { margin-left: auto; }
-.profile { margin-top: auto; }
-.profile-row { display: flex; align-items: center; gap: var(--gap-element); min-width: 0; }
-.profile-name { font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
+.search { margin-left: auto; }
 
 .mark {
   width: 32px;
@@ -116,4 +112,9 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
 .wordmark { display: flex; flex-direction: column; }
 .name { font: var(--font-title-h6); letter-spacing: 4px; color: var(--text-body); }
 .tagline { font: var(--font-normal-small); color: var(--text-muted); }
+
+/* Bottom of the sidebar, signed in only. */
+.profile { margin-top: auto; }
+.profile-row { display: flex; align-items: center; gap: var(--gap-element); min-width: 0; }
+.profile-name { font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

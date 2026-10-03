@@ -123,8 +123,8 @@ findings are never parked here.
 | `app/pages/settings/account.vue` (`.sync-stats`) | `minmax(120px, 1fr)` is a literal grid-track minimum | Same pattern as `import.vue`'s `.stats`; Kanto has no grid-track token | Account sync details |
 | Kanto 1.8 settings, reminders and import (T2) | theme test asserts the dataset only, not persistence | Minor; judged not worth a fix round | Kanto 1.8 T2 review |
 | Kanto 1.8 settings, reminders and import (T3) | palette syncNow rejection path via `void runCommand` (syncNow never throws today) | Minor; judged not worth a fix round | Kanto 1.8 T3 review |
-| Kanto 1.8 settings, reminders and import (T5) | AppSidebar .profile CSS placement; useAuth profile tests share module state | Minor; judged not worth a fix round | Kanto 1.8 T5 review |
+| Kanto 1.8 settings, reminders and import (T5) | useAuth profile tests share module state | Minor; judged not worth a fix round | Kanto 1.8 T5 review |
 | Kanto 1.8 settings, reminders and import (T9) | drag-drop keeps its selection after a failed restore (lets the learner retry; arguably right) | Minor; judged not worth a fix round | Kanto 1.8 T9 review |
-| Kanto 1.8 settings, reminders and import (T10) | DeepReadonly import order in ReviewCard/WritingCard; DST test only meaningful in a DST zone | Minor; judged not worth a fix round | Kanto 1.8 T10 review |
+| Kanto 1.8 settings, reminders and import (T10) | DST test only meaningful in a DST zone | Minor; judged not worth a fix round | Kanto 1.8 T10 review |
 | Kanto 1.8 settings, reminders and import (T12) | remembered mapping targets not re-validated (the learner sees them in step 2) | Minor; judged not worth a fix round | Kanto 1.8 T12 review |
 | Kanto 1.8 settings, reminders and import (T15) | side panel close has no unsaved-edit guard | Minor; judged not worth a fix round | Kanto 1.8 T15 review |
