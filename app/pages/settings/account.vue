@@ -75,7 +75,7 @@ async function onSignOut(): Promise<void> {
 
   <template v-else>
     <form novalidate @submit.prevent="onSaveName">
-      <kt-form heading="Profile">
+      <kt-form heading="Profile" description="Signing out keeps everything on this device.">
         <div class="identity">
           <kt-avatar size="large" :name="displayName" />
           <div class="identity-text">
@@ -86,6 +86,7 @@ async function onSignOut(): Promise<void> {
         <kt-label-input label="Display name">
           <kt-input name="display-name" autocomplete="nickname" :value="nameDraft" @kt-input="(e: CustomEvent<{ value: string }>) => (nameDraft = e.detail.value)" />
         </kt-label-input>
+        <kt-button slot="footer" type="button" variant="dark" size="medium" icon="log-out" @click="onSignOut">Sign out</kt-button>
         <kt-button slot="footer" type="submit" variant="primary" size="medium" :disabled="savingName || nameDraft.trim() === displayName">Save</kt-button>
       </kt-form>
     </form>
@@ -96,18 +97,14 @@ async function onSignOut(): Promise<void> {
         <span class="muted" :title="lastSyncedExact">{{ lastSyncedLabel }}</span>
       </div>
       <div v-if="details" class="sync-stats">
-        <kt-stat label="Waiting to send" :value="String(details.pending)" />
         <kt-stat label="Decks" :value="String(details.decks)" />
         <kt-stat label="Cards" :value="String(details.cards)" />
         <kt-stat label="Reviews" :value="String(details.reviews)" />
+        <kt-stat label="Waiting to send" :value="String(details.pending)" />
       </div>
       <kt-alert v-if="status === 'error'" variant="danger" :description="syncError || 'Sync failed. It will retry automatically.'" />
       <kt-alert v-if="status === 'offline'" variant="warning" description="No connection. Changes are saved here and sync once you're back online." />
       <kt-button slot="footer" variant="secondary" size="medium" icon="refresh-cw" :disabled="status === 'syncing'" @click="syncNow">Sync now</kt-button>
-    </kt-form>
-
-    <kt-form heading="Session" description="Signing out keeps everything on this device.">
-      <kt-button slot="footer" variant="dark" size="medium" icon="log-out" @click="onSignOut">Sign out</kt-button>
     </kt-form>
   </template>
 </template>
