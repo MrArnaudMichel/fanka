@@ -466,78 +466,80 @@ const stepDescription = computed(() => {
     </kt-empty-state>
 
     <section v-else-if="step === 1" class="step">
-      <kt-segmented-control ref="sourceControl" label="Source" :options="SOURCE_OPTIONS" :value="source.mode" @kt-change="onSourceModeChange" />
+      <kt-form heading="Source">
+        <kt-segmented-control ref="sourceControl" label="Source" :options="SOURCE_OPTIONS" :value="source.mode" @kt-change="onSourceModeChange" />
 
-      <!--
-        No `recommended-size`: kt-drag-drop.ts hard-codes that hint's prefix
-        as "Recommended image size: " (kt-drag-drop.md documents the prop
-        for images specifically), which reads oddly for a CSV/TSV file —
-        reported upstream, worked around here with a plain caption instead.
-      -->
-      <template v-if="source.mode === 'file'">
-        <kt-drag-drop
-          ref="dragDropEl"
-          accept=".csv,.tsv,.txt"
-          :multiple="false"
-          :max-size="MAX_FILE_SIZE"
-          @kt-files-change="onFilesChange"
-          @kt-files-rejected="onFilesRejected"
+        <!--
+          No `recommended-size`: kt-drag-drop.ts hard-codes that hint's prefix
+          as "Recommended image size: " (kt-drag-drop.md documents the prop
+          for images specifically), which reads oddly for a CSV/TSV file —
+          reported upstream, worked around here with a plain caption instead.
+        -->
+        <template v-if="source.mode === 'file'">
+          <kt-drag-drop
+            ref="dragDropEl"
+            accept=".csv,.tsv,.txt"
+            :multiple="false"
+            :max-size="MAX_FILE_SIZE"
+            @kt-files-change="onFilesChange"
+            @kt-files-rejected="onFilesRejected"
+          />
+          <p class="source-hint">.csv, .tsv or .txt, up to 5 MB.</p>
+        </template>
+        <kt-textarea
+          v-else
+          label="Pasted rows"
+          placeholder="Paste rows copied from a spreadsheet"
+          rows="8"
+          resize="vertical"
+          :value="pastedText"
+          @kt-input="onPastedInput"
         />
-        <p class="source-hint">.csv, .tsv or .txt, up to 5 MB.</p>
-      </template>
-      <kt-textarea
-        v-else
-        label="Pasted rows"
-        placeholder="Paste rows copied from a spreadsheet"
-        rows="8"
-        resize="vertical"
-        :value="pastedText"
-        @kt-input="onPastedInput"
-      />
 
-      <kt-select
-        label="Destination deck"
-        placeholder="Choose a deck"
-        required
-        :clearable="false"
-        :disabled="decksLoading"
-        :options="deckOptions"
-        :value="targetDeckId"
-        @kt-change="onDeckSelectChange"
-      />
+        <!-- kt-select's `label` alone is only an accessible name; kt-label-input shows it. -->
+        <kt-label-input label="Destination deck" required>
+          <kt-select
+            placeholder="Choose a deck"
+            required
+            :clearable="false"
+            :disabled="decksLoading"
+            :options="deckOptions"
+            :value="targetDeckId"
+            @kt-change="onDeckSelectChange"
+          />
+        </kt-label-input>
 
-      <kt-alert v-if="sourceError" variant="danger" :description="sourceError" />
+        <kt-alert v-if="sourceError" variant="danger" :description="sourceError" />
 
-      <div class="actions">
-        <kt-button variant="primary" size="medium" :disabled="!canContinueFromStep1 || readingFile" @click="onContinueFromStep1">Continue</kt-button>
-      </div>
+        <kt-button slot="footer" variant="primary" size="medium" :disabled="!canContinueFromStep1 || readingFile" @click="onContinueFromStep1">Continue</kt-button>
+      </kt-form>
     </section>
 
     <section v-else-if="step === 2" class="step">
-      <kt-alert v-if="mappingRemembered" variant="info" description="Mapping from your last import with these columns." />
-      <kt-toggle ref="headerToggle" size="small" :checked="draftHasHeader" @kt-change="onHasHeaderToggle">First row is a header</kt-toggle>
+      <kt-form heading="Columns">
+        <kt-alert v-if="mappingRemembered" variant="info" description="Mapping from your last import with these columns." />
+        <kt-toggle ref="headerToggle" size="small" :checked="draftHasHeader" @kt-change="onHasHeaderToggle">First row is a header</kt-toggle>
 
-      <div class="columns">
-        <div v-for="(target, index) in draftColumns" :key="index" class="column-row">
-          <div class="column-info">
-            <span class="column-label">{{ columnLabel(index) }}</span>
-            <span class="column-samples">{{ samplesFor(index).join(' · ') || '—' }}</span>
+        <div class="columns">
+          <div v-for="(target, index) in draftColumns" :key="index" class="column-row">
+            <div class="column-info">
+              <span class="column-label">{{ columnLabel(index) }}</span>
+              <span class="column-samples">{{ samplesFor(index).join(' · ') || '—' }}</span>
+            </div>
+            <kt-select
+              class="column-target"
+              :label="`Maps to, for ${columnLabel(index)}`"
+              :clearable="false"
+              :options="TARGET_OPTIONS"
+              :value="target"
+              @kt-change="onColumnTargetChange(index, $event)"
+            />
           </div>
-          <kt-select
-            class="column-target"
-            :label="`Maps to, for ${columnLabel(index)}`"
-            :clearable="false"
-            :options="TARGET_OPTIONS"
-            :value="target"
-            @kt-change="onColumnTargetChange(index, $event)"
-          />
         </div>
-      </div>
 
-      <div class="actions">
-        <kt-button variant="dark" size="medium" @click="backToStep1">Back</kt-button>
-        <kt-button variant="primary" size="medium" :disabled="verifying" @click="onContinueFromStep2">Continue</kt-button>
-      </div>
+        <kt-button slot="footer" variant="dark" size="medium" @click="backToStep1">Back</kt-button>
+        <kt-button slot="footer" variant="primary" size="medium" :disabled="verifying" @click="onContinueFromStep2">Continue</kt-button>
+      </kt-form>
     </section>
 
     <section v-else class="step">
@@ -589,7 +591,7 @@ const stepDescription = computed(() => {
 </template>
 
 <style scoped>
-.import { display: flex; flex-direction: column; gap: var(--gap-button); }
+.import { display: flex; flex-direction: column; gap: var(--gap-card); }
 .step { display: flex; flex-direction: column; gap: var(--gap-button); }
 .actions { display: flex; justify-content: flex-end; gap: var(--gap-element); }
 
