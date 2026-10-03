@@ -1,6 +1,12 @@
 import { db } from './db';
 import type { Algorithm } from '~core/srs';
 
+/** Kanto's accent presets (`data-accent`); violet is Kanto's own default. */
+export const ACCENTS = ['violet', 'blue', 'teal', 'green', 'orange', 'pink', 'slate'] as const;
+export type Accent = (typeof ACCENTS)[number];
+/** Kanto's `data-text-size` values. */
+export type TextSize = 'small' | 'default' | 'large';
+
 export interface Settings {
   algorithm: Algorithm;
   desiredRetention: number;
@@ -16,6 +22,10 @@ export interface Settings {
   autoplayStrokes: boolean;
   hanziFont: 'serif' | 'sans';
   theme: 'dark' | 'light' | 'auto';
+  /** Kanto accent preset, applied as `data-accent` on <html>. */
+  accent: Accent;
+  /** Kanto text size, applied as `data-text-size` on <html>. */
+  textSize: TextSize;
   /** Daily notification on the Android app; off until the learner allows notifications. */
   reminderEnabled: boolean;
   /** Local time of the daily reminder, "HH:MM". */
@@ -36,6 +46,8 @@ export const DEFAULT_SETTINGS: Settings = {
   autoplayStrokes: true,
   hanziFont: 'serif',
   theme: 'dark',
+  accent: 'violet',
+  textSize: 'default',
   reminderEnabled: false,
   reminderTime: '19:00',
   offlineStrokeCache: true,

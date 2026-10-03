@@ -34,4 +34,11 @@ describe('useSettings — theme preference round-trip', () => {
     expect(reloaded.theme).toBe('light');
     expect(reloaded.hanziFont).toBe('sans');
   });
+
+  it('applies the accent and text size to <html>', async () => {
+    const { useSettings } = await import('~/composables/useSettings');
+    await useSettings().update({ accent: 'teal', textSize: 'large' });
+    expect(document.documentElement.dataset.accent).toBe('teal');
+    expect(document.documentElement.dataset.textSize).toBe('large');
+  });
 });

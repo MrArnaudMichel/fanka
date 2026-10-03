@@ -90,11 +90,13 @@ function applyTheme(value: Settings): void {
   const root = document.documentElement;
   root.dataset.theme = value.theme;
   root.dataset.hanziFont = value.hanziFont;
+  root.dataset.accent = value.accent;
+  root.dataset.textSize = value.textSize;
   syncStatusBar(value);
 }
 
 /** Whether `theme` renders dark, resolving `auto` against the OS preference — the same resolution Kanto's own `[data-theme='auto']` CSS performs. */
-function resolvesDark(theme: Settings['theme']): boolean {
+export function resolvesDark(theme: Settings['theme']): boolean {
   if (theme === 'dark') return true;
   if (theme === 'light') return false;
   return typeof window === 'undefined' || !window.matchMedia ? true : window.matchMedia('(prefers-color-scheme: dark)').matches;

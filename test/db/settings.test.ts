@@ -40,4 +40,9 @@ describe('settings', () => {
     expect(loaded).not.toHaveProperty('reminders');
     expect(Object.keys(loaded).sort()).toEqual(Object.keys(DEFAULT_SETTINGS).sort());
   });
+
+  it('defaults to the violet accent and the default text size', () => {
+    expect(DEFAULT_SETTINGS.accent).toBe('violet');
+    expect(DEFAULT_SETTINGS.textSize).toBe('default');
+  });
 });
