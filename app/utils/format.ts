@@ -47,3 +47,16 @@ export function timeAgo(then: number, now: number): string {
   const days = Math.floor(hours / 24);
   return days === 1 ? 'yesterday' : `${days} days ago`;
 }
+
+/** "today at 19:00", "tomorrow at 08:30", "Tue at 19:00" — when something within the coming week happens. English copy, as everywhere in Fanka. */
+export function whenLabel(at: number, now: number, locale = 'en-GB'): string {
+  const day = (t: number) => {
+    const d = new Date(t);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  };
+  const days = Math.round((day(at) - day(now)) / 86_400_000);
+  const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at);
+  if (days === 0) return `today at ${time}`;
+  if (days === 1) return `tomorrow at ${time}`;
+  return `${new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(at)} at ${time}`;
+}

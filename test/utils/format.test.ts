@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, formatDuration, formatPercent, plural, shortDate, timeAgo } from '~/utils/format';
+import { formatBytes, formatDuration, formatPercent, plural, shortDate, timeAgo, whenLabel } from '~/utils/format';
 
 describe('format', () => {
   it('formats durations', () => {
@@ -38,5 +38,16 @@ describe('timeAgo', () => {
   });
   it('treats a time in the future (a skewed clock) as just now', () => {
     expect(timeAgo(now + 5 * MIN, now)).toBe('just now');
+  });
+});
+
+describe('whenLabel', () => {
+  // 2026-10-03 is a Saturday.
+  const now = new Date(2026, 9, 3, 18, 0).getTime();
+  const at = (d: number, h: number, m = 0) => new Date(2026, 9, d, h, m).getTime();
+  it('says today, tomorrow, or the weekday, with a 24-hour time', () => {
+    expect(whenLabel(at(3, 19), now, 'en-GB')).toBe('today at 19:00');
+    expect(whenLabel(at(4, 8, 30), now, 'en-GB')).toBe('tomorrow at 08:30');
+    expect(whenLabel(at(6, 19), now, 'en-GB')).toBe('Tue at 19:00');
   });
 });

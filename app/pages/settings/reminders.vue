@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { toaster } from 'kanto-ds';
-import { MAX_REMINDER_TIMES, normaliseTimes } from '~core/reminder/schedule';
+import { MAX_REMINDER_TIMES, nextReminders, normaliseTimes } from '~core/reminder/schedule';
+import { useDueCounts } from '~/composables/useDueCounts';
+import { useSettings } from '~/composables/useSettings';
+import { whenLabel } from '~/utils/format';
 import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useReminder } from '~/composables/useReminder';
 import { useLeaveGuard } from '~/composables/useLeaveGuard';
@@ -10,13 +13,25 @@ const SUGGESTED_TIMES = ['08:00', '12:00', '19:00', '21:00'];
 // Monday first in the bar; stored as Date#getDay() numbers (0 = Sunday).
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 // 2026-10-04 is a Sunday, so day d is 4 + d.
-const dayName = (d: number) => new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(new Date(2026, 9, 4 + d));
+// English, like all of Fanka's copy, whatever the device's language.
+const dayName = (d: number) => new Intl.DateTimeFormat('en-GB', { weekday: 'short' }).format(new Date(2026, 9, 4 + d));
 
 const { compact } = useCompactLayout();
 const { draft, ready, saving, dirty, save } = useSettingsForm(['reminderEnabled', 'reminderTimes', 'reminderDays'] as const);
 const leaveGuard = useLeaveGuard(dirty);
 const { native, requestPermission, sendTest } = useReminder();
 const denied = ref(false);
+
+// What the saved settings will do next — the same computation that schedules the notifications.
+const { settings } = useSettings();
+const { counts } = useDueCounts();
+const nextLabel = computed(() => {
+  if (!settings.value.reminderEnabled) return '';
+  const now = Date.now();
+  const due = counts.value.review.total + counts.value.writing.total;
+  const next = nextReminders(now, settings.value.reminderTimes, settings.value.reminderDays, due, due === 0)[0];
+  return next ? `Next reminder ${whenLabel(next.at, now)} · ${next.body}` : '';
+});
 const daysError = ref('');
 const testing = ref(false);
 
@@ -83,6 +98,7 @@ async function onSave(): Promise<void> {
   <form v-else novalidate @submit.prevent="onSave">
     <kt-form heading="Schedule" :loading="!ready" loading-fields="3">
       <kt-toggle size="small" :checked="draft.reminderEnabled" @kt-change="onToggle">Remind me to study</kt-toggle>
+      <p v-if="nextLabel && !dirty" class="next">{{ nextLabel }}</p>
       <kt-alert
         v-if="denied"
         variant="warning"
@@ -120,6 +136,7 @@ async function onSave(): Promise<void> {
 
 <style scoped>
 form { display: flex; flex-direction: column; }
+.next { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 .times { display: flex; flex-direction: column; gap: var(--gap-element); align-items: flex-start; }
 .time-row { display: flex; align-items: flex-end; gap: var(--gap-element); }
 </style>
