@@ -34,3 +34,17 @@ describe('useSettingsForm', () => {
     expect(form.draft.newPerDay).toBe(5);
   });
 });
+
+describe('useSettingsForm on a cold start', () => {
+  it('shows the defaults until the stored record loads, then re-seeds from it', async () => {
+    await db.settings.put({ key: 'settings', value: { newPerDay: 33, reminderTimes: ['07:00', '21:00'] } });
+    vi.resetModules();
+    const { useSettingsForm: freshForm } = await import('~/composables/useSettingsForm');
+    const form = freshForm(['newPerDay', 'reminderTimes']);
+    expect(form.ready.value).toBe(false);
+    expect(form.draft.newPerDay).toBe(15);
+    await vi.waitFor(() => expect(form.ready.value).toBe(true));
+    expect(form.draft.newPerDay).toBe(33);
+    expect(form.draft.reminderTimes).toEqual(['07:00', '21:00']);
+  });
+});
