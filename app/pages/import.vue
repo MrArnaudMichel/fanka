@@ -443,10 +443,11 @@ watch(
 
 // --- Header ------------------------------------------------------------
 
+/** What the current step asks for; kt-steps already says which step it is. */
 const stepDescription = computed(() => {
-  if (step.value === 1) return 'Step 1 of 3 — Source';
-  if (step.value === 2) return 'Step 2 of 3 — Field mapping';
-  return 'Step 3 of 3 — Review';
+  if (step.value === 1) return 'Choose a file or paste rows, and the deck they go into.';
+  if (step.value === 2) return 'Tell Fanka what each column holds.';
+  return 'Check the rows before they are added.';
 });
 </script>
 

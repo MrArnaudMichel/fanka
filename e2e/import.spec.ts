@@ -27,10 +27,10 @@ test('importing a small CSV lands on the deck and shows its cards', async ({ pag
     .setInputFiles({ name: 'cards.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf-8') });
 
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('Step 2 of 3 — Field mapping')).toBeVisible();
+  await expect(page.getByText('Tell Fanka what each column holds.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('Step 3 of 3 — Review')).toBeVisible();
+  await expect(page.getByText('Check the rows before they are added.')).toBeVisible();
   await expect(page.getByText('Valid', { exact: true }).first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Import' }).click();
@@ -67,14 +67,14 @@ test('changing a column mapping in step 2 changes the step-3 counts', async ({ p
     .setInputFiles({ name: 'cards.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf-8') });
 
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('Step 2 of 3 — Field mapping')).toBeVisible();
+  await expect(page.getByText('Tell Fanka what each column holds.')).toBeVisible();
 
   const translationTarget = page.getByRole('combobox', { name: 'Maps to, for translation' });
   await translationTarget.click();
   await page.getByRole('option', { name: 'Ignore' }).click();
 
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('Step 3 of 3 — Review')).toBeVisible();
+  await expect(page.getByText('Check the rows before they are added.')).toBeVisible();
 
   await expect(page.locator('kt-stat', { hasText: 'Valid' }).locator('[part=value]')).toHaveText('0');
   await expect(page.locator('kt-stat', { hasText: 'Errors' }).locator('[part=value]')).toHaveText('2');
@@ -99,7 +99,7 @@ test('a duplicate can update the existing card and a broken row can be fixed', a
       .setInputFiles({ name: 'cards.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf-8') });
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 3 of 3 — Review')).toBeVisible();
+    await expect(page.getByText('Check the rows before they are added.')).toBeVisible();
   };
 
   await importCsv(['hanzi,pinyin,translation', '朋友,peng2 you5,friend'].join('\n'));

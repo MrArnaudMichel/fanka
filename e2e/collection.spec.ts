@@ -45,10 +45,10 @@ test('importing small.csv through the file zone shows the right counts and lands
   await page.locator('kt-drag-drop input[type="file"]').setInputFiles(smallCsvPath);
 
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('Step 2 of 3 — Field mapping')).toBeVisible();
+  await expect(page.getByText('Tell Fanka what each column holds.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('Step 3 of 3 — Review')).toBeVisible();
+  await expect(page.getByText('Check the rows before they are added.')).toBeVisible();
 
   // Two importable rows, one rejected for its simplified characters — see
   // core/chinese/data/simplified-only.json (電 and 視's simplified forms).
