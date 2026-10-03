@@ -61,7 +61,7 @@ async function onConfirmReset(): Promise<void> {
   try {
     const waiting = await reset(user.value !== null);
     if (waiting > 0) {
-      toaster.error(`${plural(waiting, 'change')} haven't synced yet. Connect and sync before resetting.`);
+      toaster.error(`${plural(waiting, 'change')} ${waiting === 1 ? "hasn't" : "haven't"} synced yet. Connect and sync before resetting.`);
     }
   } catch (err) {
     console.error('data: reset failed', err);

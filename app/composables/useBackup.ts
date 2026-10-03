@@ -4,6 +4,7 @@ import { Share } from '@capacitor/share';
 import { type Backup, type ParsedBackup, backupFileName, buildBackup, parseBackup } from '~core/backup/format';
 import { type RestoreResult, applyBackup, readBackupData, resetDevice } from '~core/db/backup';
 import { loadSettings } from '~core/db/settings';
+import { countPendingChanges } from '~core/db/sync-details';
 import { useSync } from '~/composables/useSync';
 
 /** Hands a finished file to the learner: a download in the browser, the share sheet on Android. */
@@ -59,10 +60,10 @@ export function useBackup() {
    */
   async function reset(signedIn: boolean): Promise<number> {
     if (signedIn) {
-      const sync = useSync();
-      await sync.syncNow();
-      await sync.refreshDetails();
-      const waiting = sync.details.value?.pending ?? 0;
+      await useSync().syncNow();
+      // Read the outbox itself rather than useSync's cached summary, which
+      // keeps its last value when a refresh fails.
+      const waiting = await countPendingChanges();
       if (waiting > 0) return waiting;
     }
     await resetDevice();
