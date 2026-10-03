@@ -36,13 +36,15 @@ async function onSave(): Promise<void> {
       <kt-label-input label="Scheduler algorithm">
         <kt-select :options="algorithmOptions" :value="draft.algorithm" :clearable="false" @kt-change="(e: CustomEvent) => (draft.algorithm = e.detail.value)" />
       </kt-label-input>
-      <kt-number-input
-        label="New cards per day"
-        :min="0"
-        :value="draft.newPerDay"
-        :error="errors.newPerDay"
-        @kt-change="(e: CustomEvent<{ value: number | null }>) => (draft.newPerDay = e.detail.value ?? Number.NaN)"
-      />
+      <!-- kt-number-input's own `label` is only an accessible name; kt-label-input shows it and passes it down. -->
+      <kt-label-input label="New cards per day">
+        <kt-number-input
+          :min="0"
+          :value="draft.newPerDay"
+          :error="errors.newPerDay"
+          @kt-change="(e: CustomEvent<{ value: number | null }>) => (draft.newPerDay = e.detail.value ?? Number.NaN)"
+        />
+      </kt-label-input>
       <kt-slider
         label="Desired retention"
         :min="0.7"
@@ -53,14 +55,16 @@ async function onSave(): Promise<void> {
         :value="String(draft.desiredRetention)"
         @kt-change="(e: CustomEvent<{ value: string }>) => (draft.desiredRetention = Number(e.detail.value))"
       />
-      <kt-number-input
-        label="Maximum interval (days)"
-        :min="1"
-        :value="draft.maxInterval"
-        :error="errors.maxInterval"
-        @kt-change="(e: CustomEvent<{ value: number | null }>) => (draft.maxInterval = e.detail.value ?? Number.NaN)"
-      />
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :full-width="compact" :disabled="saving || !ready">Save</kt-button>
+      <!-- kt-number-input's own `label` is only an accessible name; kt-label-input shows it and passes it down. -->
+      <kt-label-input label="Maximum interval (days)">
+        <kt-number-input
+          :min="1"
+          :value="draft.maxInterval"
+          :error="errors.maxInterval"
+          @kt-change="(e: CustomEvent<{ value: number | null }>) => (draft.maxInterval = e.detail.value ?? Number.NaN)"
+        />
+      </kt-label-input>
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready">Save</kt-button>
     </kt-form>
   </form>
 </template>

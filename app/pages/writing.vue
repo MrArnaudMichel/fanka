@@ -415,7 +415,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
             variant="secondary"
             size="large"
             icon="circle-help"
-            :full-width="attempt.live.value"
+            :fullWidth="attempt.live.value"
             :disabled="session.busy.value"
             @click="giveUp"
           >

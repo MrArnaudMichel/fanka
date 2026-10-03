@@ -112,7 +112,7 @@ async function onSave(): Promise<void> {
         </div>
       </template>
       <kt-button slot="footer" variant="secondary" size="medium" icon="send" :disabled="testing" @click="onTest">Send test notification</kt-button>
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :full-width="compact" :disabled="saving || !ready">Save</kt-button>
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready">Save</kt-button>
     </kt-form>
   </form>
 </template>

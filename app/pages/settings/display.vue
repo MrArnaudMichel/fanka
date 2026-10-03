@@ -68,7 +68,7 @@ async function onSave(): Promise<void> {
       <kt-toggle size="small" :checked="draft.autoPlayAudio" @kt-change="(e: CustomEvent) => (draft.autoPlayAudio = e.detail.checked)">
         Play pronunciation when the answer is shown
       </kt-toggle>
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :full-width="compact" :disabled="saving || !ready">Save</kt-button>
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready">Save</kt-button>
     </kt-form>
   </form>
 </template>
