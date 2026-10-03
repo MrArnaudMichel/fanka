@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toaster } from 'kanto-ds';
+import { plural } from '~/utils/format';
 import type { Backup } from '~core/backup/format';
 import { useAuth } from '~/composables/useAuth';
 import { useBackup } from '~/composables/useBackup';
@@ -41,7 +42,7 @@ async function onFile(): Promise<void> {
 const summary = computed(() => {
   const b = pending.value;
   if (!b) return '';
-  return `${b.decks.length} decks, ${b.cards.length} cards and ${b.reviews.length} reviews, exported ${new Date(b.exportedAt).toLocaleString()}.`;
+  return `${plural(b.decks.length, 'deck')}, ${plural(b.cards.length, 'card')} and ${plural(b.reviews.length, 'review')}, exported ${new Date(b.exportedAt).toLocaleString()}.`;
 });
 
 async function onConfirmRestore(): Promise<void> {
@@ -58,7 +59,10 @@ async function onConfirmRestore(): Promise<void> {
 async function onConfirmReset(): Promise<void> {
   confirmReset.value = false;
   try {
-    await reset();
+    const waiting = await reset(user.value !== null);
+    if (waiting > 0) {
+      toaster.error(`${plural(waiting, 'change')} haven't synced yet. Connect and sync before resetting.`);
+    }
   } catch (err) {
     console.error('data: reset failed', err);
     toaster.error("Couldn't reset this device", { description: 'Try again.' });
@@ -68,7 +72,7 @@ async function onConfirmReset(): Promise<void> {
 
 <template>
   <kt-page-header eyebrow="Settings" heading="Data" description="Back up your collection, restore it, or start this device over.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings')">Settings</kt-button>
+    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
   </kt-page-header>
 
   <kt-form heading="Export" description="Every deck, card, review and setting in one JSON file.">
@@ -98,7 +102,7 @@ async function onConfirmReset(): Promise<void> {
   <kt-confirm-dialog
     :open="confirmReset"
     heading="Reset this device?"
-    :message="user ? 'Everything here is cleared, then synced back from your account.' : 'Every deck, card and review on this device is deleted.'"
+    :message="user ? 'Changes are synced to your account first, then everything here is cleared and synced back.' : 'Every deck, card and review on this device is deleted.'"
     confirm-label="Reset"
     variant="danger"
     @kt-confirm="onConfirmReset"

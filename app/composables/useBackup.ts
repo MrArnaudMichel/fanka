@@ -4,12 +4,18 @@ import { Share } from '@capacitor/share';
 import { type Backup, type ParsedBackup, backupFileName, buildBackup, parseBackup } from '~core/backup/format';
 import { type RestoreResult, applyBackup, readBackupData, resetDevice } from '~core/db/backup';
 import { loadSettings } from '~core/db/settings';
+import { useSync } from '~/composables/useSync';
 
 /** Hands a finished file to the learner: a download in the browser, the share sheet on Android. */
 async function deliver(name: string, text: string): Promise<void> {
   if (Capacitor.isNativePlatform()) {
     const { uri } = await Filesystem.writeFile({ path: name, data: text, directory: Directory.Cache, encoding: Encoding.UTF8 });
-    await Share.share({ title: 'Fanka backup', url: uri });
+    try {
+      await Share.share({ title: 'Fanka backup', url: uri });
+    } catch (err) {
+      // Dismissing the share sheet is a choice, not a failure.
+      if (!(err instanceof Error && err.message === 'Share canceled')) throw err;
+    }
     return;
   }
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -17,7 +23,7 @@ async function deliver(name: string, text: string): Promise<void> {
   link.href = url;
   link.download = name;
   link.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url));
 }
 
 /**
@@ -46,9 +52,22 @@ export function useBackup() {
     return result;
   }
 
-  async function reset(): Promise<void> {
+  /**
+   * Clears this device. Signed in, it syncs first and refuses while changes
+   * are still waiting to upload, since the reset would drop them with the
+   * outbox. Returns how many changes blocked it, 0 when it went ahead.
+   */
+  async function reset(signedIn: boolean): Promise<number> {
+    if (signedIn) {
+      const sync = useSync();
+      await sync.syncNow();
+      await sync.refreshDetails();
+      const waiting = sync.details.value?.pending ?? 0;
+      if (waiting > 0) return waiting;
+    }
     await resetDevice();
     window.location.reload();
+    return 0;
   }
 
   return { exportBackup, readFile, restore, reset };
