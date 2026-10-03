@@ -80,6 +80,8 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
   position: sticky;
   top: 0;
   height: 100vh;
+  /* An open branch (Settings) can run past a short screen; the sidebar scrolls instead of cutting it off. */
+  overflow-y: auto;
 }
 
 /* kt-header takes over below its own breakpoint (900px); the two are never

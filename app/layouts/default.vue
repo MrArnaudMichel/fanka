@@ -2,7 +2,7 @@
 import type { KtHeader, KtNavItem } from 'kanto-ds';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useCommands } from '~/composables/useCommands';
-import { navActiveHref, useNavigation } from '~/composables/useNavigation';
+import { flatNavItems, navActiveHref, useNavigation } from '~/composables/useNavigation';
 
 const { counts } = useDueCounts();
 const { sections } = useNavigation(counts);
@@ -19,8 +19,8 @@ const route = useRoute();
 
 /** The current page's nav label; "Fanka" for routes the menu does not list (e.g. /cards/:id). */
 const pageTitle = computed(() => {
-  const items = sections.value.flatMap((section) => section.items);
-  return items.find((item) => item.href === activeHref.value)?.label ?? 'Fanka';
+  const label = flatNavItems(sections.value).find((item) => item.href === activeHref.value)?.label;
+  return label ?? (route.path === '/settings' ? 'Settings' : 'Fanka');
 });
 
 const header = ref<KtHeader>();

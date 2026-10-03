@@ -3,7 +3,7 @@ import type { KtNavItem, KtNavSection } from 'kanto-ds';
 import type { SessionMode } from '~core/db/session';
 import type { ModeCounts } from '~/composables/useDueCounts';
 
-/** The Settings sections, in menu order: the settings menu, its mobile list and the command palette all read this. */
+/** The Settings sections, in menu order: nested under Settings in the sidebar, listed on /settings on a phone, and in the command palette. */
 export const SETTINGS_SECTIONS: KtNavItem[] = [
   { label: 'Account', href: '/settings/account', icon: 'user' },
   { label: 'Study', href: '/settings/study', icon: 'graduation-cap' },
@@ -15,13 +15,19 @@ export const SETTINGS_SECTIONS: KtNavItem[] = [
 
 /**
  * `kt-sub-menu-navigation` matches `activeHref` by exact equality, so a page
- * below a menu entry maps back to that entry: `/decks/:id` to Decks, every
- * Settings section to Settings.
+ * below a menu entry maps back to that entry: `/decks/:id` to Decks. Settings
+ * sections are entries of their own under Settings, which opens itself and
+ * shows as "within" while one of them is current.
  */
 export function navActiveHref(path: string): string {
   if (path.startsWith('/decks/')) return '/decks';
-  if (path.startsWith('/settings/')) return '/settings';
   return path;
+}
+
+/** Every item with a link, nested ones included, in menu order — for finding the current page's label. */
+export function flatNavItems(sections: KtNavSection[]): KtNavItem[] {
+  const walk = (items: readonly KtNavItem[]): KtNavItem[] => items.flatMap((item) => [...(item.href ? [item] : []), ...walk(item.children ?? [])]);
+  return sections.flatMap((section) => walk(section.items));
 }
 
 /**
@@ -55,7 +61,7 @@ export function useNavigation(counts: Readonly<Ref<Readonly<Record<SessionMode, 
       title: 'App',
       items: [
         { label: 'Statistics', href: '/stats', icon: 'chart-line' },
-        { label: 'Settings', href: '/settings', icon: 'settings' },
+        { label: 'Settings', icon: 'settings', children: SETTINGS_SECTIONS },
       ],
     },
     // `/install` only exists under `npm run dev` (`modules/dev-install.ts`
