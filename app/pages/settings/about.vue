@@ -11,7 +11,7 @@ const builtLabel = builtAt ? new Date(builtAt).toLocaleString() : 'Unknown';
 
 <template>
   <kt-page-header eyebrow="Settings" heading="About" description="Which build this is and where it runs.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings')">Settings</kt-button>
+    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
   </kt-page-header>
   <kt-card>
     <dl class="facts">

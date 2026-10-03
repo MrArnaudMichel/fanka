@@ -29,7 +29,7 @@ async function onSave(): Promise<void> {
 
 <template>
   <kt-page-header eyebrow="Settings" heading="Display" description="Theme, colour and how cards are shown.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings')">Settings</kt-button>
+    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
   </kt-page-header>
   <form novalidate @submit.prevent="onSave">
     <kt-form heading="Appearance" :loading="!ready" loading-fields="4">

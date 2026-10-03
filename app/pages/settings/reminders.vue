@@ -69,7 +69,7 @@ async function onSave(): Promise<void> {
 
 <template>
   <kt-page-header eyebrow="Settings" heading="Reminders" description="Notifications with how many cards are due.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings')">Settings</kt-button>
+    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
   </kt-page-header>
 
   <kt-empty-state
@@ -111,7 +111,7 @@ async function onSave(): Promise<void> {
         </div>
       </template>
       <kt-button slot="footer" variant="secondary" size="medium" icon="send" :disabled="testing" @click="onTest">Send test notification</kt-button>
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :disabled="saving || !ready">Save</kt-button>
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :full-width="compact" :disabled="saving || !ready">Save</kt-button>
     </kt-form>
   </form>
 </template>

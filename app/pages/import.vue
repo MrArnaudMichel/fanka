@@ -7,6 +7,7 @@ import { ImportCommitError, useImport } from '~/composables/useImport';
 import type { Mapping, Target } from '~core/import/mapping';
 import type { ImportRow } from '~core/import/rows';
 import type { CardDraft } from '~core/import/validate';
+import { plural } from '~/utils/format';
 
 // Ruling 4: behaviour, not a styling token — see CLAUDE.md's carve-out for
 // "no hard-coded colour, size, duration or radius" ("Where no token exists,
@@ -387,10 +388,11 @@ async function onImport(): Promise<void> {
   try {
     const { created, updated, skipped } = await commit();
     const parts = [
-      updated > 0 ? `${updated} updated` : '',
+      created > 0 && updated > 0 ? `${updated} updated` : '',
       skipped > 0 ? `${skipped} already in the deck skipped` : '',
     ].filter(Boolean);
-    toaster.success(`Imported ${created} card${created === 1 ? '' : 's'}`, parts.length > 0 ? { description: parts.join(', ') } : undefined);
+    const heading = created > 0 || updated === 0 ? `Imported ${plural(created, 'card')}` : `Updated ${plural(updated, 'card')}`;
+    toaster.success(heading, parts.length > 0 ? { description: parts.join(', ') } : undefined);
     await navigateTo(`/decks/${targetDeckId.value}`);
   } catch (err) {
     console.error('import: commit failed', err);

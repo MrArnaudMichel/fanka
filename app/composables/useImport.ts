@@ -204,7 +204,7 @@ export function useImport() {
   });
 
   // Ruling 5: changing the deck after verifying invalidates the results —
-  // duplicate-checking depends on which deck's cards `existingHanzi` reads.
+  // duplicate-checking depends on which deck's cards `deckHanzi` (the deck's cards) reads.
   // Changing the source does the same, but through `load()` itself below,
   // since that is the one function that actually reads a new source.
   // `flush: 'sync'`: this runs outside any component's render cycle, so the
