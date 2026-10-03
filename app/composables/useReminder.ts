@@ -57,6 +57,9 @@ function isReminderId(id: number): boolean {
   return id === LEGACY_REMINDER_ID || (id >= FIRST_REMINDER_ID && id <= LAST_REMINDER_ID);
 }
 
+/** Tail of the reschedule chain; every run is caught inside, so it never rejects. */
+let queue: Promise<void> = Promise.resolve();
+
 /**
  * The reminders. On the web every call is a no-op. `reschedule()` cancels
  * every pending reminder first — so a time or day just removed leaves
@@ -80,8 +83,7 @@ export function useReminder(engine?: ReminderEngine) {
     }
   }
 
-  async function reschedule(now = Date.now()): Promise<void> {
-    if (!native) return;
+  async function runReschedule(now: number): Promise<void> {
     try {
       const stale = (await notifier.pending()).filter(isReminderId);
       await notifier.cancel(stale);
@@ -92,6 +94,13 @@ export function useReminder(engine?: ReminderEngine) {
     } catch (err) {
       console.error('useReminder: could not reschedule', err);
     }
+  }
+
+  /** Reschedules run one after another, so a second call never cancels or schedules in the middle of the first. */
+  function reschedule(now = Date.now()): Promise<void> {
+    if (!native) return Promise.resolve();
+    queue = queue.then(() => runReschedule(now));
+    return queue;
   }
 
   /** A notification a second from now, to check permission and display on this device. */

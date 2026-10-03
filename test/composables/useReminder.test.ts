@@ -76,4 +76,38 @@ describe('useReminder', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(useReminder(engine).reschedule(NOW)).resolves.toBeUndefined();
   });
+
+  it('runs overlapping reschedules one after another, leaving only the last batch', async () => {
+    await useSettings().update({ reminderEnabled: true, reminderTimes: ['19:30'], reminderDays: [0, 1, 2, 3, 4, 5, 6] });
+    const live = new Set<number>();
+    const calls: string[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let first = true;
+    const engine: ReminderEngine = {
+      requestPermission: async () => true,
+      pending: vi.fn(async () => {
+        if (first) {
+          first = false;
+          await gate;
+        }
+        return [...live];
+      }),
+      cancel: async (ids) => {
+        calls.push('cancel');
+        ids.forEach((id) => live.delete(id));
+      },
+      schedule: async (list) => {
+        calls.push('schedule');
+        list.forEach((n) => live.add(n.id));
+      },
+    };
+    const { reschedule } = useReminder(engine);
+    const a = reschedule(NOW);
+    const b = reschedule(NOW);
+    release();
+    await Promise.all([a, b]);
+    expect(calls).toEqual(['cancel', 'schedule', 'cancel', 'schedule']);
+    expect([...live]).toHaveLength(6);
+  });
 });
