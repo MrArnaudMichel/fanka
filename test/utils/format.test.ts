@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, formatDuration, formatPercent, plural, shortDate } from '~/utils/format';
+import { formatBytes, formatDuration, formatPercent, plural, shortDate, timeAgo } from '~/utils/format';
 
 describe('format', () => {
   it('formats durations', () => {
@@ -22,5 +22,21 @@ describe('formatBytes', () => {
     expect(formatBytes(512)).toBe('512 B');
     expect(formatBytes(1536)).toBe('1.5 kB');
     expect(formatBytes(12 * 1000 * 1000)).toBe('12 MB');
+  });
+});
+
+describe('timeAgo', () => {
+  const now = new Date(2026, 9, 3, 18, 0).getTime();
+  const MIN = 60_000;
+  it('reads the elapsed time in the largest whole unit, as English copy', () => {
+    expect(timeAgo(now - 20 * 1000, now)).toBe('just now');
+    expect(timeAgo(now - 1 * MIN, now)).toBe('1 min ago');
+    expect(timeAgo(now - 42 * MIN, now)).toBe('42 min ago');
+    expect(timeAgo(now - 3 * 60 * MIN, now)).toBe('3 h ago');
+    expect(timeAgo(now - 30 * 60 * MIN, now)).toBe('yesterday');
+    expect(timeAgo(now - 4 * 24 * 60 * MIN, now)).toBe('4 days ago');
+  });
+  it('treats a time in the future (a skewed clock) as just now', () => {
+    expect(timeAgo(now + 5 * MIN, now)).toBe('just now');
   });
 });

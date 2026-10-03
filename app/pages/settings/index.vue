@@ -19,5 +19,5 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
 
 <template>
   <kt-page-header eyebrow="Preferences" heading="Settings" />
-  <kt-sub-menu-navigation :sections="sections" @kt-navigate="onNavigate" />
+  <kt-sub-menu-navigation flush :sections="sections" @kt-navigate="onNavigate" />
 </template>

@@ -36,3 +36,14 @@ export function formatBytes(bytes: number): string {
   const shown = unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
   return `${shown} ${units[unit]}`;
 }
+
+/** "just now", "12 min ago", "3 h ago", "yesterday", "4 days ago" — how long since `then`, for a last-synced line. */
+export function timeAgo(then: number, now: number): string {
+  const minutes = Math.floor((now - then) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? 'yesterday' : `${days} days ago`;
+}

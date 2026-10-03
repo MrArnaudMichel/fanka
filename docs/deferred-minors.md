@@ -138,4 +138,3 @@ findings are never parked here.
 | Kanto 1.8 settings, reminders and import (T16) | palette e2e uses a guessed locator with .first() and no "is open" assertion; Restore button locator is a substring match | Minor; judged not worth a fix round | Kanto 1.8 T16 review |
 | Kanto 1.8 settings, reminders and import (Final) | Update rewrites unchanged cards (fresh updatedAt + outbox even when equal) — skip when content equal | Minor; judged not worth a fix round | Kanto 1.8 final review |
 | Kanto 1.8 settings, reminders and import (Final) | import step text shown twice (header description + kt-steps), kept for e2e locators | Minor; judged not worth a fix round | Kanto 1.8 final review |
-| Kanto 1.8 settings, reminders and import (Final) | "Last synced" absolute not relative as the spec says; compact /settings list lacks `flush`; "Up to date" shown before the first sync | Minor; judged not worth a fix round | Kanto 1.8 final review |

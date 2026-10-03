@@ -3,20 +3,36 @@ import { toaster } from 'kanto-ds';
 import { useAuth } from '~/composables/useAuth';
 import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useSync } from '~/composables/useSync';
+import { timeAgo } from '~/utils/format';
 
 const { compact } = useCompactLayout();
 const { user, loading, error, displayName, signIn, signOut, updateProfile } = useAuth();
 const { status, lastSyncedAt, error: syncError, details, syncNow, refreshDetails } = useSync();
 onMounted(refreshDetails);
 
-const STATUS: Record<string, { label: string; tone: 'success' | 'info' | 'warning' | 'danger' }> = {
+type Tone = 'neutral' | 'success' | 'info' | 'warning' | 'danger';
+const STATUS: Record<string, { label: string; tone: Tone }> = {
   idle: { label: 'Up to date', tone: 'success' },
   syncing: { label: 'Syncing', tone: 'info' },
   offline: { label: 'Offline', tone: 'warning' },
   error: { label: 'Error', tone: 'danger' },
 };
-const statusMeta = computed(() => (status.value === 'idle' && (details.value?.pending ?? 0) > 0 ? { label: 'Waiting to sync', tone: 'info' as const } : STATUS[status.value]!));
-const lastSyncedLabel = computed(() => (lastSyncedAt.value ? new Date(lastSyncedAt.value).toLocaleString() : 'Not yet on this device'));
+const statusMeta = computed<{ label: string; tone: Tone }>(() => {
+  if (status.value !== 'idle') return STATUS[status.value]!;
+  if ((details.value?.pending ?? 0) > 0) return { label: 'Waiting to sync', tone: 'info' };
+  if (lastSyncedAt.value === null) return { label: 'Not synced yet', tone: 'neutral' };
+  return STATUS.idle!;
+});
+
+// The relative label ("3 min ago") has to move on while the page stays open.
+// Behaviour, not a styling token: how often the label is recomputed.
+const RELATIVE_TICK_MS = 30_000;
+const now = ref(Date.now());
+let tick: ReturnType<typeof setInterval> | undefined;
+onMounted(() => (tick = setInterval(() => (now.value = Date.now()), RELATIVE_TICK_MS)));
+onBeforeUnmount(() => clearInterval(tick));
+const lastSyncedLabel = computed(() => (lastSyncedAt.value ? `Last synced ${timeAgo(lastSyncedAt.value, now.value)}` : 'Not synced on this device yet'));
+const lastSyncedExact = computed(() => (lastSyncedAt.value ? new Date(lastSyncedAt.value).toLocaleString() : ''));
 
 const email = ref('');
 const linkSent = ref(false);
@@ -81,7 +97,7 @@ async function onSignOut(): Promise<void> {
     <kt-form heading="Sync">
       <div class="sync-head">
         <kt-badge variant="tag" :tone="statusMeta.tone" size="small">{{ statusMeta.label }}</kt-badge>
-        <span class="muted">Last synced {{ lastSyncedLabel }}</span>
+        <span class="muted" :title="lastSyncedExact">{{ lastSyncedLabel }}</span>
       </div>
       <div v-if="details" class="sync-stats">
         <kt-stat label="Waiting to send" :value="String(details.pending)" />
