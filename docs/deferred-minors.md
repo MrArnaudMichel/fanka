@@ -120,3 +120,4 @@ findings are never parked here.
 | `app/components/VerdictButtons.vue` | "Count it as right" stores `correct: true` with `shapeCorrect: false` in `writing` | By design: accuracy reflects the checker, the grade reflects the learner | Writing verdicts & stats review |
 | `app/components/stats/StatsWriting.vue` | Says "No writing yet" when the Mode filter is Review | Accurate for the filtered view, if blunt | Writing verdicts & stats review |
 | `app/components/stats/StatsActivity.vue` (`minutes`) | "Minutes studied" rounds per bucket, so a day under 30 s total shows 0 | Rounding for a compact axis, not a data loss | Writing verdicts & stats review |
+| `app/pages/settings/account.vue` (`.sync-stats`) | `minmax(120px, 1fr)` is a literal grid-track minimum | Same pattern as `import.vue`'s `.stats`; Kanto has no grid-track token | Account sync details |

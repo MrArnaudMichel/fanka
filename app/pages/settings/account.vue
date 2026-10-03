@@ -2,9 +2,21 @@
 import { toaster } from 'kanto-ds';
 import { useAuth } from '~/composables/useAuth';
 import { useCompactLayout } from '~/composables/useCompactLayout';
+import { useSync } from '~/composables/useSync';
 
 const { compact } = useCompactLayout();
 const { user, loading, error, displayName, signIn, signOut, updateProfile } = useAuth();
+const { status, lastSyncedAt, error: syncError, details, syncNow, refreshDetails } = useSync();
+onMounted(refreshDetails);
+
+const STATUS: Record<string, { label: string; tone: 'success' | 'info' | 'warning' | 'danger' }> = {
+  idle: { label: 'Up to date', tone: 'success' },
+  syncing: { label: 'Syncing', tone: 'info' },
+  offline: { label: 'Offline', tone: 'warning' },
+  error: { label: 'Error', tone: 'danger' },
+};
+const statusMeta = computed(() => (status.value === 'idle' && (details.value?.pending ?? 0) > 0 ? { label: 'Waiting to sync', tone: 'info' as const } : STATUS[status.value]!));
+const lastSyncedLabel = computed(() => (lastSyncedAt.value ? new Date(lastSyncedAt.value).toLocaleString() : 'Not yet on this device'));
 
 const email = ref('');
 const linkSent = ref(false);
@@ -66,7 +78,21 @@ async function onSignOut(): Promise<void> {
       </kt-form>
     </form>
 
-    <!-- Sync block: Task 6 -->
+    <kt-form heading="Sync">
+      <div class="sync-head">
+        <kt-badge variant="tag" :tone="statusMeta.tone" size="small">{{ statusMeta.label }}</kt-badge>
+        <span class="muted">Last synced {{ lastSyncedLabel }}</span>
+      </div>
+      <div v-if="details" class="sync-stats">
+        <kt-stat label="Waiting to send" :value="String(details.pending)" />
+        <kt-stat label="Decks" :value="String(details.decks)" />
+        <kt-stat label="Cards" :value="String(details.cards)" />
+        <kt-stat label="Reviews" :value="String(details.reviews)" />
+      </div>
+      <kt-alert v-if="status === 'error'" variant="danger" :description="syncError || 'Sync failed. It will retry automatically.'" />
+      <kt-alert v-if="status === 'offline'" variant="warning" description="No connection. Changes are saved here and sync once you're back online." />
+      <kt-button slot="footer" variant="secondary" size="medium" icon="refresh-cw" :disabled="status === 'syncing'" @click="syncNow">Sync now</kt-button>
+    </kt-form>
 
     <kt-form heading="Session" description="Signing out keeps everything on this device.">
       <kt-button slot="footer" variant="dark" size="medium" icon="log-out" @click="onSignOut">Sign out</kt-button>
@@ -80,4 +106,7 @@ form { display: flex; flex-direction: column; }
 .identity-text { display: flex; flex-direction: column; min-width: 0; }
 .identity-name { font: var(--font-normal-medium); color: var(--text-body); }
 .identity-email { font: var(--font-normal-small); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
+.sync-head { display: flex; align-items: center; gap: var(--gap-element); flex-wrap: wrap; }
+.muted { color: var(--text-muted); font: var(--font-normal-small); }
+.sync-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--gap-element); }
 </style>

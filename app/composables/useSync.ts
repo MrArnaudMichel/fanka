@@ -1,3 +1,4 @@
+import { type SyncDetails, readSyncDetails } from '~core/db/sync-details';
 import { runSync } from '~core/sync';
 import { createSupabaseTransport } from '~core/sync/supabase';
 import { useAuth } from '~/composables/useAuth';
@@ -8,6 +9,16 @@ export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline';
 const status = ref<SyncStatus>('idle');
 const lastSyncedAt = ref<number | null>(null);
 const error = ref('');
+const details = ref<SyncDetails | null>(null);
+
+/** Never throws: Account keeps the last counts it had. */
+async function refreshDetails(): Promise<void> {
+  try {
+    details.value = await readSyncDetails();
+  } catch (err) {
+    console.error('useSync: could not read sync details', err);
+  }
+}
 
 let runningPromise: Promise<void> | null = null;
 let rerunRequested = false;
@@ -63,6 +74,7 @@ function runExclusive(): Promise<void> {
     return runningPromise;
   }
   runningPromise = runOnce().finally(() => {
+    void refreshDetails();
     runningPromise = null;
     if (rerunRequested) {
       rerunRequested = false;
@@ -92,6 +104,8 @@ export function useSync() {
     status: readonly(status),
     lastSyncedAt: readonly(lastSyncedAt),
     error: readonly(error),
+    details: readonly(details),
+    refreshDetails,
     /** Runs immediately, cancelling any pending debounce — for sign-in, app start and returning to the foreground. */
     triggerSync(): Promise<void> {
       clearDebounce();
