@@ -556,7 +556,7 @@ const stepDescription = computed(() => {
         v-if="counts.errors > 0"
         variant="warning"
         heading="Some rows won't be imported"
-        :description="`${counts.errors} row${counts.errors === 1 ? '' : 's'} have an error and will be skipped. Valid rows can still be imported.`"
+        :description="`${plural(counts.errors, 'row')} ${counts.errors === 1 ? 'has an error' : 'have errors'} and will be skipped unless fixed. Select a row to fix it here.`"
       />
 
       <kt-table
