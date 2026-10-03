@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import type { KtHeader, KtNavItem } from 'kanto-ds';
 import { useDueCounts } from '~/composables/useDueCounts';
-import { useNavigation } from '~/composables/useNavigation';
+import { useCommands } from '~/composables/useCommands';
+import { navActiveHref, useNavigation } from '~/composables/useNavigation';
 
 const { counts } = useDueCounts();
 const { sections } = useNavigation(counts);
+const { commands, run: runCommand } = useCommands(sections);
+
+function onCommand(event: CustomEvent<{ id: string }>): void {
+  void runCommand(event.detail.id);
+}
 const reviewTotal = computed(() => counts.value.review.total);
 const route = useRoute();
 
@@ -18,10 +24,7 @@ const header = ref<KtHeader>();
 const menu = ref<HTMLElement | null>(null);
 const main = ref<HTMLElement | null>(null);
 
-// Same mapping as AppSidebar.vue's `activeHref` — kept here too so the
-// mobile menu's "Decks" entry stays highlighted on `/decks/:id` the same way
-// the desktop sidebar's does (ruling 8, task-13-report.md).
-const activeHref = computed(() => (route.path.startsWith('/decks/') ? '/decks' : route.path));
+const activeHref = computed(() => navActiveHref(route.path));
 
 /**
  * `kt-navigate` is cancelable specifically so a host can take over routing —
@@ -73,6 +76,9 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
         <slot />
       </div>
     </main>
+
+    <!-- Cmd/Ctrl+K from anywhere; `commands` is an array, so it goes in as a property. -->
+    <kt-command-palette :commands="commands" placeholder="Go to a page or run an action" @kt-select="onCommand" />
 
     <kt-toast-container></kt-toast-container>
   </div>

@@ -1,19 +1,12 @@
 <script setup lang="ts">
 import type { KtNavItem, KtNavSection } from 'kanto-ds';
+import { navActiveHref } from '~/composables/useNavigation';
 
 /** `dueTotal` is Review's: this button starts Review, not Writing. */
 defineProps<{ sections: KtNavSection[]; dueTotal: number }>();
 const route = useRoute();
 
-/**
- * `kt-sub-menu-navigation` matches `activeHref` by exact equality against an
- * item's `href` (kt-sub-menu-navigation.ts's `isActive`), so the deck detail
- * page's `/decks/:id` would otherwise light up nothing at all. Map any
- * `/decks/...` path back to `/decks` so the "Decks" entry stays highlighted
- * there (ruling 8, task-13-report.md) — this never touches kt-sub-menu-navigation
- * itself.
- */
-const activeHref = computed(() => (route.path.startsWith('/decks/') ? '/decks' : route.path));
+const activeHref = computed(() => navActiveHref(route.path));
 
 /**
  * `kt-navigate` is cancelable specifically so a host can take over routing —

@@ -1,6 +1,27 @@
-import type { KtNavSection } from 'kanto-ds';
+import type { KtNavItem, KtNavSection } from 'kanto-ds';
 import type { SessionMode } from '~core/db/session';
 import type { ModeCounts } from '~/composables/useDueCounts';
+
+/** The Settings sections, in menu order: the settings menu, its mobile list and the command palette all read this. */
+export const SETTINGS_SECTIONS: KtNavItem[] = [
+  { label: 'Account', href: '/settings/account', icon: 'user' },
+  { label: 'Study', href: '/settings/study', icon: 'graduation-cap' },
+  { label: 'Display', href: '/settings/display', icon: 'palette' },
+  { label: 'Reminders', href: '/settings/reminders', icon: 'bell' },
+  { label: 'Data', href: '/settings/data', icon: 'database' },
+  { label: 'About', href: '/settings/about', icon: 'info' },
+];
+
+/**
+ * `kt-sub-menu-navigation` matches `activeHref` by exact equality, so a page
+ * below a menu entry maps back to that entry: `/decks/:id` to Decks, every
+ * Settings section to Settings.
+ */
+export function navActiveHref(path: string): string {
+  if (path.startsWith('/decks/')) return '/decks';
+  if (path.startsWith('/settings/')) return '/settings';
+  return path;
+}
 
 /**
  * Kanto's sidebar sections. Each screen is added here by the task that
