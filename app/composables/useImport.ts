@@ -1,6 +1,7 @@
 import { type Delimiter, detectDelimiter, parseDelimited } from '~core/import/parse';
 import { type Mapping, applyMapping, guessMapping, headerSignature } from '~core/import/mapping';
-import { type CardDraft, type Validated, validateCard } from '~core/import/validate';
+import type { CardDraft } from '~core/import/validate';
+import { type DuplicatePolicy, type ImportRow, normalisePinyinText, updatedCardFromDraft, validateImportRows } from '~core/import/rows';
 import { parsePinyin } from '~core/chinese/pinyin';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { db } from '~core/db/db';
@@ -26,9 +27,8 @@ export interface ImportCounts {
   valid: number;
   warnings: number;
   errors: number;
+  duplicates: number;
 }
-
-const DUPLICATE_MESSAGE = 'Already in this deck';
 
 function uid(): string {
   return crypto.randomUUID();
@@ -58,36 +58,43 @@ export class ImportCommitError extends Error {
   }
 }
 
-/** Normalises a pinyin string (numbered or diacritic) to the joined diacritic form the schema stores — same conversion useCardEditor.ts applies. */
-function normalisePinyinText(text: string): string {
-  return parsePinyin(text)
-    .map((s) => s.text)
-    .join(' ');
-}
-
 /**
- * One batch, one Dexie transaction, outbox entries included. `existingHanzi`
- * is read fresh at the start of this transaction — not carried over from
- * `verify()` — so a card created by an earlier batch in the same commit, or
- * by anything else entirely, is always seen (ruling 2, task-14-report.md:
- * "commit re-checks against the database inside each batch transaction").
- * A hanzi already present is skipped, never overwritten.
+ * One batch, one Dexie transaction, outbox entries included. The deck's live
+ * cards are read fresh inside this transaction — not carried over from
+ * `verify()` — so a card created by an earlier batch, or by anything else,
+ * is always seen (ruling 2). A hanzi already present is skipped or updated
+ * per `policy`; updating rewrites the card only, so its items keep their
+ * progress.
  */
-async function commitBatch(deckId: string, batch: Validated[], now: number): Promise<{ created: number; skipped: number }> {
+async function commitBatch(
+  deckId: string,
+  batch: ImportRow[],
+  policy: DuplicatePolicy,
+  now: number,
+): Promise<{ created: number; updated: number; skipped: number }> {
   let created = 0;
+  let updated = 0;
   let skipped = 0;
 
   await db.transaction('rw', db.cards, db.items, db.outbox, async () => {
     const deckCards = await db.cards.where('deckId').equals(deckId).toArray();
-    const existingHanzi = new Set(deckCards.filter((c) => c.deletedAt === null).map((c) => c.hanzi));
+    const byHanzi = new Map(deckCards.filter((c) => c.deletedAt === null).map((c) => [c.hanzi, c]));
 
     for (const row of batch) {
       const draft = row.draft;
-      if (existingHanzi.has(draft.hanzi)) {
-        skipped += 1;
+      const existing = byHanzi.get(draft.hanzi);
+      if (existing) {
+        if (policy === 'skip') {
+          skipped += 1;
+          continue;
+        }
+        const next = updatedCardFromDraft(existing, draft, now);
+        await db.cards.put(next);
+        await db.outbox.put(outboxEntry('card', next.id, 'put', now));
+        byHanzi.set(next.hanzi, next);
+        updated += 1;
         continue;
       }
-      existingHanzi.add(draft.hanzi);
 
       const pinyin = parsePinyin(draft.pinyin);
       // Ruling 3: the mapped zhuyin column wins when present and non-empty;
@@ -126,11 +133,12 @@ async function commitBatch(deckId: string, batch: Validated[], now: number): Pro
         await db.items.put(item);
         await db.outbox.put(outboxEntry('item', item.id, 'put', now));
       }
+      byHanzi.set(card.hanzi, card);
       created += 1;
     }
   });
 
-  return { created, skipped };
+  return { created, updated, skipped };
 }
 
 const BATCH_SIZE = 200;
@@ -152,7 +160,11 @@ export function useImport() {
   const source = reactive<ImportSource>({ mode: 'file' });
   const rows = ref<string[][]>([]);
   const mapping = ref<Mapping | null>(null);
-  const results = ref<Validated[]>([]);
+  const results = ref<ImportRow[]>([]);
+  const duplicatePolicy = ref<DuplicatePolicy>('skip');
+  /** The drafts and deck hanzi the current results were built from, so one row can be fixed and everything re-checked. */
+  let drafts: CardDraft[] = [];
+  let deckHanzi: ReadonlySet<string> = new Set();
   const targetDeckId = ref<string | null>(null);
   const decks = ref<Deck[]>([]);
   const decksLoading = ref(true);
@@ -178,15 +190,17 @@ export function useImport() {
     let valid = 0;
     let warnings = 0;
     let errors = 0;
+    let duplicates = 0;
     for (const row of results.value) {
-      if (row.ok) {
-        valid += 1;
-        if (row.issues.some((issue) => issue.severity === 'warning')) warnings += 1;
-      } else {
+      if (!row.ok) {
         errors += 1;
+        continue;
       }
+      if (row.duplicate) duplicates += 1;
+      else valid += 1;
+      if (row.issues.some((issue) => issue.severity === 'warning')) warnings += 1;
     }
-    return { valid, warnings, errors };
+    return { valid, warnings, errors, duplicates };
   });
 
   // Ruling 5: changing the deck after verifying invalidates the results —
@@ -237,66 +251,58 @@ export function useImport() {
   }
 
   /**
-   * Ruling 1/2: validates every mapped row against the destination deck's
-   * *visible* cards, growing that set as each row is accepted — so a
-   * duplicate later in the same file is caught too, not just one already in
-   * the deck.
+   * Validates every mapped row against the destination deck's live cards.
+   * A hanzi already in the deck is a duplicate (skip or update at commit);
+   * the same hanzi twice in the file is an error.
    */
   async function verify(): Promise<void> {
     if (!mapping.value || !targetDeckId.value) {
       results.value = [];
       return;
     }
-    const drafts: CardDraft[] = applyMapping(rows.value, mapping.value);
-    const deckCards = await cards.forDeck(targetDeckId.value);
-    const existingHanzi = new Set(deckCards.map((c) => c.hanzi));
+    drafts = applyMapping(rows.value, mapping.value);
+    deckHanzi = new Set((await cards.forDeck(targetDeckId.value)).map((c) => c.hanzi));
+    results.value = validateImportRows(drafts, deckHanzi);
+  }
 
-    const validated: Validated[] = [];
-    for (const draft of drafts) {
-      const validation = validateCard(draft, existingHanzi);
-      validated.push(validation);
-      if (validation.ok) existingHanzi.add(validation.draft.hanzi);
-    }
-    results.value = validated;
+  /** Step 3's side panel: replaces one row's draft and re-checks every row, so a fix that clashes with another row is caught. */
+  function fixRow(index: number, draft: CardDraft): void {
+    drafts = drafts.map((d, i) => (i === index ? draft : d));
+    results.value = validateImportRows(drafts, deckHanzi);
   }
 
   /**
    * Writes every valid row in batches of `BATCH_SIZE`, each its own
-   * transaction. `skipped` (ruling 2) starts from the duplicates `verify()`
-   * already turned away — rows whose only reason for not being `ok` is the
-   * "Already in this deck" issue — and grows with whatever a batch's own
-   * re-check turns away too. A batch that throws leaves every earlier batch
-   * committed and creates nothing itself; `ImportCommitError` carries how
-   * many cards exist so far so the caller can say so.
+   * transaction. `skipped` counts duplicates left alone under Skip; rows with
+   * an error are never counted — the page already shows them as errors. A
+   * batch that throws leaves every earlier batch committed and writes nothing
+   * itself; `ImportCommitError` carries how many cards exist so far so the
+   * caller can say so.
    */
-  async function commit(): Promise<{ created: number; skipped: number }> {
+  async function commit(): Promise<{ created: number; updated: number; skipped: number }> {
     const deckId = targetDeckId.value;
     if (!deckId) throw new Error('No destination deck selected.');
 
     const validRows = results.value.filter((row) => row.ok);
-    const duplicatesFromVerify = results.value.filter((row) =>
-      row.issues.some((issue) => issue.field === 'hanzi' && issue.message === DUPLICATE_MESSAGE),
-    ).length;
-
     let created = 0;
-    let skipped = duplicatesFromVerify;
+    let updated = 0;
+    let skipped = 0;
 
     for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
       const batch = validRows.slice(i, i + BATCH_SIZE);
       try {
-        const result = await commitBatch(deckId, batch, Date.now());
+        const result = await commitBatch(deckId, batch, duplicatePolicy.value, Date.now());
         created += result.created;
+        updated += result.updated;
         skipped += result.skipped;
       } catch (err) {
-        // Earlier batches did land — their cards count toward today's work
-        // even though this one failed.
         if (created > 0) await refreshDueCounts();
         throw new ImportCommitError(created, err);
       }
     }
 
     await refreshDueCounts();
-    return { created, skipped };
+    return { created, updated, skipped };
   }
 
   return {
@@ -306,6 +312,7 @@ export function useImport() {
     mapping,
     results,
     counts,
+    duplicatePolicy,
     targetDeckId,
     decks,
     decksLoading,
@@ -315,6 +322,7 @@ export function useImport() {
     load,
     setMapping,
     verify,
+    fixRow,
     commit,
   };
 }

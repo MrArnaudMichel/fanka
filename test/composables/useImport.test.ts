@@ -4,7 +4,7 @@ import { useImport } from '~/composables/useImport';
 import { simplifiedCharactersIn } from '~core/chinese/script';
 import { db } from '~core/db/db';
 import { cards, decks, items } from '~core/db/repositories';
-import type { Validated } from '~core/import/validate';
+import { REPEATED_MESSAGE } from '~core/import/rows';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 
@@ -53,7 +53,7 @@ describe('useImport', () => {
     await importer.setMapping(importer.mapping.value!);
     await importer.verify();
 
-    expect(importer.counts.value).toEqual({ valid: 1, warnings: 0, errors: 2 });
+    expect(importer.counts.value).toEqual({ valid: 1, warnings: 0, errors: 2, duplicates: 0 });
 
     const result = await importer.commit();
     expect(result.created).toBe(1);
@@ -77,6 +77,7 @@ describe('useImport', () => {
     await again.setMapping(again.mapping.value!);
     await again.verify();
     expect(again.counts.value.valid).toBe(0);
+    expect(again.counts.value.duplicates).toBe(1);
 
     const secondCommit = await again.commit();
     expect(secondCommit.created).toBe(0);
@@ -96,7 +97,7 @@ describe('useImport', () => {
     await importer.setMapping(importer.mapping.value!);
     await importer.verify();
 
-    expect(await importer.commit()).toEqual({ created: 1, skipped: 0 });
+    expect(await importer.commit()).toEqual({ created: 1, updated: 0, skipped: 0 });
     const [card] = await cards.forDeck('d1');
     expect(card).toMatchObject({ hanzi: '電腦', zhuyin: 'ㄉㄧㄢˋ ㄋㄠˇ', tags: ['tech', 'hsk1'] });
   });
@@ -171,13 +172,12 @@ describe('useImport', () => {
     await importer.setMapping(importer.mapping.value!);
     await importer.verify();
 
-    expect(importer.counts.value).toEqual({ valid: 1, warnings: 0, errors: 1 });
-    const duplicateRow = importer.results.value.find((r: Validated) => !r.ok);
-    expect(duplicateRow?.issues).toContainEqual({ field: 'hanzi', severity: 'error', message: 'Already in this deck' });
+    expect(importer.counts.value).toEqual({ valid: 1, warnings: 0, errors: 1, duplicates: 0 });
+    const repeatedRow = importer.results.value.find((r) => !r.ok);
+    expect(repeatedRow?.issues).toContainEqual({ field: 'hanzi', severity: 'error', message: REPEATED_MESSAGE });
 
-    const result = await importer.commit();
-    expect(result.created).toBe(1);
-    expect(result.skipped).toBe(1);
+    // The repeated row is an error, never counted as skipped.
+    expect(await importer.commit()).toEqual({ created: 1, updated: 0, skipped: 0 });
   });
 
   it('re-checks against the database at commit time, skipping a card created after verify()', async () => {
@@ -272,5 +272,73 @@ describe('remembered mapping', () => {
     const second = useImport();
     await second.load('Front,Back,Extra\n朋友,friend,x');
     expect(second.mappingRemembered.value).toBe(false);
+  });
+});
+
+async function makeExistingCard(): Promise<string> {
+  await makeDeck();
+  await cards.create(
+    {
+      id: 'existing',
+      deckId: 'd1',
+      hanzi: '朋友',
+      pinyin: [{ text: 'péng', tone: 2 }, { text: 'yǒu', tone: 5 }],
+      zhuyin: '',
+      translation: 'friend',
+      pos: 'noun',
+      example: '',
+      examplePinyin: '',
+      exampleTranslation: '',
+      tags: [],
+      note: '',
+      createdAt: NOW,
+      updatedAt: NOW,
+      deletedAt: null,
+    },
+    ['recognition', 'production'],
+    NOW,
+  );
+  return 'existing';
+}
+
+describe('duplicates', () => {
+  it('skips cards already in the deck by default', async () => {
+    await makeExistingCard();
+    const imp = useImport();
+    imp.targetDeckId.value = 'd1';
+    await imp.load('hanzi,pinyin,translation\n朋友,peng2 you5,pal\n老師,lao3 shi1,teacher');
+    await imp.verify();
+    expect(imp.counts.value).toEqual({ valid: 1, warnings: 0, errors: 0, duplicates: 1 });
+    expect(imp.results.value[0]).toMatchObject({ ok: true, duplicate: true });
+    expect(await imp.commit()).toEqual({ created: 1, updated: 0, skipped: 1 });
+  });
+
+  it('updates their content and keeps their items with Update', async () => {
+    const existingCardId = await makeExistingCard();
+    const imp = useImport();
+    imp.targetDeckId.value = 'd1';
+    await imp.load('hanzi,pinyin,translation\n朋友,peng2 you5,pal');
+    await imp.verify();
+    imp.duplicatePolicy.value = 'update';
+    const itemsBefore = await db.items.where('cardId').equals(existingCardId).toArray();
+    expect(await imp.commit()).toEqual({ created: 0, updated: 1, skipped: 0 });
+    expect((await db.cards.get(existingCardId))?.translation).toBe('pal');
+    expect(await db.items.where('cardId').equals(existingCardId).toArray()).toEqual(itemsBefore);
+    expect((await db.outbox.toArray()).some((o) => o.entity === 'card' && o.entityId === existingCardId)).toBe(true);
+  });
+});
+
+describe('fixRow', () => {
+  it('re-validates the edited row in place', async () => {
+    await makeDeck();
+    const imp = useImport();
+    imp.targetDeckId.value = 'd1';
+    await imp.load('hanzi,pinyin,translation\n老師,lao3 shi1,\n學生,xue2 sheng1,student');
+    await imp.verify();
+    expect(imp.results.value[0]!.ok).toBe(false);
+    imp.fixRow(0, { hanzi: '老師', pinyin: 'lao3 shi1', translation: 'teacher' });
+    expect(imp.results.value[0]!.ok).toBe(true);
+    expect(imp.results.value[1]!.draft.hanzi).toBe('學生');
+    expect(imp.counts.value.valid).toBe(2);
   });
 });
