@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from '~core/db/schema';
-import { REPEATED_MESSAGE, updatedCardFromDraft, validateImportRows } from '~core/import/rows';
+import { REPEATED_MESSAGE, sameCardContent, updatedCardFromDraft, validateImportRows } from '~core/import/rows';
 import type { CardDraft } from '~core/import/validate';
 
 const draft = (overrides: Partial<CardDraft> = {}): CardDraft => ({ hanzi: '朋友', pinyin: 'peng2 you5', translation: 'friend', ...overrides });
@@ -49,5 +49,28 @@ describe('updatedCardFromDraft', () => {
     expect(next.example).toBe('他是我的朋友。');
     expect(next.exampleTranslation).toBe('He is my friend.');
     expect(next.tags).toEqual(['hsk1']);
+  });
+});
+
+describe('sameCardContent', () => {
+  const card = {
+    id: 'c1', deckId: 'd1', hanzi: '朋友', pinyin: [], zhuyin: '', translation: 'friend', pos: 'noun',
+    example: '', examplePinyin: '', exampleTranslation: '', tags: ['hsk1'], note: '', createdAt: 1, updatedAt: 1, deletedAt: null,
+  } as unknown as Card;
+
+  it('is true when re-importing the same row changes nothing the learner sees', () => {
+    const same = updatedCardFromDraft(card, draft(), 50);
+    const settled = { ...card, pinyin: same.pinyin, zhuyin: same.zhuyin };
+    expect(sameCardContent(settled, updatedCardFromDraft(settled, draft(), 99))).toBe(true);
+  });
+
+  it('is false when a content field differs, tags included', () => {
+    expect(sameCardContent(card, { ...card, translation: 'pal' })).toBe(false);
+    expect(sameCardContent(card, { ...card, tags: ['hsk1', 'core'] })).toBe(false);
+    expect(sameCardContent(card, { ...card, pinyin: [{ text: 'péng' }] as Card['pinyin'] })).toBe(false);
+  });
+
+  it('ignores bookkeeping: updatedAt alone is not a change', () => {
+    expect(sameCardContent(card, { ...card, updatedAt: 999 })).toBe(true);
   });
 });

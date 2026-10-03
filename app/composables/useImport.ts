@@ -1,7 +1,7 @@
 import { type Delimiter, detectDelimiter, parseDelimited } from '~core/import/parse';
 import { type Mapping, applyMapping, guessMapping, headerSignature } from '~core/import/mapping';
 import type { CardDraft } from '~core/import/validate';
-import { type DuplicatePolicy, type ImportRow, normalisePinyinText, updatedCardFromDraft, validateImportRows } from '~core/import/rows';
+import { type DuplicatePolicy, type ImportRow, normalisePinyinText, sameCardContent, updatedCardFromDraft, validateImportRows } from '~core/import/rows';
 import { parsePinyin } from '~core/chinese/pinyin';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { db } from '~core/db/db';
@@ -89,6 +89,10 @@ async function commitBatch(
           continue;
         }
         const next = updatedCardFromDraft(existing, draft, now);
+        if (sameCardContent(existing, next)) {
+          skipped += 1;
+          continue;
+        }
         await db.cards.put(next);
         await db.outbox.put(outboxEntry('card', next.id, 'put', now));
         byHanzi.set(next.hanzi, next);

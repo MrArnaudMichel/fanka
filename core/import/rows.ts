@@ -60,3 +60,20 @@ export function updatedCardFromDraft(card: Card, draft: CardDraft, now: number):
     updatedAt: now,
   };
 }
+
+/**
+ * Whether an import update would change anything the learner sees: the
+ * fields `updatedCardFromDraft` writes. An unchanged card is left alone, so
+ * re-importing a file does not queue a sync write per row.
+ */
+export function sameCardContent(a: Card, b: Card): boolean {
+  return (
+    a.zhuyin === b.zhuyin &&
+    a.translation === b.translation &&
+    a.example === b.example &&
+    a.examplePinyin === b.examplePinyin &&
+    a.exampleTranslation === b.exampleTranslation &&
+    JSON.stringify(a.pinyin) === JSON.stringify(b.pinyin) &&
+    JSON.stringify(a.tags) === JSON.stringify(b.tags)
+  );
+}

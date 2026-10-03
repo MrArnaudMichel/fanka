@@ -328,6 +328,30 @@ describe('duplicates', () => {
   });
 });
 
+describe('re-importing the same file with Update', () => {
+  it('leaves cards it would not change alone, with no sync write', async () => {
+    const existingCardId = await makeExistingCard();
+    const csv = 'hanzi,pinyin,translation\n朋友,peng2 you5,pal';
+    const first = useImport();
+    first.targetDeckId.value = 'd1';
+    await first.load(csv);
+    await first.verify();
+    first.duplicatePolicy.value = 'update';
+    expect(await first.commit()).toEqual({ created: 0, updated: 1, skipped: 0 });
+    const stamped = (await db.cards.get(existingCardId))!.updatedAt;
+    await db.outbox.clear();
+
+    const again = useImport();
+    again.targetDeckId.value = 'd1';
+    await again.load(csv);
+    await again.verify();
+    again.duplicatePolicy.value = 'update';
+    expect(await again.commit()).toEqual({ created: 0, updated: 0, skipped: 1 });
+    expect((await db.cards.get(existingCardId))!.updatedAt).toBe(stamped);
+    expect(await db.outbox.count()).toBe(0);
+  });
+});
+
 describe('fixRow', () => {
   it('re-validates the edited row in place', async () => {
     await makeDeck();

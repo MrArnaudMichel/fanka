@@ -8,6 +8,7 @@ import type { Mapping, Target } from '~core/import/mapping';
 import type { ImportRow } from '~core/import/rows';
 import type { CardDraft } from '~core/import/validate';
 import { plural } from '~/utils/format';
+import { importSummary } from '~/utils/importSummary';
 
 // Ruling 4: behaviour, not a styling token — see CLAUDE.md's carve-out for
 // "no hard-coded colour, size, duration or radius" ("Where no token exists,
@@ -386,19 +387,14 @@ const importing = ref(false);
 async function onImport(): Promise<void> {
   importing.value = true;
   try {
-    const { created, updated, skipped } = await commit();
-    const parts = [
-      created > 0 && updated > 0 ? `${updated} updated` : '',
-      skipped > 0 ? `${skipped} already in the deck skipped` : '',
-    ].filter(Boolean);
-    const heading = created > 0 || updated === 0 ? `Imported ${plural(created, 'card')}` : `Updated ${plural(updated, 'card')}`;
-    toaster.success(heading, parts.length > 0 ? { description: parts.join(', ') } : undefined);
+    const { heading, description } = importSummary(await commit(), duplicatePolicy.value);
+    toaster.success(heading, description ? { description } : undefined);
     await navigateTo(`/decks/${targetDeckId.value}`);
   } catch (err) {
     console.error('import: commit failed', err);
     const createdSoFar = err instanceof ImportCommitError ? err.createdSoFar : 0;
     toaster.error("Couldn't finish the import", {
-      description: createdSoFar > 0 ? `${createdSoFar} card${createdSoFar === 1 ? '' : 's'} were already created. Try again.` : 'Try again.',
+      description: createdSoFar > 0 ? `${plural(createdSoFar, 'card')} already created. Try again.` : 'Try again.',
     });
   } finally {
     importing.value = false;
