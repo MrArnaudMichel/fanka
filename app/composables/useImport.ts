@@ -169,6 +169,13 @@ export function useImport() {
   /** The drafts and deck hanzi the current results were built from, so one row can be fixed and everything re-checked. */
   let drafts: CardDraft[] = [];
   let deckHanzi: ReadonlySet<string> = new Set();
+
+  /** Forgets the checked rows and what they were checked against, so a stale fix cannot bring them back. */
+  function invalidate(): void {
+    results.value = [];
+    drafts = [];
+    deckHanzi = new Set();
+  }
   const targetDeckId = ref<string | null>(null);
   const decks = ref<Deck[]>([]);
   const decksLoading = ref(true);
@@ -215,9 +222,7 @@ export function useImport() {
   // default deferred flush would not clear `results` until a later tick —
   // a caller reading `results` right after setting `targetDeckId` (as the
   // "invalidates" ruling demands) must see it already empty.
-  watch(targetDeckId, () => {
-    results.value = [];
-  }, { flush: 'sync' });
+  watch(targetDeckId, invalidate, { flush: 'sync' });
 
   /**
    * Detects the delimiter, parses `text` into `rows`, and picks a mapping:
@@ -239,7 +244,7 @@ export function useImport() {
     rows.value = parsed;
     mapping.value = chosen;
     mappingRemembered.value = remembered;
-    results.value = [];
+    invalidate();
   }
 
   /** Sets the mapping step 3 verifies, and remembers it for this header. A failed save is logged, never thrown. */
@@ -261,7 +266,7 @@ export function useImport() {
    */
   async function verify(): Promise<void> {
     if (!mapping.value || !targetDeckId.value) {
-      results.value = [];
+      invalidate();
       return;
     }
     drafts = applyMapping(rows.value, mapping.value);
@@ -271,6 +276,7 @@ export function useImport() {
 
   /** Step 3's side panel: replaces one row's draft and re-checks every row, so a fix that clashes with another row is caught. */
   function fixRow(index: number, draft: CardDraft): void {
+    if (index < 0 || index >= drafts.length) return;
     drafts = drafts.map((d, i) => (i === index ? draft : d));
     results.value = validateImportRows(drafts, deckHanzi);
   }

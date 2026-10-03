@@ -366,3 +366,26 @@ describe('fixRow', () => {
     expect(imp.counts.value.valid).toBe(2);
   });
 });
+describe('fixRow after the results were invalidated', () => {
+  it('does nothing once the destination deck changes, rather than rebuilding results for the old deck', async () => {
+    await makeDeck();
+    const imp = useImport();
+    imp.targetDeckId.value = 'd1';
+    await imp.load('hanzi,pinyin,translation\n老師,lao3 shi1,');
+    await imp.verify();
+    imp.targetDeckId.value = 'other';
+    imp.fixRow(0, { hanzi: '老師', pinyin: 'lao3 shi1', translation: 'teacher' });
+    expect(imp.results.value).toEqual([]);
+  });
+
+  it('ignores an index outside the rows', async () => {
+    await makeDeck();
+    const imp = useImport();
+    imp.targetDeckId.value = 'd1';
+    await imp.load('hanzi,pinyin,translation\n學生,xue2 sheng1,student');
+    await imp.verify();
+    imp.fixRow(5, { hanzi: '老師', pinyin: 'lao3 shi1', translation: 'teacher' });
+    expect(imp.results.value.map((r) => r.draft.hanzi)).toEqual(['學生']);
+  });
+});
+

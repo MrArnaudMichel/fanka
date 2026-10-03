@@ -41,6 +41,17 @@ export function normalisePinyinText(text: string): string {
 }
 
 /**
+ * A mapped zhuyin column wins. Without one, the card keeps its zhuyin while
+ * the pinyin is unchanged — it may have been corrected by hand — and gets a
+ * derived one when the pinyin changed, so the two never disagree.
+ */
+function nextZhuyin(card: Card, draft: CardDraft, pinyin: Card['pinyin']): string {
+  if (draft.zhuyin && draft.zhuyin.length > 0) return draft.zhuyin;
+  if (card.zhuyin && JSON.stringify(card.pinyin) === JSON.stringify(pinyin)) return card.zhuyin;
+  return toZhuyin(pinyin);
+}
+
+/**
  * The card after an import row updates it. Items and reviews are separate
  * rows and stay as they are, so progress is kept. A field the file did not
  * map (undefined in the draft) keeps the card's value; a mapped field
@@ -51,7 +62,7 @@ export function updatedCardFromDraft(card: Card, draft: CardDraft, now: number):
   return {
     ...card,
     pinyin,
-    zhuyin: draft.zhuyin && draft.zhuyin.length > 0 ? draft.zhuyin : toZhuyin(pinyin),
+    zhuyin: nextZhuyin(card, draft, pinyin),
     translation: draft.translation,
     example: draft.example ?? card.example,
     examplePinyin: draft.examplePinyin === undefined ? card.examplePinyin : normalisePinyinText(draft.examplePinyin),

@@ -52,6 +52,29 @@ describe('updatedCardFromDraft', () => {
   });
 });
 
+describe('updatedCardFromDraft and zhuyin', () => {
+  const base = {
+    id: 'c1', deckId: 'd1', hanzi: '朋友', zhuyin: 'ㄆㄥˊ ㄧㄡˇ (edited)', translation: 'friend', pos: 'noun',
+    example: '', examplePinyin: '', exampleTranslation: '', tags: [], note: '', createdAt: 1, updatedAt: 1, deletedAt: null,
+  };
+
+  it('keeps a hand-edited zhuyin when the file has no zhuyin and the pinyin is unchanged', () => {
+    const settled = updatedCardFromDraft({ ...base, pinyin: [] } as unknown as Card, draft(), 1);
+    const card = { ...base, pinyin: settled.pinyin } as unknown as Card;
+    expect(updatedCardFromDraft(card, draft({ translation: 'pal' }), 2).zhuyin).toBe('ㄆㄥˊ ㄧㄡˇ (edited)');
+  });
+
+  it('derives zhuyin again when the pinyin changes', () => {
+    const card = { ...base, pinyin: [] } as unknown as Card;
+    expect(updatedCardFromDraft(card, draft(), 2).zhuyin).not.toBe('ㄆㄥˊ ㄧㄡˇ (edited)');
+  });
+
+  it('uses the zhuyin column when the file maps one', () => {
+    const card = { ...base, pinyin: [] } as unknown as Card;
+    expect(updatedCardFromDraft(card, draft({ zhuyin: 'ㄆㄥˊ ˙ㄧㄡ' }), 2).zhuyin).toBe('ㄆㄥˊ ˙ㄧㄡ');
+  });
+});
+
 describe('sameCardContent', () => {
   const card = {
     id: 'c1', deckId: 'd1', hanzi: '朋友', pinyin: [], zhuyin: '', translation: 'friend', pos: 'noun',
