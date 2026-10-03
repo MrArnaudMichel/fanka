@@ -20,6 +20,15 @@ describe('backupFileName', () => {
 });
 
 describe('parseBackup', () => {
+  it('refuses a version that is not a known whole release, and a missing export time', () => {
+    const base = buildBackup(empty(), DEFAULT_SETTINGS, 5);
+    for (const version of [0, 0.5, '1']) {
+      expect(parseBackup(JSON.stringify({ ...base, version }))).toEqual({ ok: false, error: 'This backup is damaged.' });
+    }
+    expect(parseBackup(JSON.stringify({ ...base, exportedAt: 'yesterday' }))).toEqual({ ok: false, error: 'This backup is damaged.' });
+    expect(parseBackup(JSON.stringify({ ...base, settings: [] }))).toEqual({ ok: false, error: 'This backup is damaged.' });
+  });
+
   it('round-trips a built backup', () => {
     const backup = buildBackup({ ...empty(), decks: [deck('d1', 1)] }, DEFAULT_SETTINGS, 5);
     expect(parseBackup(JSON.stringify(backup))).toEqual({ ok: true, backup });

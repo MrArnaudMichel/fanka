@@ -25,6 +25,7 @@ export type ParsedBackup = { ok: true; backup: Backup } | { ok: false; error: st
 
 const TABLES = ['decks', 'cards', 'items', 'reviews', 'attempts'] as const;
 const NOT_A_BACKUP = 'This file is not a Fanka backup.';
+const DAMAGED = 'This backup is damaged.';
 
 export function buildBackup(data: BackupData, settings: Settings, now: number): Backup {
   return { format: 'fanka-backup', version: 1, exportedAt: now, settings, ...data };
@@ -36,7 +37,7 @@ export function backupFileName(now: number): string {
   return `fanka-backup-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`;
 }
 
-/** Checks the shape only as far as a restore needs: the stamp, each table, an id on every row. */
+/** Checks the shape only as far as a restore needs: the stamp, version 1, the export time, each table, an id on every row, a settings object. */
 export function parseBackup(text: string): ParsedBackup {
   let value: unknown;
   try {
@@ -48,14 +49,18 @@ export function parseBackup(text: string): ParsedBackup {
     return { ok: false, error: NOT_A_BACKUP };
   }
   const candidate = value as Record<string, unknown>;
-  if (typeof candidate.version !== 'number' || candidate.version > 1) {
+  if (typeof candidate.version === 'number' && Number.isInteger(candidate.version) && candidate.version > 1) {
     return { ok: false, error: 'This backup comes from a newer Fanka. Update the app first.' };
+  }
+  if (candidate.version !== 1 || typeof candidate.exportedAt !== 'number' || !Number.isFinite(candidate.exportedAt)) {
+    return { ok: false, error: DAMAGED };
   }
   const tablesOk = TABLES.every(
     (table) => Array.isArray(candidate[table]) && (candidate[table] as unknown[]).every((row) => typeof (row as { id?: unknown })?.id === 'string'),
   );
-  if (!tablesOk || typeof candidate.settings !== 'object' || candidate.settings === null) {
-    return { ok: false, error: 'This backup is damaged.' };
+  const settingsOk = typeof candidate.settings === 'object' && candidate.settings !== null && !Array.isArray(candidate.settings);
+  if (!tablesOk || !settingsOk) {
+    return { ok: false, error: DAMAGED };
   }
   return { ok: true, backup: candidate as unknown as Backup };
 }
