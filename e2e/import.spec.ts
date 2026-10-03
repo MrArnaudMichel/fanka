@@ -80,3 +80,44 @@ test('changing a column mapping in step 2 changes the step-3 counts', async ({ p
   await expect(page.locator('kt-stat', { hasText: 'Errors' }).locator('[part=value]')).toHaveText('2');
   await expect(page.getByRole('button', { name: 'Import' })).toBeDisabled();
 });
+
+test('a duplicate can update the existing card and a broken row can be fixed', async ({ page }) => {
+  const deckName = `Duplicate test ${Date.now()}`;
+
+  await page.goto('/decks');
+  await page.getByRole('button', { name: 'New deck' }).click();
+  await page.getByRole('textbox', { name: 'Name' }).fill(deckName);
+  await page.getByRole('button', { name: 'Create deck' }).click();
+  await expect(page.getByRole('main').getByText(deckName)).toBeVisible();
+
+  const importCsv = async (csv: string) => {
+    await page.goto('/import');
+    await page.getByRole('combobox', { name: 'Destination deck' }).click();
+    await page.getByRole('option', { name: deckName }).click();
+    await page
+      .locator('kt-drag-drop input[type="file"]')
+      .setInputFiles({ name: 'cards.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf-8') });
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByText('Step 3 of 3 — Review')).toBeVisible();
+  };
+
+  await importCsv(['hanzi,pinyin,translation', '朋友,peng2 you5,friend'].join('\n'));
+  await page.getByRole('button', { name: 'Import' }).click();
+  await page.waitForURL(/\/decks\/[^/?]+$/);
+
+  await importCsv(['hanzi,pinyin,translation', '朋友,peng2 you5,pal', '老師,lao3 shi1,'].join('\n'));
+  await expect(page.locator('kt-stat', { hasText: 'Already in deck' }).locator('[part=value]')).toHaveText('1');
+  await expect(page.locator('kt-stat', { hasText: 'Errors' }).locator('[part=value]')).toHaveText('1');
+
+  await page.getByRole('row', { name: /老師/ }).click();
+  await page.getByRole('textbox', { name: 'Translation', exact: true }).fill('teacher');
+  await page.getByRole('button', { name: 'Check row' }).click();
+  await expect(page.locator('kt-stat', { hasText: 'Errors' }).locator('[part=value]')).toHaveText('0');
+
+  await page.getByRole('radio', { name: 'Update' }).click();
+  await page.getByRole('button', { name: 'Import' }).click();
+  await page.waitForURL(/\/decks\/[^/?]+$/);
+  await expect(page.getByText('pal', { exact: true })).toBeVisible();
+  await expect(page.getByText('老師', { exact: true })).toBeVisible();
+});
