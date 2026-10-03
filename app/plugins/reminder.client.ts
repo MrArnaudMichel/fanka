@@ -24,7 +24,12 @@ export default defineNuxtPlugin(() => {
     }
     await reminder.reschedule();
     watch(
-      () => [counts.value.review.total + counts.value.writing.total, settings.value.reminderEnabled, settings.value.reminderTime],
+      () => [
+        counts.value.review.total + counts.value.writing.total,
+        settings.value.reminderEnabled,
+        settings.value.reminderTimes.join(','),
+        settings.value.reminderDays.join(','),
+      ],
       () => void reminder.reschedule(),
     );
   })();

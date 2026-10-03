@@ -45,4 +45,17 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS.accent).toBe('violet');
     expect(DEFAULT_SETTINGS.textSize).toBe('default');
   });
+
+  it('migrates a stored single reminder time into the list', async () => {
+    await db.settings.put({ key: 'settings', value: { reminderEnabled: true, reminderTime: '07:30' } });
+    const loaded = await loadSettings();
+    expect(loaded.reminderTimes).toEqual(['07:30']);
+    expect(loaded.reminderDays).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(loaded).not.toHaveProperty('reminderTime');
+  });
+
+  it('prefers a stored list over a leftover single time', async () => {
+    await db.settings.put({ key: 'settings', value: { reminderTime: '07:30', reminderTimes: ['09:00'] } });
+    expect((await loadSettings()).reminderTimes).toEqual(['09:00']);
+  });
 });

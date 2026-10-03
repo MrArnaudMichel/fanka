@@ -26,10 +26,12 @@ export interface Settings {
   accent: Accent;
   /** Kanto text size, applied as `data-text-size` on <html>. */
   textSize: TextSize;
-  /** Daily notification on the Android app; off until the learner allows notifications. */
+  /** Reminders on the Android app; off until the learner allows notifications. */
   reminderEnabled: boolean;
-  /** Local time of the daily reminder, "HH:MM". */
-  reminderTime: string;
+  /** Local times of the reminders, "HH:MM", 1 to 4, sorted. */
+  reminderTimes: string[];
+  /** Weekdays the reminders fire, 0 = Sunday … 6 = Saturday. */
+  reminderDays: number[];
   offlineStrokeCache: boolean;
 }
 
@@ -49,7 +51,8 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: 'violet',
   textSize: 'default',
   reminderEnabled: false,
-  reminderTime: '19:00',
+  reminderTimes: ['19:00'],
+  reminderDays: [0, 1, 2, 3, 4, 5, 6],
   offlineStrokeCache: true,
 };
 
@@ -68,6 +71,9 @@ export async function loadSettings(): Promise<Settings> {
   for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]) {
     if (key in stored) (merged as unknown as Record<string, unknown>)[key] = stored[key];
   }
+  // Before reminderTimes, a single reminderTime was stored; carry it over once.
+  const legacyTime = (stored as { reminderTime?: unknown }).reminderTime;
+  if (!('reminderTimes' in stored) && typeof legacyTime === 'string') merged.reminderTimes = [legacyTime];
   return merged;
 }
 

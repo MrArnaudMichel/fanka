@@ -1,19 +1,20 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { REMINDER_ID, type ReminderEngine, useReminder } from '~/composables/useReminder';
+import { FIRST_REMINDER_ID, type ReminderEngine, type ScheduledNotification, TEST_REMINDER_ID, useReminder } from '~/composables/useReminder';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useSettings } from '~/composables/useSettings';
 import { db } from '~core/db/db';
 
-function fakeEngine(granted = true) {
+function fakeEngine(granted = true, pendingIds: number[] = []) {
   const calls: string[] = [];
   const engine: ReminderEngine = {
     requestPermission: vi.fn(async () => granted),
-    cancel: vi.fn(async (id: number) => {
-      calls.push(`cancel:${id}`);
+    pending: vi.fn(async () => pendingIds),
+    cancel: vi.fn(async (ids: number[]) => {
+      calls.push(`cancel:${ids.join(',')}`);
     }),
-    schedule: vi.fn(async (id: number, at: number, _title: string, body: string) => {
-      calls.push(`schedule:${id}:${at}:${body}`);
+    schedule: vi.fn(async (list: ScheduledNotification[]) => {
+      calls.push(...list.map((n) => `schedule:${n.id}:${n.at}:${n.body}`));
     }),
   };
   return { engine, calls };
@@ -21,8 +22,6 @@ function fakeEngine(granted = true) {
 
 const NOW = new Date(2026, 8, 16, 8, 0).getTime();
 
-// Every useReminder() call starts a fire-and-forget due-count refresh; let it
-// finish before the next beforeEach deletes the database under it.
 afterEach(async () => {
   await useDueCounts().refresh();
   await vi.waitFor(() => new Promise((resolve) => setTimeout(resolve, 10)));
@@ -34,22 +33,34 @@ beforeEach(async () => {
 });
 
 describe('useReminder', () => {
-  it('only cancels when the reminder is off', async () => {
-    const { engine, calls } = fakeEngine();
+  it('cancels every pending reminder, the legacy id included, and the test one untouched', async () => {
+    const { engine, calls } = fakeEngine(true, [1, 99, 100, 101, 127, 200]);
     await useSettings().update({ reminderEnabled: false });
     await useReminder(engine).reschedule(NOW);
-    expect(calls).toEqual([`cancel:${REMINDER_ID}`]);
+    expect(calls).toEqual(['cancel:1,100,101,127']);
   });
 
-  it('cancels then schedules at the chosen time when on', async () => {
+  it('schedules a week of reminders from id 100 when on', async () => {
     const { engine, calls } = fakeEngine();
-    await useSettings().update({ reminderEnabled: true, reminderTime: '19:30' });
+    await useSettings().update({ reminderEnabled: true, reminderTimes: ['19:30'], reminderDays: [0, 1, 2, 3, 4, 5, 6] });
     await useReminder(engine).reschedule(NOW);
-    // Due counts are not loaded in this test, so today reads as done: tomorrow, generic body.
-    expect(calls).toEqual([
-      `cancel:${REMINDER_ID}`,
-      `schedule:${REMINDER_ID}:${new Date(2026, 8, 17, 19, 30).getTime()}:Time for today's cards`,
-    ]);
+    // Due counts are not loaded here, so today reads as done: first is tomorrow.
+    const scheduled = calls.filter((c) => c.startsWith('schedule:'));
+    expect(scheduled).toHaveLength(6);
+    expect(scheduled[0]).toBe(`schedule:${FIRST_REMINDER_ID}:${new Date(2026, 8, 17, 19, 30).getTime()}:Time for today's cards`);
+    expect(scheduled[5]!.startsWith(`schedule:${FIRST_REMINDER_ID + 5}:`)).toBe(true);
+  });
+
+  it('sends a test notification a second from now', async () => {
+    const { engine, calls } = fakeEngine();
+    expect(await useReminder(engine).sendTest(NOW)).toBe(true);
+    expect(calls).toEqual([`schedule:${TEST_REMINDER_ID}:${NOW + 1000}:Reminders are working`]);
+  });
+
+  it('does not send a test without permission', async () => {
+    const { engine, calls } = fakeEngine(false);
+    expect(await useReminder(engine).sendTest(NOW)).toBe(false);
+    expect(calls).toEqual([]);
   });
 
   it('reports the permission result', async () => {
@@ -59,7 +70,7 @@ describe('useReminder', () => {
 
   it('never throws when the engine fails', async () => {
     const { engine } = fakeEngine();
-    engine.cancel = vi.fn(async () => {
+    engine.pending = vi.fn(async () => {
       throw new Error('boom');
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});

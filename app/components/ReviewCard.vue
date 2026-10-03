@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { Card, Item } from '~core/db/schema';
+import type { DeepReadonly } from 'vue';
 import type { Settings } from '~core/db/settings';
 
 /**
  * Review shows recognition items only (see `SessionMode`): the hanzi alone,
  * and the learner recalls its pinyin and meaning before revealing them.
  */
-defineProps<{ card: Card; item: Item; revealed: boolean; settings: Settings; canSpeak: boolean }>();
+defineProps<{ card: Card; item: Item; revealed: boolean; settings: DeepReadonly<Settings>; canSpeak: boolean }>();
 defineEmits<{ speak: [text: string] }>();
 </script>
 

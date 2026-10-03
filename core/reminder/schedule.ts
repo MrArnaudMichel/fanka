@@ -18,20 +18,38 @@ function dueBody(count: number): string {
   return count === 1 ? '1 card due today' : `${count} cards due today`;
 }
 
-/**
- * The next daily reminder at local `time` ("HH:MM"). Today's occurrence is used
- * while it is still ahead and there is work left; otherwise the reminder is for
- * tomorrow, with a generic body since today's count says nothing about then.
- * Null when `time` is not a valid "HH:MM".
- */
-export function nextReminder(now: number, time: string, dueToday: number, doneToday: boolean): Reminder | null {
-  const match = TIME.exec(time);
-  if (!match) return null;
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
+/** Valid "HH:MM" times only, each once, earliest first. */
+export function normaliseTimes(times: readonly string[]): string[] {
+  return [...new Set(times.filter((t) => TIME.test(t)))].sort();
+}
 
-  const today = occurrence(now, 0, hour, minute);
+/**
+ * Every reminder for the next `horizonDays` calendar days, today included:
+ * each time on each allowed weekday (0 = Sunday), strictly after `now`,
+ * earliest first. Today's carry the due count, and are left out when today
+ * is done or nothing is due; later days carry the generic body, since
+ * today's count says nothing about them. Scheduling a week ahead keeps the
+ * reminders coming when the app is not opened for a few days.
+ */
+export function nextReminders(
+  now: number,
+  times: readonly string[],
+  days: readonly number[],
+  dueToday: number,
+  doneToday: boolean,
+  horizonDays = 7,
+): Reminder[] {
+  const allowed = new Set(days);
   const hasWork = !doneToday && dueToday > 0;
-  if (hasWork && today > now) return { at: today, body: dueBody(dueToday) };
-  return { at: occurrence(now, 1, hour, minute), body: GENERIC_BODY };
+  const list: Reminder[] = [];
+  for (let offset = 0; offset < horizonDays; offset += 1) {
+    for (const time of normaliseTimes(times)) {
+      const [, h, m] = TIME.exec(time)!;
+      const at = occurrence(now, offset, Number(h), Number(m));
+      if (at <= now || !allowed.has(new Date(at).getDay())) continue;
+      if (offset === 0 && !hasWork) continue;
+      list.push({ at, body: offset === 0 ? dueBody(dueToday) : GENERIC_BODY });
+    }
+  }
+  return list;
 }

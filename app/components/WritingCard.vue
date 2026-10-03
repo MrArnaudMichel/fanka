@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Card } from '~core/db/schema';
+import type { DeepReadonly } from 'vue';
 import type { Settings } from '~core/db/settings';
 
 /**
@@ -8,7 +9,7 @@ import type { Settings } from '~core/db/settings';
  * slot holds whatever sits between prompt and answer — the drawing pad, or
  * the verdict once the drawing is checked.
  */
-defineProps<{ card: Card; revealed: boolean; settings: Settings; canSpeak: boolean }>();
+defineProps<{ card: Card; revealed: boolean; settings: DeepReadonly<Settings>; canSpeak: boolean }>();
 defineEmits<{ speak: [text: string] }>();
 </script>
 

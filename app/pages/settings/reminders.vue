@@ -5,7 +5,7 @@ import { useReminder } from '~/composables/useReminder';
 import { useSettingsForm } from '~/composables/useSettingsForm';
 
 const { compact } = useCompactLayout();
-const { draft, ready, saving, save } = useSettingsForm(['reminderEnabled', 'reminderTime'] as const);
+const { draft, ready, saving, save } = useSettingsForm(['reminderEnabled', 'reminderTimes'] as const);
 const { native, requestPermission } = useReminder();
 const denied = ref(false);
 
@@ -19,7 +19,7 @@ async function onToggle(event: CustomEvent<{ checked: boolean }>): Promise<void>
 }
 
 function onTimeChange(event: CustomEvent<{ value: string }>): void {
-  if (event.detail.value) draft.reminderTime = event.detail.value;
+  if (event.detail.value) draft.reminderTimes = [event.detail.value];
 }
 
 async function onSave(): Promise<void> {
@@ -47,7 +47,7 @@ async function onSave(): Promise<void> {
         description="Notifications are blocked. Turn them on for Fanka in Android settings, under Apps, then Notifications."
       />
       <kt-label-input v-show="draft.reminderEnabled" label="Reminder time">
-        <kt-input type="time" name="reminder-time" :value="draft.reminderTime" @kt-change="onTimeChange" />
+        <kt-input type="time" name="reminder-time" :value="draft.reminderTimes[0]" @kt-change="onTimeChange" />
       </kt-label-input>
       <kt-button slot="footer" type="submit" variant="primary" size="medium" :full-width="compact" :disabled="saving || !ready">Save</kt-button>
     </kt-form>
