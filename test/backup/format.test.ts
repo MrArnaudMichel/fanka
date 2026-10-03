@@ -66,5 +66,9 @@ describe('mergePlan', () => {
     const local = { ...empty(), reviews: [review('r1')] };
     const backup = { ...empty(), reviews: [review('r1'), review('r2')] };
     expect(mergePlan(local, backup).reviews.map((r) => r.id)).toEqual(['r2']);
+    const attempt = (id: string, at: number) => ({ id, at }) as never;
+    const withAttempts = mergePlan({ ...empty(), attempts: [attempt('a1', 1)] }, { ...empty(), attempts: [attempt('a1', 99), attempt('a2', 2)] });
+    // An attempt already here is never replaced, even by a later copy.
+    expect(withAttempts.attempts.map((a) => a.id)).toEqual(['a2']);
   });
 });

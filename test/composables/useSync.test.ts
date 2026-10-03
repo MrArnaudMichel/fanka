@@ -39,7 +39,12 @@ const { calls, runSync } = vi.hoisted(() => {
 /** A signed-in-or-not `user` ref, shared with the mocked `useAuth`. */
 const { userRef } = vi.hoisted(() => ({ userRef: { value: { id: 'user-1' } as { id: string } | null } }));
 
+const { readSyncDetails } = vi.hoisted(() => ({
+  readSyncDetails: vi.fn(async () => ({ pending: 0, decks: 2, cards: 40, reviews: 7 })),
+}));
+
 vi.mock('~core/sync', () => ({ runSync }));
+vi.mock('~core/db/sync-details', () => ({ readSyncDetails }));
 vi.mock('~core/sync/supabase', () => ({ createSupabaseTransport: vi.fn(() => ({})) }));
 vi.mock('~/utils/supabaseClient', () => ({ getSupabaseClient: vi.fn(() => ({})) }));
 vi.mock('~/composables/useAuth', () => ({ useAuth: () => ({ user: userRef }) }));
@@ -78,6 +83,21 @@ describe('useSync', () => {
     await flush();
 
     expect(calls.state.maxInFlight).toBe(1);
+  });
+
+  it('refreshes the sync details once a run settles', async () => {
+    const { useSync } = await import('~/composables/useSync');
+    const { triggerSync, details } = useSync();
+    calls.length = 0;
+    userRef.value = { id: 'user-1' };
+    readSyncDetails.mockClear();
+
+    void triggerSync();
+    expect(readSyncDetails).not.toHaveBeenCalled();
+    calls[0]!.resolve();
+    await flush();
+    expect(readSyncDetails).toHaveBeenCalledTimes(1);
+    expect(details.value).toEqual({ pending: 0, decks: 2, cards: 40, reviews: 7 });
   });
 
   it('debounces a burst of writes into a single run', async () => {

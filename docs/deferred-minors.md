@@ -122,12 +122,9 @@ findings are never parked here.
 | `app/components/stats/StatsActivity.vue` (`minutes`) | "Minutes studied" rounds per bucket, so a day under 30 s total shows 0 | Rounding for a compact axis, not a data loss | Writing verdicts & stats review |
 | `app/pages/settings/account.vue` (`.sync-stats`) | `minmax(120px, 1fr)` is a literal grid-track minimum | Same pattern as `import.vue`'s `.stats`; Kanto has no grid-track token | Account sync details |
 | Kanto 1.8 settings, reminders and import (T2) | theme test asserts the dataset only, not persistence | Minor; judged not worth a fix round | Kanto 1.8 T2 review |
-| Kanto 1.8 settings, reminders and import (T3) | palette syncNow rejection path via `void runCommand` (syncNow never throws today); commands.ts filter/concat cosmetic | Minor; judged not worth a fix round | Kanto 1.8 T3 review |
+| Kanto 1.8 settings, reminders and import (T3) | palette syncNow rejection path via `void runCommand` (syncNow never throws today) | Minor; judged not worth a fix round | Kanto 1.8 T3 review |
 | Kanto 1.8 settings, reminders and import (T5) | AppSidebar .profile CSS placement; useAuth profile tests share module state | Minor; judged not worth a fix round | Kanto 1.8 T5 review |
-| Kanto 1.8 settings, reminders and import (T6) | no test that sync details refresh after a sync | Minor; judged not worth a fix round | Kanto 1.8 T6 review |
-| Kanto 1.8 settings, reminders and import (T7) | no attempts insert-only test in core/backup | Minor; judged not worth a fix round | Kanto 1.8 T7 review |
-| Kanto 1.8 settings, reminders and import (T8) | applyBackup test asserts deck outbox entries only | Minor; judged not worth a fix round | Kanto 1.8 T8 review |
 | Kanto 1.8 settings, reminders and import (T9) | drag-drop keeps its selection after a failed restore (lets the learner retry; arguably right) | Minor; judged not worth a fix round | Kanto 1.8 T9 review |
 | Kanto 1.8 settings, reminders and import (T10) | DeepReadonly import order in ReviewCard/WritingCard; DST test only meaningful in a DST zone | Minor; judged not worth a fix round | Kanto 1.8 T10 review |
-| Kanto 1.8 settings, reminders and import (T12) | remembered mapping targets not re-validated; lookup .catch(() => null) doesn't log; no test for resetDevice clearing importMappings | Minor; judged not worth a fix round | Kanto 1.8 T12 review |
+| Kanto 1.8 settings, reminders and import (T12) | remembered mapping targets not re-validated (the learner sees them in step 2) | Minor; judged not worth a fix round | Kanto 1.8 T12 review |
 | Kanto 1.8 settings, reminders and import (T15) | side panel close has no unsaved-edit guard | Minor; judged not worth a fix round | Kanto 1.8 T15 review |

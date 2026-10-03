@@ -33,6 +33,22 @@ describe('backup I/O', () => {
     expect((await loadSettings()).newPerDay).toBe(33);
   });
 
+  it('queues every kind of restored row for sync', async () => {
+    const backup = buildBackup(
+      {
+        decks: [deck('d1', 1)],
+        cards: [{ id: 'c1', deckId: 'd1', updatedAt: 1, deletedAt: null } as never],
+        items: [{ id: 'i1', cardId: 'c1', updatedAt: 1 } as never],
+        reviews: [{ id: 'r1', itemId: 'i1', reviewedAt: 1 } as never],
+        attempts: [{ id: 'a1', at: 1, itemId: 'i1', cardId: 'c1', deckId: 'd1', mode: 'review', source: 'session' } as never],
+      },
+      DEFAULT_SETTINGS,
+      100,
+    );
+    await applyBackup(backup, 200);
+    expect((await db.outbox.toArray()).map((o) => `${o.entity}:${o.entityId}`).sort()).toEqual(['attempt:a1', 'card:c1', 'deck:d1', 'item:i1', 'review:r1']);
+  });
+
   it('resets the device but keeps the seed marker so nothing reseeds', async () => {
     await db.decks.put(deck('d1', 1));
     await db.outbox.put({ id: 'o', entity: 'deck', entityId: 'd1', op: 'put', at: 1 });
@@ -45,5 +61,11 @@ describe('backup I/O', () => {
     expect(await db.syncState.count()).toBe(0);
     expect((await db.settings.get('seedVersion'))?.value).toBe(3);
     expect(await db.settings.get('settings')).toBeUndefined();
+  });
+
+  it('forgets remembered import mappings on reset', async () => {
+    await db.importMappings.put({ signature: 'front\u001fback', columns: ['hanzi', 'translation'], updatedAt: 1 });
+    await resetDevice();
+    expect(await db.importMappings.count()).toBe(0);
   });
 });
