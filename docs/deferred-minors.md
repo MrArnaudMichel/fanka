@@ -130,7 +130,6 @@ findings are never parked here.
 | Kanto 1.8 settings, reminders and import (T8) | applyBackup test asserts deck outbox entries only | Minor; judged not worth a fix round | Kanto 1.8 T8 review |
 | Kanto 1.8 settings, reminders and import (T9) | exportedAt unvalidated → "Invalid Date" possible; drag-drop keeps selection after a failed restore | Minor; judged not worth a fix round | Kanto 1.8 T9 review |
 | Kanto 1.8 settings, reminders and import (T10) | DeepReadonly import order in ReviewCard/WritingCard; DST test only meaningful in a DST zone | Minor; judged not worth a fix round | Kanto 1.8 T10 review |
-| Kanto 1.8 settings, reminders and import (T11) | any sendTest failure shows the "blocked" alert; duplicate "Days" label on label-input and group | Minor; judged not worth a fix round | Kanto 1.8 T11 review |
 | Kanto 1.8 settings, reminders and import (T12) | remembered mapping targets not re-validated; lookup .catch(() => null) doesn't log; no test for resetDevice clearing importMappings | Minor; judged not worth a fix round | Kanto 1.8 T12 review |
 | Kanto 1.8 settings, reminders and import (T13) | blank zhuyin re-derived on Update, overwriting a hand-edited one; no test for mapped-but-empty field | Minor; judged not worth a fix round | Kanto 1.8 T13 review |
 | Kanto 1.8 settings, reminders and import (T14) | invalidation keeps drafts/deckHanzi (unreachable today); fixRow no range guard | Minor; judged not worth a fix round | Kanto 1.8 T14 review |

@@ -48,6 +48,9 @@ const nativeEngine: ReminderEngine = {
   },
 };
 
+/** How a test notification went: shown, blocked by permission, or failed for another reason. */
+export type TestResult = 'sent' | 'denied' | 'failed';
+
 /** Whether this build can show reminders at all; false in the browser. */
 export function useNativePlatform(): boolean {
   return Capacitor.isNativePlatform();
@@ -104,14 +107,14 @@ export function useReminder(engine?: ReminderEngine) {
   }
 
   /** A notification a second from now, to check permission and display on this device. */
-  async function sendTest(now = Date.now()): Promise<boolean> {
-    if (!(await requestPermission())) return false;
+  async function sendTest(now = Date.now()): Promise<TestResult> {
+    if (!(await requestPermission())) return 'denied';
     try {
       await notifier.schedule([{ id: TEST_REMINDER_ID, at: now + 1000, title: 'Fanka', body: 'Reminders are working' }]);
-      return true;
+      return 'sent';
     } catch (err) {
       console.error('useReminder: could not send the test notification', err);
-      return false;
+      return 'failed';
     }
   }
 

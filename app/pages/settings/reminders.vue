@@ -50,10 +50,11 @@ function removeTime(index: number): void {
 
 async function onTest(): Promise<void> {
   testing.value = true;
-  const ok = await sendTest();
+  const result = await sendTest();
   testing.value = false;
-  if (ok) toaster.success('Test notification sent');
-  else denied.value = true;
+  if (result === 'sent') toaster.success('Test notification sent');
+  else if (result === 'denied') denied.value = true;
+  else toaster.error("Couldn't send a test notification", { description: 'Try again.' });
 }
 
 async function onSave(): Promise<void> {
@@ -89,7 +90,7 @@ async function onSave(): Promise<void> {
       />
       <template v-if="draft.reminderEnabled">
         <kt-label-input label="Days">
-          <kt-toggle-button-group multiple label="Days" :value="draft.reminderDays.map(String)" @kt-change="onDays">
+          <kt-toggle-button-group multiple :value="draft.reminderDays.map(String)" @kt-change="onDays">
             <kt-toggle-button v-for="d in WEEK" :key="d" variant="outline" :value="String(d)">{{ dayName(d) }}</kt-toggle-button>
           </kt-toggle-button-group>
         </kt-label-input>

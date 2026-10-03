@@ -53,14 +53,23 @@ describe('useReminder', () => {
 
   it('sends a test notification a second from now', async () => {
     const { engine, calls } = fakeEngine();
-    expect(await useReminder(engine).sendTest(NOW)).toBe(true);
+    expect(await useReminder(engine).sendTest(NOW)).toBe('sent');
     expect(calls).toEqual([`schedule:${TEST_REMINDER_ID}:${NOW + 1000}:Reminders are working`]);
   });
 
   it('does not send a test without permission', async () => {
     const { engine, calls } = fakeEngine(false);
-    expect(await useReminder(engine).sendTest(NOW)).toBe(false);
+    expect(await useReminder(engine).sendTest(NOW)).toBe('denied');
     expect(calls).toEqual([]);
+  });
+
+  it('tells a failed send apart from a denied permission', async () => {
+    const { engine } = fakeEngine(true);
+    engine.schedule = vi.fn(async () => {
+      throw new Error('boom');
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await useReminder(engine).sendTest(NOW)).toBe('failed');
   });
 
   it('reports the permission result', async () => {
