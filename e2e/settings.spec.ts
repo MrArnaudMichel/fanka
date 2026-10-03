@@ -41,6 +41,17 @@ test('the command palette opens with Control+K and goes to a page', async ({ pag
   await expect(page).toHaveURL(/\/stats$/);
 });
 
+test('the sidebar Search button opens the command palette without a keyboard', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await page.getByRole('button', { name: /^Search/ }).click();
+  const palette = page.getByRole('dialog');
+  await expect(palette).toBeVisible();
+  await palette.getByRole('combobox').fill('decks');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/decks$/);
+});
+
 test('a file that is not a backup is refused and Restore stays disabled', async ({ page }) => {
   await page.goto('/settings/data');
   await page

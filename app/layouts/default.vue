@@ -8,6 +8,9 @@ const { counts } = useDueCounts();
 const { sections } = useNavigation(counts);
 const { commands, run: runCommand } = useCommands(sections);
 
+/** Mirrors the palette's own state, so the sidebar's Search button can open it on a device without a keyboard. */
+const paletteOpen = ref(false);
+
 function onCommand(event: CustomEvent<{ id: string }>): void {
   void runCommand(event.detail.id);
 }
@@ -53,7 +56,7 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
 
 <template>
   <div class="shell">
-    <AppSidebar :sections="sections" :due-total="reviewTotal" />
+    <AppSidebar :sections="sections" :due-total="reviewTotal" @search="paletteOpen = true" />
 
     <kt-header ref="header" class="mobile-header" sticky label="Fanka">
       <span slot="brand" class="brand">
@@ -78,7 +81,14 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
     </main>
 
     <!-- Cmd/Ctrl+K from anywhere; `commands` is an array, so it goes in as a property. -->
-    <kt-command-palette :commands="commands" placeholder="Go to a page or run an action" @kt-select="onCommand" />
+    <kt-command-palette
+      :commands="commands"
+      :open="paletteOpen"
+      placeholder="Go to a page or run an action"
+      @kt-select="onCommand"
+      @kt-open="paletteOpen = true"
+      @kt-close="paletteOpen = false"
+    />
 
     <kt-toast-container></kt-toast-container>
   </div>

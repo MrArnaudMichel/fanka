@@ -55,8 +55,8 @@ export default defineNuxtPlugin(async () => {
   // Ellipsis is each deck card's actions dropdown trigger; TriangleAlert and
   // RefreshCw are load-failure states and their retry action; FileQuestion is
   // the card editor's "card not found" empty state. List is the Browse
-  // ("Cards") nav entry; Search is Browse's filter field and its "no match"
-  // empty state; Pause/Play (Play already listed) are Browse's
+  // ("Cards") nav entry; Search is Browse's filter field, its "no match"
+  // empty state and the sidebar's command palette button; Pause/Play (Play already listed) are Browse's
   // suspend/unsuspend actions; Move is its bulk Move action; SquarePen is
   // the card detail panel's Edit action; Trash2 is Browse's delete actions.
   // Upload is the Import nav entry, the Import empty-state action and the

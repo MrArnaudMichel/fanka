@@ -5,6 +5,7 @@ import { navActiveHref } from '~/composables/useNavigation';
 
 /** `dueTotal` is Review's: this button starts Review, not Writing. */
 defineProps<{ sections: KtNavSection[]; dueTotal: number }>();
+defineEmits<{ search: [] }>();
 const route = useRoute();
 const { user, displayName } = useAuth();
 
@@ -49,6 +50,11 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
       Start review · {{ dueTotal }}
     </kt-button>
 
+    <!-- Opens the command palette: the way in for a tablet with no keyboard, and a reminder of the shortcut for one with. -->
+    <kt-button variant="secondary-no-bg" size="medium" icon="search" full-width @click="$emit('search')">
+      <span class="search-label">Search <kt-kbd keys="mod k" /></span>
+    </kt-button>
+
     <kt-sub-menu-navigation flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
 
     <!-- Signed in only: who this is, a shortcut to Account. -->
@@ -84,6 +90,7 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
   }
 }
 
+.search-label { display: inline-flex; align-items: center; gap: var(--gap-element); }
 .profile { margin-top: auto; }
 .profile-row { display: flex; align-items: center; gap: var(--gap-element); min-width: 0; }
 .profile-name { font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
