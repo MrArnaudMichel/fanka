@@ -1,3 +1,4 @@
+import type { Ref } from 'vue';
 import type { KtNavItem, KtNavSection } from 'kanto-ds';
 import type { SessionMode } from '~core/db/session';
 import type { ModeCounts } from '~/composables/useDueCounts';

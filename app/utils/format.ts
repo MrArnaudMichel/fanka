@@ -23,3 +23,16 @@ export function plural(n: number, noun: string): string {
 export function shortDate(key: string): string {
   return `${Number(key.slice(5, 7))}/${Number(key.slice(8, 10))}`;
 }
+
+/** Bytes in the largest unit that keeps a whole number in front, decimal (kB = 1000 B) as storage APIs report. */
+export function formatBytes(bytes: number): string {
+  const units = ['B', 'kB', 'MB', 'GB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1000 && unit < units.length - 1) {
+    value /= 1000;
+    unit += 1;
+  }
+  const shown = unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${shown} ${units[unit]}`;
+}

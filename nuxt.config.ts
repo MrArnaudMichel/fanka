@@ -1,5 +1,18 @@
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { isKantoElement } from 'kanto-ds/vue';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string };
+
+/** The short commit the bundle is built from, for Settings › About; empty outside a git checkout. */
+function gitCommit(): string {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return '';
+  }
+}
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
@@ -25,6 +38,9 @@ export default defineNuxtConfig({
     public: {
       supabaseUrl: '',
       supabaseAnonKey: '',
+      appVersion: pkg.version,
+      appCommit: gitCommit(),
+      appBuiltAt: String(Date.now()),
     },
   },
   css: ['kanto-ds/styles.css', '~/assets/css/fanka.css'],
