@@ -48,3 +48,32 @@ describe('useSettingsForm on a cold start', () => {
     expect(form.draft.reminderTimes).toEqual(['07:00', '21:00']);
   });
 });
+
+describe('useSettingsForm dirty state', () => {
+  it('is clean once seeded, dirty after an edit, clean again after reverting or saving', async () => {
+    const { useSettingsForm: form } = await import('~/composables/useSettingsForm');
+    const f = form(['newPerDay', 'reminderDays']);
+    await vi.waitFor(() => expect(f.ready.value).toBe(true));
+    expect(f.dirty.value).toBe(false);
+
+    const before = f.draft.newPerDay;
+    f.draft.newPerDay = before + 1;
+    expect(f.dirty.value).toBe(true);
+    f.draft.newPerDay = before;
+    expect(f.dirty.value).toBe(false);
+
+    f.draft.reminderDays = [1, 2];
+    expect(f.dirty.value).toBe(true);
+    expect(await f.save()).toBe(true);
+    expect(f.dirty.value).toBe(false);
+  });
+
+  it('is not made dirty by a change saved elsewhere, such as the theme switched from the palette', async () => {
+    const { useSettingsForm: form } = await import('~/composables/useSettingsForm');
+    const { useSettings: settings } = await import('~/composables/useSettings');
+    const f = form(['theme']);
+    await vi.waitFor(() => expect(f.ready.value).toBe(true));
+    await settings().update({ theme: f.draft.theme === 'dark' ? 'light' : 'dark' });
+    expect(f.dirty.value).toBe(false);
+  });
+});

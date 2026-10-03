@@ -29,6 +29,28 @@ test('a saved study setting survives a reload', async ({ page }) => {
   await expect(page.getByRole('spinbutton', { name: 'New cards per day' })).toHaveValue('21');
 });
 
+test('leaving a settings page with unsaved changes asks first', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/settings/study');
+  const save = page.getByRole('button', { name: 'Save' });
+  await expect(save).toBeDisabled();
+
+  const field = page.getByRole('spinbutton', { name: 'New cards per day' });
+  await field.fill('9');
+  await field.press('Tab');
+  await expect(save).toBeEnabled();
+
+  await page.getByRole('link', { name: 'Display' }).click();
+  const dialog = page.getByRole('alertdialog').or(page.getByRole('dialog')).filter({ hasText: 'Leave without saving?' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Stay' }).click();
+  await expect(page).toHaveURL(/\/settings\/study$/);
+
+  await page.getByRole('link', { name: 'Display' }).click();
+  await dialog.getByRole('button', { name: 'Leave' }).click();
+  await expect(page).toHaveURL(/\/settings\/display$/);
+});
+
 test('the command palette opens with Control+K and goes to a page', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');

@@ -3,6 +3,7 @@ import { toaster } from 'kanto-ds';
 import { MAX_REMINDER_TIMES, normaliseTimes } from '~core/reminder/schedule';
 import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useReminder } from '~/composables/useReminder';
+import { useLeaveGuard } from '~/composables/useLeaveGuard';
 import { useSettingsForm } from '~/composables/useSettingsForm';
 
 const SUGGESTED_TIMES = ['08:00', '12:00', '19:00', '21:00'];
@@ -12,7 +13,8 @@ const WEEK = [1, 2, 3, 4, 5, 6, 0];
 const dayName = (d: number) => new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(new Date(2026, 9, 4 + d));
 
 const { compact } = useCompactLayout();
-const { draft, ready, saving, save } = useSettingsForm(['reminderEnabled', 'reminderTimes', 'reminderDays'] as const);
+const { draft, ready, saving, dirty, save } = useSettingsForm(['reminderEnabled', 'reminderTimes', 'reminderDays'] as const);
+const leaveGuard = useLeaveGuard(dirty);
 const { native, requestPermission, sendTest } = useReminder();
 const denied = ref(false);
 const daysError = ref('');
@@ -110,9 +112,10 @@ async function onSave(): Promise<void> {
         </div>
       </template>
       <kt-button slot="footer" variant="secondary" size="medium" icon="send" :disabled="testing" @click="onTest">Send test notification</kt-button>
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready">Save</kt-button>
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready || !dirty">Save</kt-button>
     </kt-form>
   </form>
+  <UnsavedChangesDialog :open="leaveGuard.asking.value" @stay="leaveGuard.stay" @leave="leaveGuard.leave" />
 </template>
 
 <style scoped>

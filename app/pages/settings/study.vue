@@ -2,10 +2,12 @@
 import { toaster } from 'kanto-ds';
 import type { KtOption } from 'kanto-ds';
 import { useCompactLayout } from '~/composables/useCompactLayout';
+import { useLeaveGuard } from '~/composables/useLeaveGuard';
 import { useSettingsForm } from '~/composables/useSettingsForm';
 
 const { compact } = useCompactLayout();
-const { draft, ready, saving, save } = useSettingsForm(['algorithm', 'newPerDay', 'desiredRetention', 'maxInterval'] as const);
+const { draft, ready, saving, dirty, save } = useSettingsForm(['algorithm', 'newPerDay', 'desiredRetention', 'maxInterval'] as const);
+const leaveGuard = useLeaveGuard(dirty);
 
 const algorithmOptions: KtOption[] = [
   { id: 'FSRS', label: 'FSRS' },
@@ -62,7 +64,8 @@ async function onSave(): Promise<void> {
           @kt-change="(e: CustomEvent<{ value: number | null }>) => (draft.maxInterval = e.detail.value ?? Number.NaN)"
         />
       </kt-label-input>
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready">Save</kt-button>
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready || !dirty">Save</kt-button>
     </kt-form>
   </form>
+  <UnsavedChangesDialog :open="leaveGuard.asking.value" @stay="leaveGuard.stay" @leave="leaveGuard.leave" />
 </template>

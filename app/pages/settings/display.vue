@@ -2,12 +2,14 @@
 import { KT_ACCENTS, KT_TEXT_SIZES, toaster } from 'kanto-ds';
 import type { KtOption } from 'kanto-ds';
 import { useCompactLayout } from '~/composables/useCompactLayout';
+import { useLeaveGuard } from '~/composables/useLeaveGuard';
 import { useSettingsForm } from '~/composables/useSettingsForm';
 
 const { compact } = useCompactLayout();
-const { draft, ready, saving, save } = useSettingsForm(
+const { draft, ready, saving, dirty, save } = useSettingsForm(
   ['theme', 'accent', 'textSize', 'hanziFont', 'showZhuyin', 'toneColors', 'hidePinyinUntilRevealed', 'strokeFeedback', 'autoPlayAudio'] as const,
 );
+const leaveGuard = useLeaveGuard(dirty);
 
 const themeOptions: KtOption[] = [
   { id: 'auto', label: 'System' },
@@ -66,7 +68,8 @@ async function onSave(): Promise<void> {
       <kt-toggle size="small" :checked="draft.autoPlayAudio" @kt-change="(e: CustomEvent) => (draft.autoPlayAudio = e.detail.checked)">
         Play pronunciation when the answer is shown
       </kt-toggle>
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready">Save</kt-button>
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :fullWidth="compact" :disabled="saving || !ready || !dirty">Save</kt-button>
     </kt-form>
   </form>
+  <UnsavedChangesDialog :open="leaveGuard.asking.value" @stay="leaveGuard.stay" @leave="leaveGuard.leave" />
 </template>
