@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GENERIC_BODY, nextReminders, normaliseTimes } from '~core/reminder/schedule';
+import { GENERIC_BODY, MAX_REMINDER_TIMES, nextReminders, normaliseTimes } from '~core/reminder/schedule';
 
 const local = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min).getTime();
 const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
@@ -8,6 +8,11 @@ const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
 describe('normaliseTimes', () => {
   it('drops invalid times, dedupes and sorts', () => {
     expect(normaliseTimes(['19:00', '7:00', '08:30', '19:00', '24:00'])).toEqual(['08:30', '19:00']);
+  });
+
+  it('keeps at most MAX_REMINDER_TIMES, the earliest', () => {
+    expect(MAX_REMINDER_TIMES).toBe(4);
+    expect(normaliseTimes(['21:00', '07:00', '12:00', '08:00', '19:00', '15:00'])).toEqual(['07:00', '08:00', '12:00', '15:00']);
   });
 });
 

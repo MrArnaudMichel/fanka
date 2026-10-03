@@ -18,9 +18,12 @@ function dueBody(count: number): string {
   return count === 1 ? '1 card due today' : `${count} cards due today`;
 }
 
-/** Valid "HH:MM" times only, each once, earliest first. */
+/** Most times a day; with the 7-day horizon it keeps scheduled ids inside 100–199. */
+export const MAX_REMINDER_TIMES = 4;
+
+/** Valid "HH:MM" times only, each once, earliest first, at most MAX_REMINDER_TIMES. */
 export function normaliseTimes(times: readonly string[]): string[] {
-  return [...new Set(times.filter((t) => TIME.test(t)))].sort();
+  return [...new Set(times.filter((t) => TIME.test(t)))].sort().slice(0, MAX_REMINDER_TIMES);
 }
 
 /**
