@@ -46,16 +46,18 @@ const poolText = (n: number) => `${n} card${n === 1 ? '' : 's'} in your studied 
       description="Endless drill on the decks you study. Missed cards come back more often. Nothing here changes your schedule."
     />
 
-    <kt-card v-for="{ mode, heading, description, icon, variant } in MODES" :key="mode">
-      <p class="overline" slot="header">{{ heading }}</p>
-      <div class="summary">
-        <p class="description">{{ description }}</p>
-        <p v-if="poolSizes[mode] !== undefined" class="description pool">{{ poolText(poolSizes[mode]!) }}</p>
-        <kt-button :variant="variant" size="large" :icon="icon" full-width @click="navigateTo(`/${mode}?endless=1`)">
-          Practise {{ heading.toLowerCase() }}
-        </kt-button>
-      </div>
-    </kt-card>
+    <div class="modes">
+      <kt-card v-for="{ mode, heading, description, icon, variant } in MODES" :key="mode">
+        <p class="overline" slot="header">{{ heading }}</p>
+        <div class="summary">
+          <p class="description">{{ description }}</p>
+          <p v-if="poolSizes[mode] !== undefined" class="description pool">{{ poolText(poolSizes[mode]!) }}</p>
+          <kt-button :variant="variant" size="large" :icon="icon" full-width @click="navigateTo(`/${mode}?endless=1`)">
+            Practise {{ heading.toLowerCase() }}
+          </kt-button>
+        </div>
+      </kt-card>
+    </div>
   </div>
 </template>
 
@@ -63,6 +65,11 @@ const poolText = (n: number) => `${n} card${n === 1 ? '' : 's'} in your studied 
 /* Same outer page gap as index.vue's .today, and for the same reason. */
 .practice { display: flex; flex-direction: column; gap: 24px; }
 .overline { margin: 0; font: var(--font-title-overline); letter-spacing: var(--letter-spacing-overline); text-transform: uppercase; color: var(--text-muted); }
+/* Same two-up layout as Today's Review and Writing cards, from the shell's 900px breakpoint. */
+.modes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+@media (min-width: 900px) {
+  .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .summary { display: flex; flex-direction: column; gap: var(--gap-form); }
 .description { margin: 0; font: var(--font-normal-regular); color: var(--text-muted); }
 </style>
