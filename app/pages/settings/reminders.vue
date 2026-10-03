@@ -69,9 +69,7 @@ async function onSave(): Promise<void> {
 </script>
 
 <template>
-  <kt-page-header eyebrow="Settings" heading="Reminders" description="Notifications with how many cards are due.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
-  </kt-page-header>
+  <SettingsHeader heading="Reminders" description="Notifications with how many cards are due." />
 
   <kt-empty-state
     v-if="!native"

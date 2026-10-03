@@ -4,9 +4,7 @@ import { plural } from '~/utils/format';
 import type { Backup } from '~core/backup/format';
 import { useAuth } from '~/composables/useAuth';
 import { useBackup } from '~/composables/useBackup';
-import { useCompactLayout } from '~/composables/useCompactLayout';
 
-const { compact } = useCompactLayout();
 const { user } = useAuth();
 const { exportBackup, readFile, restore, reset } = useBackup();
 
@@ -71,9 +69,7 @@ async function onConfirmReset(): Promise<void> {
 </script>
 
 <template>
-  <kt-page-header eyebrow="Settings" heading="Data" description="Back up your collection, restore it, or start this device over.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
-  </kt-page-header>
+  <SettingsHeader heading="Data" description="Back up your collection, restore it, or start this device over." />
 
   <kt-form heading="Export" description="Every deck, card, review and setting in one JSON file.">
     <kt-button slot="footer" variant="primary" size="medium" icon="download" :disabled="exporting" @click="onExport">Export backup</kt-button>

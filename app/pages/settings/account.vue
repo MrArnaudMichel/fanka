@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { toaster } from 'kanto-ds';
 import { useAuth } from '~/composables/useAuth';
-import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useSync } from '~/composables/useSync';
 import { timeAgo } from '~/utils/format';
 
-const { compact } = useCompactLayout();
 const { user, loading, error, displayName, signIn, signOut, updateProfile } = useAuth();
 const { status, lastSyncedAt, error: syncError, details, syncNow, refreshDetails } = useSync();
 onMounted(refreshDetails);
@@ -62,9 +60,7 @@ async function onSignOut(): Promise<void> {
 </script>
 
 <template>
-  <kt-page-header eyebrow="Settings" heading="Account" description="Your profile and how this device syncs.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
-  </kt-page-header>
+  <SettingsHeader heading="Account" description="Your profile and how this device syncs." />
 
   <form v-if="!user" novalidate @submit.prevent="onSendLink">
     <kt-form heading="Sign in" description="An account syncs your decks and progress across devices. Fanka works fully offline without one.">

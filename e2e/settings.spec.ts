@@ -14,7 +14,7 @@ test('settings is a list on a phone, and each section goes back to it', async ({
   await page.goto('/settings');
   await page.getByRole('link', { name: 'About' }).click();
   await expect(page.getByText('Platform')).toBeVisible();
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('navigation', { name: 'Settings' }).getByRole('link', { name: 'Settings' }).click();
   await expect(page).toHaveURL(/\/settings$/);
 });
 

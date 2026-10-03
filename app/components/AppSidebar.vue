@@ -9,6 +9,9 @@ defineEmits<{ search: [] }>();
 const route = useRoute();
 const { user, displayName } = useAuth();
 
+/** The palette's shortcut as this platform writes it; a wrong modifier is worse than none. */
+const shortcut = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
+
 const activeHref = computed(() => navActiveHref(route.path));
 
 /**
@@ -30,6 +33,10 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
         <span class="name">FANKA</span>
         <span class="tagline">Traditional Chinese</span>
       </span>
+      <!-- Opens the command palette: the way in for a tablet with no keyboard; the tooltip teaches the shortcut. -->
+      <kt-tooltip class="search" :text="`Search pages and actions · ${shortcut}`" placement="bottom">
+        <kt-button variant="secondary-no-bg" size="medium" icon="search" label="Search" @click="$emit('search')" />
+      </kt-tooltip>
     </div>
 
     <!--
@@ -48,11 +55,6 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
       @click="navigateTo('/review')"
     >
       Start review · {{ dueTotal }}
-    </kt-button>
-
-    <!-- Opens the command palette: the way in for a tablet with no keyboard, and a reminder of the shortcut for one with. -->
-    <kt-button variant="secondary-no-bg" size="medium" icon="search" full-width @click="$emit('search')">
-      <span class="search-label">Search <kt-kbd keys="mod k" /></span>
     </kt-button>
 
     <kt-sub-menu-navigation flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
@@ -92,7 +94,7 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
   }
 }
 
-.search-label { display: inline-flex; align-items: center; gap: var(--gap-element); }
+.search { margin-left: auto; }
 .profile { margin-top: auto; }
 .profile-row { display: flex; align-items: center; gap: var(--gap-element); min-width: 0; }
 .profile-name { font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -28,9 +28,7 @@ async function onSave(): Promise<void> {
 </script>
 
 <template>
-  <kt-page-header eyebrow="Settings" heading="Study" description="Daily allowance and the algorithm behind due dates.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
-  </kt-page-header>
+  <SettingsHeader heading="Study" description="Daily allowance and the algorithm behind due dates." />
   <form novalidate @submit.prevent="onSave">
     <kt-form heading="Scheduler" :loading="!ready" loading-fields="4">
       <kt-label-input label="Scheduler algorithm">

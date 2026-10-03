@@ -1,18 +1,14 @@
 <script setup lang="ts">
 import { useAppInfo } from '~/composables/useAppInfo';
-import { useCompactLayout } from '~/composables/useCompactLayout';
 import { formatBytes } from '~/utils/format';
 
-const { compact } = useCompactLayout();
 const { version, commit, builtAt, platform, storage, loadStorage } = useAppInfo();
 onMounted(loadStorage);
 const builtLabel = builtAt ? new Date(builtAt).toLocaleString() : 'Unknown';
 </script>
 
 <template>
-  <kt-page-header eyebrow="Settings" heading="About" description="Which build this is and where it runs.">
-    <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings', { replace: true })">Settings</kt-button>
-  </kt-page-header>
+  <SettingsHeader heading="About" description="Which build this is and where it runs." />
   <kt-card>
     <dl class="facts">
       <dt>Version</dt><dd>{{ version }}<template v-if="commit"> ({{ commit }})</template></dd>
