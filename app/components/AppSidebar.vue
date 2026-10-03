@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { KtNavItem, KtNavSection } from 'kanto-ds';
+import { useAuth } from '~/composables/useAuth';
 import { navActiveHref } from '~/composables/useNavigation';
 
 /** `dueTotal` is Review's: this button starts Review, not Writing. */
 defineProps<{ sections: KtNavSection[]; dueTotal: number }>();
 const route = useRoute();
+const { user, displayName } = useAuth();
 
 const activeHref = computed(() => navActiveHref(route.path));
 
@@ -48,6 +50,14 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
     </kt-button>
 
     <kt-sub-menu-navigation flush :sections="sections" :active-href="activeHref" @kt-navigate="onNavigate" />
+
+    <!-- Signed in only: who this is, a shortcut to Account. -->
+    <kt-card v-if="user" class="profile" clickable @kt-card-click="navigateTo('/settings/account')">
+      <span class="profile-row">
+        <kt-avatar size="small" :name="displayName" />
+        <span class="profile-name">{{ displayName }}</span>
+      </span>
+    </kt-card>
   </aside>
 </template>
 
@@ -73,6 +83,10 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
     display: none;
   }
 }
+
+.profile { margin-top: auto; }
+.profile-row { display: flex; align-items: center; gap: var(--gap-element); min-width: 0; }
+.profile-name { font: var(--font-normal-medium); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
 

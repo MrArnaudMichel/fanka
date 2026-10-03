@@ -6,6 +6,13 @@ const user = ref<AuthUser | null>(null);
 const loading = ref(true);
 const error = ref('');
 
+/** The name Account and the sidebar show: the profile's, else the email's local part. */
+const displayName = computed(() => {
+  const named = (user.value?.user_metadata?.display_name as string | undefined)?.trim();
+  if (named) return named;
+  return user.value?.email?.split('@')[0] ?? '';
+});
+
 let initPromise: Promise<void> | null = null;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -116,12 +123,32 @@ export function useAuth() {
     }
   }
 
+  /** Stores the display name in the account's metadata. Never throws: a failure lands in `error`. */
+  async function updateProfile(name: string): Promise<boolean> {
+    error.value = '';
+    try {
+      const { data, error: updateError } = await getSupabaseClient().auth.updateUser({ data: { display_name: name.trim() } });
+      if (updateError) {
+        error.value = updateError.message;
+        return false;
+      }
+      if (data.user) user.value = data.user;
+      return true;
+    } catch (err) {
+      console.error('useAuth: profile update failed', err);
+      error.value = err instanceof Error ? err.message : 'Profile update failed';
+      return false;
+    }
+  }
+
   return {
     user: readonly(user),
     loading: readonly(loading),
     error: readonly(error),
     signIn,
+    displayName,
     signOut,
+    updateProfile,
     completeSignInFromUrl,
   };
 }

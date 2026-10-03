@@ -1,27 +1,29 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { toaster } from 'kanto-ds';
 import { useAuth } from '~/composables/useAuth';
 import { useCompactLayout } from '~/composables/useCompactLayout';
-import { useSync } from '~/composables/useSync';
 
 const { compact } = useCompactLayout();
-
-const { user: authUser, loading: authLoading, error: authError, signIn, signOut } = useAuth();
-const { status: syncStatus, lastSyncedAt, error: syncError, syncNow } = useSync();
+const { user, loading, error, displayName, signIn, signOut, updateProfile } = useAuth();
 
 const email = ref('');
 const linkSent = ref(false);
-const syncing = computed(() => syncStatus.value === 'syncing');
-
-function onEmailInput(event: CustomEvent<{ value: string }>): void {
-  email.value = event.detail.value;
-  linkSent.value = false;
-}
+const nameDraft = ref('');
+const savingName = ref(false);
+watch(displayName, (name) => (nameDraft.value = name), { immediate: true });
 
 async function onSendLink(): Promise<void> {
   linkSent.value = false;
   await signIn(email.value);
-  if (!authError.value) linkSent.value = true;
+  if (!error.value) linkSent.value = true;
+}
+
+async function onSaveName(): Promise<void> {
+  savingName.value = true;
+  const ok = await updateProfile(nameDraft.value);
+  savingName.value = false;
+  if (ok) toaster.success('Profile saved');
+  else toaster.error("Couldn't save your profile", { description: error.value || 'Try again.' });
 }
 
 async function onSignOut(): Promise<void> {
@@ -29,53 +31,53 @@ async function onSignOut(): Promise<void> {
   linkSent.value = false;
   email.value = '';
 }
-
-async function onSyncNow(): Promise<void> {
-  await syncNow();
-}
-
-const lastSyncedLabel = computed(() => (lastSyncedAt.value ? new Date(lastSyncedAt.value).toLocaleString() : 'Never'));
 </script>
 
 <template>
-  <kt-page-header eyebrow="Settings" heading="Account">
+  <kt-page-header eyebrow="Settings" heading="Account" description="Your profile and how this device syncs.">
     <kt-button v-if="compact" slot="actions" variant="secondary-no-bg" size="medium" icon="chevron-left" @click="navigateTo('/settings')">Settings</kt-button>
   </kt-page-header>
-  <form novalidate @submit.prevent="onSendLink">
-    <kt-form heading="Account" description="Sign in with a magic link to sync your decks and progress across devices. Fanka works fully offline either way.">
-      <kt-label-input v-show="!authUser" label="Email">
-        <kt-input
-          type="email"
-          name="email"
-          autocomplete="email"
-          placeholder="you@example.com"
-          :value="email"
-          :error="authError"
-          @kt-input="onEmailInput"
-        />
+
+  <form v-if="!user" novalidate @submit.prevent="onSendLink">
+    <kt-form heading="Sign in" description="An account syncs your decks and progress across devices. Fanka works fully offline without one.">
+      <kt-label-input label="Email">
+        <kt-input type="email" name="email" autocomplete="email" placeholder="you@example.com" :value="email" :error="error"
+          @kt-input="(e: CustomEvent<{ value: string }>) => { email = e.detail.value; linkSent = false; }" />
       </kt-label-input>
-      <kt-alert v-show="!authUser && linkSent && !authError" variant="success" description="Check your inbox for the sign-in link." />
-
-      <div v-show="!!authUser" class="account-status">
-        <p>Signed in as {{ authUser?.email }}</p>
-        <p class="muted">Last synced: {{ lastSyncedLabel }}<template v-if="syncing"> · Syncing…</template></p>
-        <kt-alert v-if="syncStatus === 'error'" variant="danger" :description="syncError || 'Sync failed. It will retry automatically.'" />
-        <kt-alert v-if="syncStatus === 'offline'" variant="warning" description="No connection. Changes are saved locally and will sync once you're back online." />
-      </div>
-
-      <kt-button slot="footer" v-show="!authUser" type="submit" variant="primary" size="medium" :disabled="authLoading || !email">
-        Send link
-      </kt-button>
-      <kt-button slot="footer" v-show="!!authUser" type="button" variant="secondary" size="medium" :disabled="syncing" @click="onSyncNow">
-        Sync now
-      </kt-button>
-      <kt-button slot="footer" v-show="!!authUser" type="button" variant="dark" size="medium" @click="onSignOut">Sign out</kt-button>
+      <kt-alert v-if="linkSent && !error" variant="success" description="Check your inbox for the sign-in link." />
+      <kt-button slot="footer" type="submit" variant="primary" size="medium" :disabled="loading || !email">Send link</kt-button>
     </kt-form>
   </form>
+
+  <template v-else>
+    <form novalidate @submit.prevent="onSaveName">
+      <kt-form heading="Profile">
+        <div class="identity">
+          <kt-avatar size="large" :name="displayName" />
+          <div class="identity-text">
+            <span class="identity-name">{{ displayName }}</span>
+            <span class="identity-email">{{ user.email }}</span>
+          </div>
+        </div>
+        <kt-label-input label="Display name">
+          <kt-input name="display-name" autocomplete="nickname" :value="nameDraft" @kt-input="(e: CustomEvent<{ value: string }>) => (nameDraft = e.detail.value)" />
+        </kt-label-input>
+        <kt-button slot="footer" type="submit" variant="primary" size="medium" :disabled="savingName || nameDraft.trim() === displayName">Save</kt-button>
+      </kt-form>
+    </form>
+
+    <!-- Sync block: Task 6 -->
+
+    <kt-form heading="Session" description="Signing out keeps everything on this device.">
+      <kt-button slot="footer" variant="dark" size="medium" icon="log-out" @click="onSignOut">Sign out</kt-button>
+    </kt-form>
+  </template>
 </template>
 
 <style scoped>
-.account-status { display: flex; flex-direction: column; gap: var(--gap-element); }
-.account-status p { margin: 0; color: var(--text-body); font: var(--font-normal-regular); }
-.account-status .muted { color: var(--text-muted); }
+form { display: flex; flex-direction: column; }
+.identity { display: flex; align-items: center; gap: var(--gap-element); }
+.identity-text { display: flex; flex-direction: column; min-width: 0; }
+.identity-name { font: var(--font-normal-medium); color: var(--text-body); }
+.identity-email { font: var(--font-normal-small); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
 </style>

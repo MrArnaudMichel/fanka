@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
  * `onAuthStateChange` event (sign-in, sign-out, a token refresh) so tests
  * can drive `useAuth()`'s `user` ref without a network call.
  */
-type FakeSession = { user: { id: string; email: string } } | null;
+type FakeSession = { user: { id: string; email: string; user_metadata?: { display_name?: string } } } | null;
 type FakeAuthError = { message: string } | null;
 
 const { authStub, getSupabaseClient } = vi.hoisted(() => {
@@ -21,6 +21,10 @@ const { authStub, getSupabaseClient } = vi.hoisted(() => {
     }),
     signInWithOtp: vi.fn(async (): Promise<{ error: FakeAuthError }> => ({ error: null })),
     signOut: vi.fn(async (): Promise<{ error: FakeAuthError }> => ({ error: null })),
+    updateUser: vi.fn(async (attrs: { data: { display_name: string } }): Promise<{ data: { user: unknown }; error: FakeAuthError }> => ({
+      data: { user: { id: 'u1', email: 'arnaud@example.com', user_metadata: { display_name: attrs.data.display_name } } },
+      error: null,
+    })),
     exchangeCodeForSession: vi.fn(async (): Promise<{ error: FakeAuthError }> => ({ error: null })),
     emit(event: string, session: FakeSession) {
       for (const cb of listeners) cb(event, session);
@@ -114,5 +118,31 @@ describe('useAuth', () => {
 
     await expect(signOut()).resolves.toBeUndefined();
     expect(error.value).toBe('network down');
+  });
+});
+
+describe('profile', () => {
+  it('falls back to the email local part without a display name', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    authStub.emit('SIGNED_IN', { user: { id: 'u1', email: 'arnaud@example.com' } });
+    expect(auth.displayName.value).toBe('arnaud');
+  });
+
+  it('saves a trimmed display name and shows it', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    authStub.emit('SIGNED_IN', { user: { id: 'u1', email: 'arnaud@example.com' } });
+    expect(await auth.updateProfile('  Arnaud  ')).toBe(true);
+    expect(authStub.updateUser).toHaveBeenCalledWith({ data: { display_name: 'Arnaud' } });
+    expect(auth.displayName.value).toBe('Arnaud');
+  });
+
+  it('reports a failed update in error and returns false', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    authStub.updateUser.mockResolvedValueOnce({ data: { user: null }, error: { message: 'Network down' } });
+    expect(await auth.updateProfile('X')).toBe(false);
+    expect(auth.error.value).toBe('Network down');
   });
 });
