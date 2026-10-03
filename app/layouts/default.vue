@@ -6,10 +6,13 @@ import { flatNavItems, navActiveHref, useNavigation } from '~/composables/useNav
 
 const { counts } = useDueCounts();
 const { sections } = useNavigation(counts);
-const { commands, run: runCommand } = useCommands(sections);
+const { commands, run: runCommand, refreshDecks } = useCommands(sections);
 
 /** Mirrors the palette's own state, so the sidebar's Search button can open it on a device without a keyboard. */
 const paletteOpen = ref(false);
+watch(paletteOpen, (open) => {
+  if (open) void refreshDecks();
+});
 
 function onCommand(event: CustomEvent<{ id: string }>): void {
   void runCommand(event.detail.id);

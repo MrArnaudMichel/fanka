@@ -52,6 +52,19 @@ test('the sidebar Search button opens the command palette without a keyboard', a
   await expect(page).toHaveURL(/\/decks$/);
 });
 
+test('the command palette jumps straight to a deck', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
+  await page.keyboard.press('Control+K');
+  const palette = page.getByRole('dialog');
+  await expect(palette).toBeVisible();
+  await palette.getByRole('combobox').fill('HSK 1');
+  await expect(palette.getByRole('option', { name: /HSK 1/ })).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/decks\/[^/]+$/);
+});
+
 test('a file that is not a backup is refused and Restore stays disabled', async ({ page }) => {
   await page.goto('/settings/data');
   await page

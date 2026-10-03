@@ -234,7 +234,10 @@ export function useImport() {
     const delimiter: Delimiter = detectDelimiter(text);
     const parsed = parseDelimited(text, delimiter);
     const guessed = guessMapping(parsed);
-    const saved = parsed[0] ? await findImportMapping(headerSignature(parsed[0])).catch(() => null) : null;
+    const saved = parsed[0] ? await findImportMapping(headerSignature(parsed[0])).catch((err: unknown) => {
+          console.error('useImport: could not read the remembered mapping', err);
+          return null;
+        }) : null;
     const remembered = saved !== null && saved.length === parsed[0]!.length;
     const chosen: Mapping = remembered ? { columns: saved, hasHeader: true } : guessed;
     const dataRowCount = chosen.hasHeader ? parsed.length - 1 : parsed.length;
