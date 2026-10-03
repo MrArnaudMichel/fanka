@@ -58,4 +58,19 @@ describe('settings', () => {
     await db.settings.put({ key: 'settings', value: { reminderTime: '07:30', reminderTimes: ['09:00'] } });
     expect((await loadSettings()).reminderTimes).toEqual(['09:00']);
   });
+
+  it('falls back to the default accent and text size when the stored ones are unknown', async () => {
+    await db.settings.put({ key: 'settings', value: { accent: 'neon', textSize: 'huge', newPerDay: 7 } });
+    const loaded = await loadSettings();
+    expect(loaded.accent).toBe(DEFAULT_SETTINGS.accent);
+    expect(loaded.textSize).toBe(DEFAULT_SETTINGS.textSize);
+    expect(loaded.newPerDay).toBe(7);
+  });
+
+  it('keeps a known accent and text size', async () => {
+    await db.settings.put({ key: 'settings', value: { accent: 'teal', textSize: 'large' } });
+    const loaded = await loadSettings();
+    expect(loaded.accent).toBe('teal');
+    expect(loaded.textSize).toBe('large');
+  });
 });

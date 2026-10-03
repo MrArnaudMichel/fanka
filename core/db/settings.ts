@@ -5,7 +5,8 @@ import type { Algorithm } from '~core/srs';
 export const ACCENTS = ['violet', 'blue', 'teal', 'green', 'orange', 'pink', 'slate'] as const;
 export type Accent = (typeof ACCENTS)[number];
 /** Kanto's `data-text-size` values. */
-export type TextSize = 'small' | 'default' | 'large';
+export const TEXT_SIZES = ['small', 'default', 'large'] as const;
+export type TextSize = (typeof TEXT_SIZES)[number];
 
 export interface Settings {
   algorithm: Algorithm;
@@ -74,6 +75,10 @@ export async function loadSettings(): Promise<Settings> {
   // Before reminderTimes, a single reminderTime was stored; carry it over once.
   const legacyTime = (stored as { reminderTime?: unknown }).reminderTime;
   if (!('reminderTimes' in stored) && typeof legacyTime === 'string') merged.reminderTimes = [legacyTime];
+  // These two become attributes Kanto matches by value; an unknown one (an
+  // edited record, a backup from elsewhere) would leave the page unstyled.
+  if (!(ACCENTS as readonly string[]).includes(merged.accent)) merged.accent = DEFAULT_SETTINGS.accent;
+  if (!TEXT_SIZES.includes(merged.textSize)) merged.textSize = DEFAULT_SETTINGS.textSize;
   return merged;
 }
 

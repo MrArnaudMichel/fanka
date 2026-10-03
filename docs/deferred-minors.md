@@ -121,7 +121,7 @@ findings are never parked here.
 | `app/components/stats/StatsWriting.vue` | Says "No writing yet" when the Mode filter is Review | Accurate for the filtered view, if blunt | Writing verdicts & stats review |
 | `app/components/stats/StatsActivity.vue` (`minutes`) | "Minutes studied" rounds per bucket, so a day under 30 s total shows 0 | Rounding for a compact axis, not a data loss | Writing verdicts & stats review |
 | `app/pages/settings/account.vue` (`.sync-stats`) | `minmax(120px, 1fr)` is a literal grid-track minimum | Same pattern as `import.vue`'s `.stats`; Kanto has no grid-track token | Account sync details |
-| Kanto 1.8 settings, reminders and import (T2) | stored accent/textSize not validated against ACCENTS on load; theme test asserts dataset only | Minor; judged not worth a fix round | Kanto 1.8 T2 review |
+| Kanto 1.8 settings, reminders and import (T2) | theme test asserts the dataset only, not persistence | Minor; judged not worth a fix round | Kanto 1.8 T2 review |
 | Kanto 1.8 settings, reminders and import (T3) | palette syncNow rejection path via `void runCommand` (syncNow never throws today); commands.ts filter/concat cosmetic | Minor; judged not worth a fix round | Kanto 1.8 T3 review |
 | Kanto 1.8 settings, reminders and import (T4) | useSettingsForm tests don't exercise the ready-flip re-seed; a test title overstates | Minor; judged not worth a fix round | Kanto 1.8 T4 review |
 | Kanto 1.8 settings, reminders and import (T5) | AppSidebar .profile CSS placement; useAuth profile tests share module state | Minor; judged not worth a fix round | Kanto 1.8 T5 review |
