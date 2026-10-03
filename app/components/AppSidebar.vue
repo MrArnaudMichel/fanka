@@ -34,7 +34,7 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
         <span class="tagline">Traditional Chinese</span>
       </span>
       <!-- Opens the command palette: the way in for a tablet with no keyboard; the tooltip teaches the shortcut. -->
-      <kt-tooltip class="search" :text="`Search pages and actions · ${shortcut}`" placement="bottom">
+      <kt-tooltip class="search" :text="`Search · ${shortcut}`" placement="bottom">
         <kt-button variant="secondary-no-bg" size="medium" icon="search" label="Search" @click="$emit('search')" />
       </kt-tooltip>
     </div>
