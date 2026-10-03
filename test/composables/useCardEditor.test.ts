@@ -268,3 +268,41 @@ describe('useCardEditor', () => {
     });
   });
 });
+
+describe('useCardEditor dirty state', () => {
+  it('is clean when an existing card loads, dirty after an edit, clean once saved', async () => {
+    await makeDeck();
+    await makeCard({ pinyin: [{ text: 'xué', tone: 2 }, { text: 'xí', tone: 2 }] });
+    const editor = useCardEditor('c1');
+    await ready(editor);
+    expect(editor.dirty.value).toBe(false);
+    editor.draft.translation = 'to learn';
+    expect(editor.dirty.value).toBe(true);
+    expect(await editor.save()).toBe(true);
+    expect(editor.dirty.value).toBe(false);
+  });
+
+  it('counts a toggled direction as a change', async () => {
+    await makeDeck();
+    await makeCard();
+    const editor = useCardEditor('c1');
+    await ready(editor);
+    editor.directions.production = false;
+    expect(editor.dirty.value).toBe(true);
+  });
+
+  it('is clean for a new card until something is typed, and clean again once created', async () => {
+    await makeDeck();
+    const editor = useCardEditor();
+    await ready(editor);
+    expect(editor.dirty.value).toBe(false);
+    editor.draft.deckId = 'd1';
+    expect(editor.dirty.value).toBe(false);
+    editor.draft.hanzi = '朋友';
+    editor.draft.pinyin = 'peng2 you5';
+    editor.draft.translation = 'friend';
+    expect(editor.dirty.value).toBe(true);
+    expect(await editor.save()).toBe(true);
+    expect(editor.dirty.value).toBe(false);
+  });
+});

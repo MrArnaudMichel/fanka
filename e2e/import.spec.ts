@@ -121,3 +121,20 @@ test('a duplicate can update the existing card and a broken row can be fixed', a
   await expect(page.getByText('pal', { exact: true })).toBeVisible();
   await expect(page.getByText('老師', { exact: true })).toBeVisible();
 });
+
+test('leaving an import with rows loaded asks first', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/import');
+  const csv = ['hanzi,pinyin,translation', '朋友,peng2 you5,friend'].join('\n');
+  await page
+    .locator('kt-drag-drop input[type="file"]')
+    .setInputFiles({ name: 'cards.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf-8') });
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText('Tell Fanka what each column holds.')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Decks' }).click();
+  const dialog = page.getByRole('alertdialog').or(page.getByRole('dialog')).filter({ hasText: "The rows you loaded haven't been imported yet." });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Stay' }).click();
+  await expect(page).toHaveURL(/\/import/);
+});

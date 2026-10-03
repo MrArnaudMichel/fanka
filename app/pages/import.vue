@@ -4,6 +4,7 @@ import { toaster } from 'kanto-ds';
 import { html } from 'lit';
 import DeckFormModal from '~/components/DeckFormModal.vue';
 import { ImportCommitError, useImport } from '~/composables/useImport';
+import { useLeaveGuard } from '~/composables/useLeaveGuard';
 import type { Mapping, Target } from '~core/import/mapping';
 import type { ImportRow } from '~core/import/rows';
 import type { CardDraft } from '~core/import/validate';
@@ -383,11 +384,16 @@ function onFixSave(): void {
 }
 
 const importing = ref(false);
+/** Set once the rows are written, so the jump to the deck is not taken for walking away. */
+const imported = ref(false);
+// Past step 1 the rows and their mapping exist only here; leaving drops them.
+const leaveGuard = useLeaveGuard(computed(() => step.value > 1 && !imported.value));
 
 async function onImport(): Promise<void> {
   importing.value = true;
   try {
     const { heading, description } = importSummary(await commit(), duplicatePolicy.value);
+    imported.value = true;
     toaster.success(heading, description ? { description } : undefined);
     await navigateTo(`/decks/${targetDeckId.value}`);
   } catch (err) {
@@ -587,6 +593,12 @@ const stepDescription = computed(() => {
     </kt-side-panel>
 
     <DeckFormModal :open="deckFormOpen" @close="onDeckFormClose" @saved="onDeckFormSaved" />
+    <UnsavedChangesDialog
+      :open="leaveGuard.asking.value"
+      message="The rows you loaded haven't been imported yet."
+      @stay="leaveGuard.stay"
+      @leave="leaveGuard.leave"
+    />
   </div>
 </template>
 

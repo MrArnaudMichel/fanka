@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ open: boolean }>();
+withDefaults(defineProps<{ open: boolean; message?: string }>(), { message: "Your changes on this page haven't been saved." });
 const emit = defineEmits<{ stay: []; leave: [] }>();
 </script>
 
@@ -7,7 +7,7 @@ const emit = defineEmits<{ stay: []; leave: [] }>();
   <kt-confirm-dialog
     :open="open"
     heading="Leave without saving?"
-    message="Your changes on this page haven't been saved."
+    :message="message"
     confirm-label="Leave"
     cancel-label="Stay"
     variant="danger"

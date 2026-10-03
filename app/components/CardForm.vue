@@ -4,6 +4,7 @@ import { toaster } from 'kanto-ds';
 import PinyinText from '~/components/PinyinText.vue';
 import TagInput from '~/components/TagInput.vue';
 import { useCardEditor } from '~/composables/useCardEditor';
+import { useLeaveGuard } from '~/composables/useLeaveGuard';
 import type { PartOfSpeech } from '~core/db/schema';
 import type { CardField } from '~core/import/validate';
 
@@ -17,8 +18,10 @@ const props = defineProps<{ cardId?: string; defaultDeckId?: string }>();
 const editing = computed(() => Boolean(props.cardId));
 const router = useRouter();
 
-const { draft, directions, issues, preview, save, loading, saving, notFound, error, retry, suspended, directionsError, decks, allTags } =
+const { draft, directions, dirty, issues, preview, save, loading, saving, notFound, error, retry, suspended, directionsError, decks, allTags } =
   useCardEditor(props.cardId);
+// Cancel, the sidebar or the back button all go through this when the card has unsaved edits.
+const leaveGuard = useLeaveGuard(dirty);
 
 /**
  * Ruling 6: the deck defaults to the first one (`useCardEditor`'s own
@@ -377,6 +380,7 @@ async function onSubmit(): Promise<void> {
       </kt-form>
     </form>
   </div>
+  <UnsavedChangesDialog :open="leaveGuard.asking.value" @stay="leaveGuard.stay" @leave="leaveGuard.leave" />
 </template>
 
 <style scoped>

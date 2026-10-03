@@ -99,6 +99,8 @@ function directionList(directions: CardEditorDirections): Direction[] {
  */
 export function useCardEditor(id?: string) {
   const draft = reactive<CardEditorDraft>(emptyDraft());
+  /** The form as last loaded or saved; null for a new card until it is first saved. */
+  const baseline = ref<string | null>(null);
   const directions = reactive<CardEditorDirections>({ recognition: true, production: true });
   const loading = ref(true);
   const saving = ref(false);
@@ -166,6 +168,10 @@ export function useCardEditor(id?: string) {
     () => refreshExistingHanzi().catch((err: unknown) => console.error('useCardEditor: failed to check duplicates', err)),
   );
 
+  function formSnapshot(): string {
+    return JSON.stringify({ draft, directions });
+  }
+
   /** Never rejects — a failed read lands in `error`, for the page's Retry. */
   async function load(): Promise<void> {
     loading.value = true;
@@ -207,6 +213,7 @@ export function useCardEditor(id?: string) {
         directions.recognition = shows('recognition');
         directions.production = shows('production');
         loadedDirections.value = { recognition: directions.recognition, production: directions.production };
+        baseline.value = formSnapshot();
       } else {
         // Ruling 6: the deck defaults to the first one. `?deck=<id>` (when
         // present and live) overrides this from the page, once loaded — see
@@ -278,15 +285,30 @@ export function useCardEditor(id?: string) {
         existingCard.value = card;
       }
       await refreshDueCounts();
+      baseline.value = formSnapshot();
       return true;
     } finally {
       saving.value = false;
     }
   }
 
+  /**
+   * Whether the form holds edits not yet saved, for the page's leave guard.
+   * A loaded or saved card compares against that state; a new card counts as
+   * changed once anything is typed (the deck alone, which defaults itself,
+   * does not count).
+   */
+  const dirty = computed(() => {
+    if (baseline.value !== null) return formSnapshot() !== baseline.value;
+    if (id) return false;
+    const typed = [draft.hanzi, draft.pinyin, draft.translation, draft.example, draft.examplePinyin, draft.exampleTranslation, draft.note];
+    return typed.some((value) => value.trim() !== '') || draft.tags.length > 0;
+  });
+
   return {
     draft,
     directions,
+    dirty,
     issues,
     preview,
     save,

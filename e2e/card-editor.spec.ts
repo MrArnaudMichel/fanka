@@ -63,3 +63,20 @@ test('typing pinyin keeps a suspended card’s direction toggles read-only', asy
   await expect(recognition).toBeDisabled();
   await expect(production).toBeDisabled();
 });
+
+test('cancelling a new card with something typed asks before throwing it away', async ({ page }) => {
+  await page.goto('/decks');
+  await page.goto('/cards/new');
+  await expect(page.getByRole('heading', { name: 'New card', level: 1 })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Hanzi' }).fill('朋友');
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  const dialog = page.getByRole('alertdialog').or(page.getByRole('dialog')).filter({ hasText: 'Leave without saving?' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Stay' }).click();
+  await expect(page.getByRole('textbox', { name: 'Hanzi' })).toHaveValue('朋友');
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await dialog.getByRole('button', { name: 'Leave' }).click();
+  await expect(page).toHaveURL(/\/decks$/);
+});
