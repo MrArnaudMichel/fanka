@@ -134,5 +134,4 @@ findings are never parked here.
 | Kanto 1.8 settings, reminders and import (T13) | blank zhuyin re-derived on Update, overwriting a hand-edited one; no test for mapped-but-empty field | Minor; judged not worth a fix round | Kanto 1.8 T13 review |
 | Kanto 1.8 settings, reminders and import (T14) | invalidation keeps drafts/deckHanzi (unreachable today); fixRow no range guard | Minor; judged not worth a fix round | Kanto 1.8 T14 review |
 | Kanto 1.8 settings, reminders and import (T15) | side panel close has no unsaved-edit guard | Minor; judged not worth a fix round | Kanto 1.8 T15 review |
-| Kanto 1.8 settings, reminders and import (T16) | palette e2e uses a guessed locator with .first() and no "is open" assertion; Restore button locator is a substring match | Minor; judged not worth a fix round | Kanto 1.8 T16 review |
 | Kanto 1.8 settings, reminders and import (Final) | import step text shown twice (header description + kt-steps), kept for e2e locators | Minor; judged not worth a fix round | Kanto 1.8 final review |

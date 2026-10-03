@@ -34,7 +34,9 @@ test('the command palette opens with Control+K and goes to a page', async ({ pag
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
   await page.keyboard.press('Control+K');
-  await page.getByRole('combobox').or(page.getByRole('searchbox')).or(page.getByRole('textbox', { name: /go to|search/i })).first().fill('stat');
+  const palette = page.getByRole('dialog');
+  await expect(palette).toBeVisible();
+  await palette.getByRole('combobox').fill('stat');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/stats$/);
 });
@@ -45,5 +47,5 @@ test('a file that is not a backup is refused and Restore stays disabled', async 
     .locator('kt-drag-drop input[type="file"]')
     .setInputFiles({ name: 'other.json', mimeType: 'application/json', buffer: Buffer.from('{"hello":1}', 'utf-8') });
   await expect(page.getByText('This file is not a Fanka backup.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Restore' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Restore', exact: true })).toBeDisabled();
 });
