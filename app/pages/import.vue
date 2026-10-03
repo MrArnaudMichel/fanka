@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { KtOption, KtSegmentedOption, KtTableColumn, KtTableRow } from 'kanto-ds';
+import type { KtOption, KtSegmentedOption, KtStep, KtTableColumn, KtTableRow } from 'kanto-ds';
 import { toaster } from 'kanto-ds';
 import { html } from 'lit';
 import DeckFormModal from '~/components/DeckFormModal.vue';
 import { ImportCommitError, useImport } from '~/composables/useImport';
 import type { Mapping, Target } from '~core/import/mapping';
-import type { Validated } from '~core/import/validate';
+import type { ImportRow } from '~core/import/rows';
+import type { CardDraft } from '~core/import/validate';
 
 // Ruling 4: behaviour, not a styling token — see CLAUDE.md's carve-out for
 // "no hard-coded colour, size, duration or radius" ("Where no token exists,
@@ -26,6 +27,8 @@ const {
   decksLoading,
   decksError,
   mappingRemembered,
+  duplicatePolicy,
+  fixRow,
   loadDecks,
   load,
   setMapping,
@@ -86,6 +89,20 @@ async function onDeckFormSaved(): Promise<void> {
   await loadDecks();
   const created = deckList.value.find((d) => !before.has(d.id));
   if (created) targetDeckId.value = created.id;
+}
+
+const STEPS: KtStep[] = [
+  { id: 'source', label: 'Source' },
+  { id: 'mapping', label: 'Field mapping' },
+  { id: 'review', label: 'Review' },
+];
+const STEP_IDS = ['source', 'mapping', 'review'] as const;
+const currentStepId = computed(() => STEP_IDS[step.value - 1]);
+
+/** `navigable` only offers completed steps, so this only ever goes back. */
+function onStepChange(event: CustomEvent<{ id: string }>): void {
+  const index = STEP_IDS.indexOf(event.detail.id as (typeof STEP_IDS)[number]);
+  if (index >= 0) step.value = (index + 1) as 1 | 2 | 3;
 }
 
 // --- Step 1: source ------------------------------------------------------
@@ -260,7 +277,7 @@ function backToStep2(): void {
 
 // --- Step 3: review ----------------------------------------------------
 
-type PreviewStatus = 'valid' | 'warning' | 'error';
+type PreviewStatus = 'valid' | 'warning' | 'error' | 'duplicate';
 
 interface PreviewRow {
   id: string;
@@ -271,8 +288,9 @@ interface PreviewRow {
   issues: string;
 }
 
-function statusFor(row: Validated): PreviewStatus {
+function statusFor(row: ImportRow): PreviewStatus {
   if (!row.ok) return 'error';
+  if (row.duplicate) return 'duplicate';
   return row.issues.some((issue) => issue.severity === 'warning') ? 'warning' : 'valid';
 }
 
@@ -295,10 +313,11 @@ const previewColumns: KtTableColumn[] = [
   { key: 'issues', label: 'Issues' },
 ];
 
-const STATUS_META: Record<PreviewStatus, { label: string; tone: 'success' | 'warning' | 'danger' }> = {
+const STATUS_META: Record<PreviewStatus, { label: string; tone: 'success' | 'warning' | 'danger' | 'info' }> = {
   valid: { label: 'Valid', tone: 'success' },
   warning: { label: 'Warning', tone: 'warning' },
   error: { label: 'Error', tone: 'danger' },
+  duplicate: { label: 'In deck', tone: 'info' },
 };
 
 /** `:renderCell` (camelCase) — see CardTable.vue's own comment: `render-cell` silently no-ops on kt-table's `attribute: false` property. */
@@ -311,16 +330,67 @@ function renderPreviewCell(row: KtTableRow, column: KtTableColumn): unknown {
   return undefined;
 }
 
+const DUPLICATE_OPTIONS: KtSegmentedOption[] = [
+  { value: 'skip', label: 'Skip' },
+  { value: 'update', label: 'Update' },
+];
+function onDuplicatePolicy(event: CustomEvent<{ value: string | number }>): void {
+  duplicatePolicy.value = event.detail.value === 'update' ? 'update' : 'skip';
+}
+const canImport = computed(() => counts.value.valid > 0 || (counts.value.duplicates > 0 && duplicatePolicy.value === 'update'));
+
+// --- Fix a row ---------------------------------------------------------
+
+const editingIndex = ref<number | null>(null);
+const editDraft = reactive<CardDraft>({ hanzi: '', pinyin: '', translation: '', example: '', examplePinyin: '', exampleTranslation: '' });
+const EDIT_FIELDS: { key: keyof Omit<CardDraft, 'tags' | 'zhuyin'>; label: string }[] = [
+  { key: 'hanzi', label: 'Hanzi' },
+  { key: 'pinyin', label: 'Pinyin' },
+  { key: 'translation', label: 'Translation' },
+  { key: 'example', label: 'Example' },
+  { key: 'examplePinyin', label: 'Example pinyin' },
+  { key: 'exampleTranslation', label: 'Example translation' },
+];
+const editingIssues = computed(() => (editingIndex.value === null ? '' : results.value[editingIndex.value]?.issues.map((i) => i.message).join('; ') ?? ''));
+
+/** Only rows with something to fix open the panel. */
+function onRowClick(event: CustomEvent<{ row: KtTableRow }>): void {
+  const index = Number((event.detail.row as unknown as PreviewRow).id);
+  const row = results.value[index];
+  if (!row || (row.ok && row.issues.length === 0)) return;
+  Object.assign(editDraft, { example: '', examplePinyin: '', exampleTranslation: '', ...row.draft });
+  editingIndex.value = index;
+}
+
+function onFixSave(): void {
+  if (editingIndex.value === null) return;
+  const original = results.value[editingIndex.value]!.draft;
+  // A field the file did not map stays unmapped unless the learner typed something.
+  const optional = (key: 'example' | 'examplePinyin' | 'exampleTranslation') =>
+    original[key] === undefined && !editDraft[key] ? undefined : editDraft[key];
+  fixRow(editingIndex.value, {
+    ...original,
+    hanzi: editDraft.hanzi,
+    pinyin: editDraft.pinyin,
+    translation: editDraft.translation,
+    example: optional('example'),
+    examplePinyin: optional('examplePinyin'),
+    exampleTranslation: optional('exampleTranslation'),
+  });
+  editingIndex.value = null;
+}
+
 const importing = ref(false);
 
 async function onImport(): Promise<void> {
   importing.value = true;
   try {
-    const { created, skipped } = await commit();
-    toaster.success(
-      `Imported ${created} card${created === 1 ? '' : 's'}`,
-      skipped > 0 ? { description: `${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` } : undefined,
-    );
+    const { created, updated, skipped } = await commit();
+    const parts = [
+      updated > 0 ? `${updated} updated` : '',
+      skipped > 0 ? `${skipped} already in the deck skipped` : '',
+    ].filter(Boolean);
+    toaster.success(`Imported ${created} card${created === 1 ? '' : 's'}`, parts.length > 0 ? { description: parts.join(', ') } : undefined);
     await navigateTo(`/decks/${targetDeckId.value}`);
   } catch (err) {
     console.error('import: commit failed', err);
@@ -385,8 +455,7 @@ const stepDescription = computed(() => {
 <template>
   <div class="import">
     <kt-page-header eyebrow="Collection" heading="Import" :description="stepDescription" />
-    <!-- Kanto has no stepper (task-14-brief.md) — a progress bar under the header is what stands in for one. -->
-    <kt-progress-bar :value="step" :max="3" label="Import progress" />
+    <kt-steps label="Import steps" :steps="STEPS" :current="currentStepId" navigable @kt-change="onStepChange" />
 
     <kt-empty-state
       v-if="decksError"
@@ -477,7 +546,12 @@ const stepDescription = computed(() => {
         <kt-stat label="Valid" :value="String(counts.valid)" />
         <kt-stat label="Warnings" :value="String(counts.warnings)" />
         <kt-stat label="Errors" :value="String(counts.errors)" />
+        <kt-stat label="Already in deck" :value="String(counts.duplicates)" />
       </div>
+
+      <kt-label-input v-if="counts.duplicates > 0" label="Cards already in the deck">
+        <kt-segmented-control label="Cards already in the deck" :options="DUPLICATE_OPTIONS" :value="duplicatePolicy" @kt-change="onDuplicatePolicy" />
+      </kt-label-input>
 
       <kt-alert
         v-if="counts.errors > 0"
@@ -492,13 +566,24 @@ const stepDescription = computed(() => {
         :data="previewRows"
         :renderCell="renderPreviewCell"
         page-size="25"
+        @kt-row-click="onRowClick"
       />
 
       <div class="actions">
         <kt-button ref="reviewBack" variant="dark" size="medium" :disabled="importing" @click="backToStep2">Back</kt-button>
-        <kt-button variant="primary" size="medium" icon="upload" :disabled="counts.valid === 0 || importing" @click="onImport">Import</kt-button>
+        <kt-button variant="primary" size="medium" icon="upload" :disabled="!canImport || importing" @click="onImport">Import</kt-button>
       </div>
     </section>
+
+    <kt-side-panel :open="editingIndex !== null" eyebrow="Fix row" :heading="editDraft.hanzi || 'Row'" @kt-close="editingIndex = null">
+      <form class="fix-form" novalidate @submit.prevent="onFixSave">
+        <kt-alert v-if="editingIssues" variant="warning" :description="editingIssues" />
+        <kt-label-input v-for="field in EDIT_FIELDS" :key="field.key" :label="field.label">
+          <kt-input :value="editDraft[field.key] ?? ''" @kt-input="(e: CustomEvent<{ value: string }>) => (editDraft[field.key] = e.detail.value)" />
+        </kt-label-input>
+      </form>
+      <kt-button slot="footer" variant="primary" size="medium" @click="onFixSave">Check row</kt-button>
+    </kt-side-panel>
 
     <DeckFormModal :open="deckFormOpen" @close="onDeckFormClose" @saved="onDeckFormSaved" />
   </div>
@@ -529,5 +614,6 @@ const stepDescription = computed(() => {
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--gap-element); }
 
+.fix-form { display: flex; flex-direction: column; gap: var(--gap-element); }
 .source-hint { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 </style>
