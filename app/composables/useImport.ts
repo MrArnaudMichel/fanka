@@ -1,9 +1,10 @@
 import { type Delimiter, detectDelimiter, parseDelimited } from '~core/import/parse';
-import { type Mapping, applyMapping, guessMapping } from '~core/import/mapping';
+import { type Mapping, applyMapping, guessMapping, headerSignature } from '~core/import/mapping';
 import { type CardDraft, type Validated, validateCard } from '~core/import/validate';
 import { parsePinyin } from '~core/chinese/pinyin';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { db } from '~core/db/db';
+import { findImportMapping, saveImportMapping } from '~core/db/import-mappings';
 import { cards, decks as deckRepository } from '~core/db/repositories';
 import { type Card, type Deck, type Direction, type Item, type OutboxEntry, itemId } from '~core/db/schema';
 import { newSrsState } from '~core/srs';
@@ -157,6 +158,7 @@ export function useImport() {
   const decksLoading = ref(true);
   /** The destination-deck list could not be read — the page shows Retry, never "no decks" (final review I3). */
   const decksError = ref(false);
+  const mappingRemembered = ref(false);
 
   /** Never rejects: a failure lands in `decksError`, and `decks` keeps whatever it last held. */
   async function loadDecks(): Promise<void> {
@@ -200,25 +202,38 @@ export function useImport() {
   }, { flush: 'sync' });
 
   /**
-   * Detects the delimiter, parses `text` into `rows`, and guesses a
-   * `mapping` from it. Throws (and touches neither `rows` nor `mapping`) on
+   * Detects the delimiter, parses `text` into `rows`, and picks a mapping:
+   * the one saved for this header when its column count still fits,
+   * otherwise a guess. Throws (and touches neither `rows` nor `mapping`) on
    * fewer than one data row — the caller shows that inline (ruling 4).
    */
-  function load(text: string): void {
+  async function load(text: string): Promise<void> {
     const delimiter: Delimiter = detectDelimiter(text);
     const parsed = parseDelimited(text, delimiter);
     const guessed = guessMapping(parsed);
-    const dataRowCount = guessed.hasHeader ? parsed.length - 1 : parsed.length;
+    const saved = parsed[0] ? await findImportMapping(headerSignature(parsed[0])).catch(() => null) : null;
+    const remembered = saved !== null && saved.length === parsed[0]!.length;
+    const chosen: Mapping = remembered ? { columns: saved, hasHeader: true } : guessed;
+    const dataRowCount = chosen.hasHeader ? parsed.length - 1 : parsed.length;
     if (dataRowCount < 1) {
       throw new Error('No data rows found in that source.');
     }
     rows.value = parsed;
-    mapping.value = guessed;
+    mapping.value = chosen;
+    mappingRemembered.value = remembered;
     results.value = [];
   }
 
-  function setMapping(m: Mapping): void {
+  /** Sets the mapping step 3 verifies, and remembers it for this header. A failed save is logged, never thrown. */
+  async function setMapping(m: Mapping): Promise<void> {
     mapping.value = m;
+    const header = rows.value[0];
+    if (!m.hasHeader || !header) return;
+    try {
+      await saveImportMapping(headerSignature(header), m.columns, Date.now());
+    } catch (err) {
+      console.error('useImport: could not remember the mapping', err);
+    }
   }
 
   /**
@@ -295,6 +310,7 @@ export function useImport() {
     decks,
     decksLoading,
     decksError,
+    mappingRemembered,
     loadDecks,
     load,
     setMapping,

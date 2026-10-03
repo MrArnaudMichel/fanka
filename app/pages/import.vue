@@ -25,6 +25,7 @@ const {
   decks: deckList,
   decksLoading,
   decksError,
+  mappingRemembered,
   loadDecks,
   load,
   setMapping,
@@ -176,7 +177,7 @@ async function onContinueFromStep1(): Promise<void> {
   }
 
   try {
-    load(text);
+    await load(text);
   } catch (err) {
     sourceError.value = err instanceof Error ? err.message : 'Could not read that source.';
     return;
@@ -243,7 +244,7 @@ function backToStep1(): void {
 
 async function onContinueFromStep2(): Promise<void> {
   const built: Mapping = { columns: [...draftColumns.value], hasHeader: draftHasHeader.value };
-  setMapping(built);
+  await setMapping(built);
   verifying.value = true;
   try {
     await verify();
@@ -445,6 +446,7 @@ const stepDescription = computed(() => {
     </section>
 
     <section v-else-if="step === 2" class="step">
+      <kt-alert v-if="mappingRemembered" variant="info" description="Mapping from your last import with these columns." />
       <kt-toggle ref="headerToggle" size="small" :checked="draftHasHeader" @kt-change="onHasHeaderToggle">First row is a header</kt-toggle>
 
       <div class="columns">

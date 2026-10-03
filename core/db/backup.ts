@@ -59,7 +59,7 @@ export async function applyBackup(backup: Backup, now: number): Promise<RestoreR
  * the seed marker, so the starter deck is not added again.
  */
 export async function resetDevice(): Promise<void> {
-  const tables = [db.decks, db.cards, db.items, db.reviews, db.attempts, db.outbox, db.syncState, db.settings];
+  const tables = [db.decks, db.cards, db.items, db.reviews, db.attempts, db.outbox, db.syncState, db.settings, db.importMappings];
   await db.transaction('rw', tables, async () => {
     const seed = await db.settings.get('seedVersion');
     await Promise.all(tables.map((table) => table.clear()));

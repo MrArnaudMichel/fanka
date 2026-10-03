@@ -47,10 +47,10 @@ describe('useImport', () => {
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
 
-    importer.load(CSV);
+    await importer.load(CSV);
     expect(importer.mapping.value?.hasHeader).toBe(true);
 
-    importer.setMapping(importer.mapping.value!);
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
 
     expect(importer.counts.value).toEqual({ valid: 1, warnings: 0, errors: 2 });
@@ -73,8 +73,8 @@ describe('useImport', () => {
     // now a duplicate, so nothing new is created.
     const again = useImport();
     again.targetDeckId.value = 'd1';
-    again.load(CSV);
-    again.setMapping(again.mapping.value!);
+    await again.load(CSV);
+    await again.setMapping(again.mapping.value!);
     await again.verify();
     expect(again.counts.value.valid).toBe(0);
 
@@ -87,13 +87,13 @@ describe('useImport', () => {
     await makeDeck();
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
-    importer.load(
+    await importer.load(
       [
         'hanzi,pinyin,zhuyin,translation,example,example pinyin,example translation,tags',
         '電腦,diàn nǎo,ㄉㄧㄢˋ ㄋㄠˇ,computer,"這台電腦很快,也很便宜。","Zhè tái diànnǎo hěn kuài, yě hěn piányí.","This computer is fast, and cheap too.",tech;hsk1',
       ].join('\n'),
     );
-    importer.setMapping(importer.mapping.value!);
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
 
     expect(await importer.commit()).toEqual({ created: 1, skipped: 0 });
@@ -101,18 +101,18 @@ describe('useImport', () => {
     expect(card).toMatchObject({ hanzi: '電腦', zhuyin: 'ㄉㄧㄢˋ ㄋㄠˇ', tags: ['tech', 'hsk1'] });
   });
 
-  it('rejects a source with fewer than one data row', () => {
+  it('rejects a source with fewer than one data row', async () => {
     const importer = useImport();
-    expect(() => importer.load('hanzi,pinyin,translation')).toThrow();
-    expect(() => importer.load('')).toThrow();
+    await expect(importer.load('hanzi,pinyin,translation')).rejects.toThrow();
+    await expect(importer.load('')).rejects.toThrow();
   });
 
   it('writes an outbox entry for every card it creates', async () => {
     await makeDeck();
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
-    importer.load(CSV);
-    importer.setMapping(importer.mapping.value!);
+    await importer.load(CSV);
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
     await importer.commit();
 
@@ -141,8 +141,8 @@ describe('useImport', () => {
     }
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
-    importer.load(rows.join('\n'));
-    importer.setMapping(importer.mapping.value!);
+    await importer.load(rows.join('\n'));
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
     expect(importer.counts.value.valid).toBe(450);
 
@@ -167,8 +167,8 @@ describe('useImport', () => {
     await makeDeck();
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
-    importer.load(['hanzi,pinyin,translation', '你好,ni3 hao3,hello', '你好,ni3 hao3,hello again'].join('\n'));
-    importer.setMapping(importer.mapping.value!);
+    await importer.load(['hanzi,pinyin,translation', '你好,ni3 hao3,hello', '你好,ni3 hao3,hello again'].join('\n'));
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
 
     expect(importer.counts.value).toEqual({ valid: 1, warnings: 0, errors: 1 });
@@ -184,8 +184,8 @@ describe('useImport', () => {
     await makeDeck();
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
-    importer.load(['hanzi,pinyin,translation', '你好,ni3 hao3,hello'].join('\n'));
-    importer.setMapping(importer.mapping.value!);
+    await importer.load(['hanzi,pinyin,translation', '你好,ni3 hao3,hello'].join('\n'));
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
     expect(importer.counts.value.valid).toBe(1);
 
@@ -224,8 +224,8 @@ describe('useImport', () => {
     await makeDeck('d2', 'HSK 2');
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
-    importer.load(['hanzi,pinyin,translation', '你好,ni3 hao3,hello'].join('\n'));
-    importer.setMapping(importer.mapping.value!);
+    await importer.load(['hanzi,pinyin,translation', '你好,ni3 hao3,hello'].join('\n'));
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
     expect(importer.results.value.length).toBeGreaterThan(0);
 
@@ -237,10 +237,10 @@ describe('useImport', () => {
     await makeDeck();
     const importer = useImport();
     importer.targetDeckId.value = 'd1';
-    importer.load(
+    await importer.load(
       ['hanzi,pinyin,zhuyin,translation', '你好,ni3 hao3,custom-zhuyin,hello', '謝謝,xie4 xie5,,thanks'].join('\n'),
     );
-    importer.setMapping(importer.mapping.value!);
+    await importer.setMapping(importer.mapping.value!);
     await importer.verify();
     await importer.commit();
 
@@ -250,5 +250,27 @@ describe('useImport', () => {
     expect(withColumn?.zhuyin).toBe('custom-zhuyin');
     expect(withoutColumn?.zhuyin.length).toBeGreaterThan(0);
     expect(withoutColumn?.zhuyin).not.toBe('custom-zhuyin');
+  });
+});
+
+describe('remembered mapping', () => {
+  it('reuses the mapping saved for the same headers', async () => {
+    const first = useImport();
+    await first.load('Front,Back,Sound\n朋友,friend,peng2 you5');
+    await first.setMapping({ columns: ['hanzi', 'translation', 'pinyin'], hasHeader: true });
+
+    const second = useImport();
+    await second.load('front,back,sound\n老師,teacher,lao3 shi1');
+    expect(second.mapping.value).toEqual({ columns: ['hanzi', 'translation', 'pinyin'], hasHeader: true });
+    expect(second.mappingRemembered.value).toBe(true);
+  });
+
+  it('ignores a saved mapping with a different column count', async () => {
+    const first = useImport();
+    await first.load('Front,Back\n朋友,friend');
+    await first.setMapping({ columns: ['hanzi', 'translation'], hasHeader: true });
+    const second = useImport();
+    await second.load('Front,Back,Extra\n朋友,friend,x');
+    expect(second.mappingRemembered.value).toBe(false);
   });
 });

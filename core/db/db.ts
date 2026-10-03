@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 
 import { attemptFromReview } from './attempts';
+import type { Target } from '~core/import/mapping';
 import type { Attempt, Card, Deck, Item, OutboxEntry, Review } from './schema';
 
 export interface SettingsRow {
@@ -25,6 +26,13 @@ export interface SyncStateRow {
   value: unknown;
 }
 
+/** A column mapping the learner confirmed, kept for the next file with the same header. Local only, never synced. */
+export interface ImportMappingRow {
+  signature: string;
+  columns: Target[];
+  updatedAt: number;
+}
+
 export class FankaDatabase extends Dexie {
   decks!: Table<Deck, string>;
   cards!: Table<Card, string>;
@@ -35,6 +43,7 @@ export class FankaDatabase extends Dexie {
   settings!: Table<SettingsRow, string>;
   outbox!: Table<OutboxEntry, string>;
   syncState!: Table<SyncStateRow, string>;
+  importMappings!: Table<ImportMappingRow, string>;
 
   constructor() {
     super('fanka');
@@ -78,6 +87,8 @@ export class FankaDatabase extends Dexie {
           rows.map((a) => ({ id: crypto.randomUUID(), entity: 'attempt' as const, entityId: a.id, op: 'put' as const, at: a.at })),
         );
       });
+    // Additive: remembered import mappings, local to this device.
+    this.version(4).stores({ importMappings: 'signature' });
   }
 }
 

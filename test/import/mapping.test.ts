@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyMapping, guessMapping } from '~core/import/mapping';
+import { applyMapping, guessMapping, headerSignature } from '~core/import/mapping';
 import type { Mapping } from '~core/import/mapping';
 
 describe('guessMapping', () => {
@@ -243,5 +243,15 @@ describe('applyMapping', () => {
     expect(drafts[0]!.hanzi).toBe('  你好  ');
     expect(drafts[0]!.pinyin).toBe('  ni3 hao3  ');
     expect(drafts[0]!.translation).toBe('  hello  ');
+  });
+});
+
+describe('headerSignature', () => {
+  it('ignores case and surrounding spaces', () => {
+    expect(headerSignature([' Front', 'BACK '])).toBe(headerSignature(['front', 'back']));
+  });
+  it('tells different headers apart, including their order', () => {
+    expect(headerSignature(['front', 'back'])).not.toBe(headerSignature(['back', 'front']));
+    expect(headerSignature(['a b'])).not.toBe(headerSignature(['a', 'b']));
   });
 });

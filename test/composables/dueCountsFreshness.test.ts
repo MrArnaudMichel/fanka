@@ -48,7 +48,7 @@ describe('due counts stay fresh after collection writes', () => {
 
     const importer = useImport();
     importer.targetDeckId.value = deck.id;
-    importer.load(['hanzi,pinyin,translation', '朋友,peng2 you5,friend'].join('\n'));
+    await importer.load(['hanzi,pinyin,translation', '朋友,peng2 you5,friend'].join('\n'));
     await importer.verify();
     await importer.commit();
 

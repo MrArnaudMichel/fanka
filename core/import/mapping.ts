@@ -210,3 +210,12 @@ export function applyMapping(rows: string[][], mapping: Mapping): CardDraft[] {
 
   return drafts;
 }
+
+/**
+ * What identifies "the same kind of file" for a remembered mapping: its
+ * header cells, trimmed and lower-cased, in order. U+001F (unit separator)
+ * joins them, since no header cell contains it.
+ */
+export function headerSignature(header: readonly string[]): string {
+  return header.map((cell) => cell.trim().toLowerCase()).join('\u001f');
+}
