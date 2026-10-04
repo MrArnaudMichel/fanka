@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '~core/db/db';
-import { forgetSyncedAccount } from '~core/sync/engine';
+import { forgetSyncedAccount, runSync } from '~core/sync/engine';
+import type { RemoteChanges, SyncTransport } from '~core/sync/types';
 
 beforeEach(async () => {
   await db.delete();
@@ -19,5 +20,21 @@ describe('forgetSyncedAccount', () => {
     expect(await db.syncState.get('lastPulledAt')).toBeUndefined();
     expect(await db.outbox.count()).toBe(0);
     expect(await db.decks.count()).toBe(1);
+  });
+
+  it('waits for a sync already in flight, so its pull cannot write the cursor back', async () => {
+    let resolvePull!: (remote: RemoteChanges) => void;
+    const transport: SyncTransport = {
+      pull: () => new Promise((resolve) => (resolvePull = resolve)),
+      push: async () => ({ at: 0 }),
+    };
+    const sync = runSync(transport);
+    await new Promise((r) => setTimeout(r, 0));
+
+    const forgotten = forgetSyncedAccount();
+    resolvePull({ decks: [], cards: [], items: [], reviews: [], attempts: [], at: 999 });
+    await Promise.all([sync, forgotten]);
+
+    expect(await db.syncState.get('lastPulledAt')).toBeUndefined();
   });
 });

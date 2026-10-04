@@ -12,11 +12,17 @@ async function getLastPulledAt(): Promise<number> {
   return typeof row?.value === 'number' ? row.value : 0;
 }
 
+/** The sync run in progress, if any, settled either way — see `forgetSyncedAccount`. */
+let inFlight: Promise<unknown> | null = null;
+
 /**
  * After the account is deleted: the cursor and the unsent changes both
- * pointed at it. Local decks, cards and reviews are left alone.
+ * pointed at it. Local decks, cards and reviews are left alone. A run already
+ * in flight is waited for first, or its pull would write the deleted
+ * account's cursor back after it was cleared.
  */
 export async function forgetSyncedAccount(): Promise<void> {
+  await inFlight;
   await db.transaction('rw', [db.syncState, db.outbox], async () => {
     await db.syncState.delete(LAST_PULLED_AT_KEY);
     await db.outbox.clear();
@@ -163,6 +169,17 @@ const EMPTY_COUNTS: EntityCounts = { decks: 0, cards: 0, items: 0, reviews: 0, a
  * left ahead of what was actually merged.
  */
 export async function runSync(transport: SyncTransport): Promise<SyncResult> {
+  const run = runSyncOnce(transport);
+  const settled = run.catch(() => undefined);
+  inFlight = settled;
+  try {
+    return await run;
+  } finally {
+    if (inFlight === settled) inFlight = null;
+  }
+}
+
+async function runSyncOnce(transport: SyncTransport): Promise<SyncResult> {
   const since = await getLastPulledAt();
   const remote = await transport.pull(since);
   const pulled = await applyRemote(remote);
