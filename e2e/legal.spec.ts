@@ -20,3 +20,10 @@ test('a legal page leads back to the app', async ({ page }) => {
   await page.getByRole('button', { name: 'Back to Fanka' }).click();
   await expect(page).toHaveURL(/\/$/);
 });
+
+test('the licences page credits the stroke data and the libraries', async ({ page }) => {
+  await page.goto('/licences');
+  await expect(page.getByRole('heading', { name: 'Open source licences', level: 1 })).toBeVisible();
+  await expect(page.getByText('Make Me a Hanzi stroke data', { exact: false })).toBeVisible();
+  await expect(page.locator('kt-table tr[part=row]', { hasText: 'Vue Router' })).toBeVisible();
+});
