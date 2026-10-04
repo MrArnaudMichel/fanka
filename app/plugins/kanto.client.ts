@@ -5,11 +5,16 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CircleCheck,
   CircleHelp,
   Clock,
+  Cloud,
+  Copy,
   Database,
   Ellipsis,
+  EyeOff,
   FileQuestion,
+  FileText,
   Flame,
   GraduationCap,
   House,
@@ -19,6 +24,7 @@ import {
   Layers,
   List,
   LogOut,
+  Mail,
   Move,
   Palette,
   Pause,
@@ -30,13 +36,17 @@ import {
   Scale,
   Search,
   Send,
+  Server,
   Settings,
   Shield,
+  ShieldCheck,
+  Smartphone,
   SquarePen,
   SunMoon,
   Trash2,
   TriangleAlert,
   Trophy,
+  Type,
   Undo2,
   Upload,
   User,
@@ -75,7 +85,11 @@ export default defineNuxtPlugin(async () => {
   // play-pronunciation button on the Review and Writing cards. User, GraduationCap,
   // Palette, Bell, Database and Info are the Settings sections; LogOut is
   // Account's Sign out; Send is Reminders' test notification; SunMoon is the
-  // palette's theme switch.
+  // palette's theme switch. ArrowLeft, Shield, UserX and Scale are About's
+  // legal links and the legal pages' way back; ShieldCheck, Smartphone,
+  // Cloud, EyeOff, Server, Type, Mail, Copy, CircleCheck and FileText are the
+  // legal pages' sections and contact actions (Smartphone is also the dev
+  // /install nav entry).
   registerIcons({
     ArrowLeft,
     Bell,
@@ -83,11 +97,16 @@ export default defineNuxtPlugin(async () => {
     Check,
     ChevronLeft,
     ChevronRight,
+    CircleCheck,
     CircleHelp,
     Clock,
+    Cloud,
+    Copy,
     Database,
     Ellipsis,
+    EyeOff,
     FileQuestion,
+    FileText,
     Flame,
     GraduationCap,
     House,
@@ -96,6 +115,7 @@ export default defineNuxtPlugin(async () => {
     Layers,
     List,
     LogOut,
+    Mail,
     Move,
     Palette,
     Pause,
@@ -107,13 +127,17 @@ export default defineNuxtPlugin(async () => {
     Scale,
     Search,
     Send,
+    Server,
     Settings,
     Shield,
+    ShieldCheck,
+    Smartphone,
     SquarePen,
     SunMoon,
     Trash2,
     TriangleAlert,
     Trophy,
+    Type,
     Undo2,
     Upload,
     User,
@@ -121,12 +145,4 @@ export default defineNuxtPlugin(async () => {
     Volume2,
     X,
   });
-
-  // Dev-only nav entry (`useNavigation.ts`) for `/install` — its icon has no
-  // business in a production bundle, so it is registered, and imported,
-  // only under `import.meta.dev`; both are dead-code-eliminated otherwise.
-  if (import.meta.dev) {
-    const { Smartphone } = await import('lucide');
-    registerIcons({ Smartphone });
-  }
 });

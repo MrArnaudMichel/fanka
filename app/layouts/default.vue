@@ -63,7 +63,7 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
 
     <kt-header ref="header" class="mobile-header" sticky label="Fanka">
       <span slot="brand" class="brand">
-        <span class="mark" aria-hidden="true">繁</span>
+        <BrandMark size="small" />
         <span class="name">{{ pageTitle }}</span>
       </span>
 
@@ -157,17 +157,4 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
 
 .brand { display: flex; align-items: center; gap: 8px; min-width: 0; font: var(--font-title-h6); color: var(--text-body); }
 .brand .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.mark {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--border-radius);
-  background: var(--color-primary-base);
-  display: grid;
-  place-items: center;
-  font-family: var(--fk-font-hanzi-serif);
-  font-size: 14px;
-  color: var(--color-white);
-}
 </style>

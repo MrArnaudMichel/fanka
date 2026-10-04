@@ -28,7 +28,7 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
 <template>
   <aside class="sidebar">
     <div class="brand">
-      <span class="mark" aria-hidden="true">繁</span>
+      <BrandMark size="large" />
       <span class="wordmark">
         <span class="name">FANKA</span>
         <span class="tagline">Traditional Chinese</span>
@@ -96,18 +96,6 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
 
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
 .search { margin-left: auto; }
-
-.mark {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--border-radius);
-  background: var(--color-primary-base);
-  display: grid;
-  place-items: center;
-  font-family: var(--fk-font-hanzi-serif);
-  font-size: 19px;
-  color: var(--color-white);
-}
 
 .wordmark { display: flex; flex-direction: column; }
 .name { font: var(--font-title-h6); letter-spacing: 4px; color: var(--text-body); }
