@@ -13,6 +13,17 @@ async function getLastPulledAt(): Promise<number> {
 }
 
 /**
+ * After the account is deleted: the cursor and the unsent changes both
+ * pointed at it. Local decks, cards and reviews are left alone.
+ */
+export async function forgetSyncedAccount(): Promise<void> {
+  await db.transaction('rw', [db.syncState, db.outbox], async () => {
+    await db.syncState.delete(LAST_PULLED_AT_KEY);
+    await db.outbox.clear();
+  });
+}
+
+/**
  * Whole-row last-write-wins: the incoming row replaces the local one only
  * when it is at least as new. A tie goes to the remote row, which is what
  * makes re-pulling a row nothing has touched since a no-op rather than a
