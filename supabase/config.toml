@@ -3,10 +3,12 @@
 project_id = "bpqsomdnokgojopmqizt"
 
 [auth]
-site_url = "http://localhost:3000"
-# The magic link has to come back to the app: the Android deep link, the dev
-# server on localhost, and the dev server on the LAN address a phone uses.
+site_url = "https://fanka.arnaudmichel.fr"
+# The magic link has to come back to the app: production, the Android deep
+# link, the dev server on localhost, and the dev server on the LAN address a
+# phone uses.
 additional_redirect_urls = [
+  "https://fanka.arnaudmichel.fr",
   "fanka://auth",
   "http://localhost:3000",
   "http://10.50.122.64:3000",

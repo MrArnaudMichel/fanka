@@ -126,3 +126,47 @@ device shows) and the splash screen. It does not touch the legacy flat
 - **No release signing / release build** — only `assembleDebug` was
   requested and built. A Play-ready release build needs a keystore and
   signing config, not set up here.
+
+## Release
+
+Google Play gets a signed Android App Bundle. Play App Signing holds the app
+signing key; you keep only the upload key, which Google can reset if lost.
+
+### Once: the upload key
+
+1. `npm run android:keystore` prints the `keytool` command. Run it and choose
+   two passwords.
+2. Back up `~/.android/fanka-upload.jks` and both passwords outside this
+   machine. Never commit them (`android/.gitignore` refuses `*.jks`).
+3. `cp android/keystore.properties.example android/keystore.properties` and
+   fill it in with the absolute path and passwords.
+
+### Each release
+
+1. `npm version patch` (or `minor`). `package.json` is the only version:
+   About shows it, and `scripts/version-code.mjs` turns `x.y.z` into Play's
+   `versionCode` (`x*10000 + y*100 + z`, minor and patch at most 99, no
+   pre-release suffix).
+2. `npm run android:bundle` →
+   `android/app/build/outputs/bundle/release/app-release.aab`.
+3. Upload it to a Play Console track.
+
+Without an upload key, `bundleRelease` stops with "No upload key"; debug
+builds never need one. CI can set `FANKA_KEYSTORE_FILE`,
+`FANKA_KEYSTORE_PASSWORD`, `FANKA_KEY_ALIAS` and `FANKA_KEY_PASSWORD` instead
+of the properties file.
+
+### Play Console checklist (first release)
+
+- Privacy policy: https://fanka.arnaudmichel.fr/privacy
+- Account deletion: https://fanka.arnaudmichel.fr/delete-account
+- Data safety: email address collected for sign-in; study data (decks, cards,
+  reviews, attempts, settings) stored to sync; nothing shared with third
+  parties; data encrypted in transit; users can request deletion.
+- Content rating questionnaire.
+- Store listing: 512 px icon, 1024×500 feature graphic, 2–8 phone screenshots,
+  short and full description.
+- A new personal developer account must run a closed test with at least 12
+  testers for 14 days before production.
+- After merging, run `supabase db push` (migration 0003) and
+  `supabase config push` (production redirect).

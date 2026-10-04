@@ -21,6 +21,8 @@
     "build:stroke-data": "node scripts/build-stroke-data.mjs",
     "android:sync": "npm run build:app && cap sync android",
     "android:build": "[ -x \"$JAVA_HOME/bin/java\" ] || unset JAVA_HOME; cd android && ./gradlew assembleDebug",
+    "android:bundle": "npm run android:sync && ([ -x \"$JAVA_HOME/bin/java\" ] || unset JAVA_HOME; cd android && ./gradlew bundleRelease)",
+    "android:keystore": "echo 'Run, then back the file and both passwords up somewhere safe:' && echo 'keytool -genkeypair -v -keystore ~/.android/fanka-upload.jks -alias fanka-upload -keyalg RSA -keysize 2048 -validity 10000'",
     "android:run": "[ -x \"$JAVA_HOME/bin/java\" ] || unset JAVA_HOME; cd android && ./gradlew installDebug && adb shell am start -n fr.arnaudmichel.fanka/.MainActivity",
     "android:open": "cap open android",
     "android": "npm run android:sync && npm run android:build"
