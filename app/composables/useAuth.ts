@@ -1,10 +1,12 @@
 import { Capacitor } from '@capacitor/core';
 import type { AuthUser } from '@supabase/supabase-js';
+import { forgetSyncedAccount } from '~core/sync/engine';
 import { getSupabaseClient } from '~/utils/supabaseClient';
 
 const user = ref<AuthUser | null>(null);
 const loading = ref(true);
 const error = ref('');
+const deleting = ref(false);
 
 /** The name Account and the sidebar show: the profile's, else the email's local part. */
 const displayName = computed(() => {
@@ -105,6 +107,45 @@ export function useAuth() {
   }
 
   /**
+   * Deletes the account and everything synced to it (`delete_my_account`,
+   * supabase/migrations/0003). Local decks, cards and reviews stay; the
+   * learner carries on signed out. Once the server call succeeds the account
+   * is gone, so a failing local clean-up is logged, never reported as a
+   * failed deletion.
+   */
+  async function deleteAccount(): Promise<boolean> {
+    if (deleting.value) return false;
+    deleting.value = true;
+    error.value = '';
+    try {
+      const client = getSupabaseClient();
+      const { error: rpcError } = await client.rpc('delete_my_account');
+      if (rpcError) {
+        error.value = rpcError.message;
+        return false;
+      }
+      try {
+        await client.auth.signOut({ scope: 'local' });
+      } catch (err) {
+        console.error('useAuth: local sign-out after account deletion failed', err);
+      }
+      user.value = null;
+      try {
+        await forgetSyncedAccount();
+      } catch (err) {
+        console.error('useAuth: failed to forget the sync state after account deletion', err);
+      }
+      return true;
+    } catch (err) {
+      console.error('useAuth: account deletion failed', err);
+      error.value = err instanceof Error ? err.message : 'Account deletion failed';
+      return false;
+    } finally {
+      deleting.value = false;
+    }
+  }
+
+  /**
    * Android only: hands the `code` query param from the `fanka://auth` deep
    * link to Supabase, which exchanges it for a session using the PKCE
    * verifier this same WebView stored when `signIn()` requested the link —
@@ -145,9 +186,11 @@ export function useAuth() {
     user: readonly(user),
     loading: readonly(loading),
     error: readonly(error),
+    deleting: readonly(deleting),
     signIn,
     displayName,
     signOut,
+    deleteAccount,
     updateProfile,
     completeSignInFromUrl,
   };

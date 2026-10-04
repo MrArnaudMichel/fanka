@@ -128,3 +128,4 @@ findings are never parked here.
 | Kanto 1.8 settings, reminders and import (T10) | DST test only meaningful in a DST zone | Minor; judged not worth a fix round | Kanto 1.8 T10 review |
 | Kanto 1.8 settings, reminders and import (T12) | remembered mapping targets not re-validated (the learner sees them in step 2) | Minor; judged not worth a fix round | Kanto 1.8 T12 review |
 | Kanto 1.8 settings, reminders and import (T15) | side panel close has no unsaved-edit guard | Minor; judged not worth a fix round | Kanto 1.8 T15 review |
+| `app/plugins/sync.client.ts` | Signing in to a new account (after deleting one, or after signing out of another) does not push the rows already on the device; only changes made afterwards reach the new account | Pre-existing for account switches; deletion now resets the cursor and outbox so nothing leaks into the new account | Store readiness batch 1 design |

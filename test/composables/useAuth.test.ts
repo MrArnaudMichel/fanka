@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 type FakeSession = { user: { id: string; email: string; user_metadata?: { display_name?: string } } } | null;
 type FakeAuthError = { message: string } | null;
 
-const { authStub, getSupabaseClient } = vi.hoisted(() => {
+const { authStub, rpc, forgetSyncedAccount, getSupabaseClient } = vi.hoisted(() => {
   const listeners: ((event: string, session: FakeSession) => void)[] = [];
   const authStub = {
     getSession: vi.fn(async (): Promise<{ data: { session: FakeSession }; error: FakeAuthError }> => ({
@@ -30,11 +30,14 @@ const { authStub, getSupabaseClient } = vi.hoisted(() => {
       for (const cb of listeners) cb(event, session);
     },
   };
-  const getSupabaseClient = vi.fn(() => ({ auth: authStub }));
-  return { authStub, getSupabaseClient };
+  const rpc = vi.fn(async (_fn: string): Promise<{ error: FakeAuthError }> => ({ error: null }));
+  const forgetSyncedAccount = vi.fn(async (): Promise<void> => {});
+  const getSupabaseClient = vi.fn(() => ({ auth: authStub, rpc }));
+  return { authStub, rpc, forgetSyncedAccount, getSupabaseClient };
 });
 
 vi.mock('~/utils/supabaseClient', () => ({ getSupabaseClient }));
+vi.mock('~core/sync/engine', () => ({ forgetSyncedAccount }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 
 /** Lets queued promise callbacks (the faked async client calls) settle. */
@@ -144,5 +147,84 @@ describe('profile', () => {
     authStub.updateUser.mockResolvedValueOnce({ data: { user: null }, error: { message: 'Network down' } });
     expect(await auth.updateProfile('X')).toBe(false);
     expect(auth.error.value).toBe('Network down');
+  });
+});
+
+describe('deleteAccount', () => {
+  it('deletes the account, signs out locally and forgets the sync state', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    authStub.emit('SIGNED_IN', { user: { id: 'u1', email: 'arnaud@example.com' } });
+    rpc.mockClear();
+    authStub.signOut.mockClear();
+    forgetSyncedAccount.mockClear();
+
+    expect(await auth.deleteAccount()).toBe(true);
+
+    expect(rpc).toHaveBeenCalledWith('delete_my_account');
+    expect(authStub.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(forgetSyncedAccount).toHaveBeenCalledTimes(1);
+    expect(auth.user.value).toBeNull();
+    expect(auth.error.value).toBe('');
+  });
+
+  it('changes nothing locally when the server refuses', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    authStub.emit('SIGNED_IN', { user: { id: 'u1', email: 'arnaud@example.com' } });
+    rpc.mockResolvedValueOnce({ error: { message: 'JWT expired' } });
+    authStub.signOut.mockClear();
+    forgetSyncedAccount.mockClear();
+
+    expect(await auth.deleteAccount()).toBe(false);
+
+    expect(auth.error.value).toBe('JWT expired');
+    expect(authStub.signOut).not.toHaveBeenCalled();
+    expect(forgetSyncedAccount).not.toHaveBeenCalled();
+    expect(auth.user.value).toMatchObject({ id: 'u1' });
+  });
+
+  it('changes nothing locally when the network call throws', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    rpc.mockRejectedValueOnce(new Error('Failed to fetch'));
+    forgetSyncedAccount.mockClear();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(await auth.deleteAccount()).toBe(false);
+
+    expect(auth.error.value).toBe('Failed to fetch');
+    expect(forgetSyncedAccount).not.toHaveBeenCalled();
+  });
+
+  it('still reports success when the local sign-out fails after the server deleted the account', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    authStub.emit('SIGNED_IN', { user: { id: 'u1', email: 'arnaud@example.com' } });
+    authStub.signOut.mockRejectedValueOnce(new Error('storage locked'));
+    forgetSyncedAccount.mockClear();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(await auth.deleteAccount()).toBe(true);
+
+    expect(auth.user.value).toBeNull();
+    expect(forgetSyncedAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a second call while the first is running', async () => {
+    const { useAuth } = await import('~/composables/useAuth');
+    const auth = useAuth();
+    rpc.mockClear();
+    let release!: () => void;
+    rpc.mockImplementationOnce(() => new Promise((resolve) => (release = () => resolve({ error: null }))));
+
+    const first = auth.deleteAccount();
+    expect(auth.deleting.value).toBe(true);
+    expect(await auth.deleteAccount()).toBe(false);
+    release();
+    expect(await first).toBe(true);
+
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(auth.deleting.value).toBe(false);
   });
 });
