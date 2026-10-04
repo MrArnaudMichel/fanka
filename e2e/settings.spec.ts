@@ -95,3 +95,10 @@ test('a file that is not a backup is refused and Restore stays disabled', async 
   await expect(page.getByText('This file is not a Fanka backup.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Restore', exact: true })).toBeDisabled();
 });
+
+test('account deletion is offered only to a signed-in learner', async ({ page }) => {
+  await page.goto('/settings/account');
+  await expect(page.getByRole('heading', { name: 'Account', level: 1 })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Send link' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Delete account' })).toHaveCount(0);
+});

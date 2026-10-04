@@ -4,7 +4,7 @@ import { useAuth } from '~/composables/useAuth';
 import { useSync } from '~/composables/useSync';
 import { timeAgo } from '~/utils/format';
 
-const { user, loading, error, displayName, signIn, signOut, updateProfile } = useAuth();
+const { user, loading, error, displayName, signIn, signOut, updateProfile, deleteAccount, deleting } = useAuth();
 const { status, lastSyncedAt, error: syncError, details, syncNow, refreshDetails } = useSync();
 onMounted(refreshDetails);
 
@@ -57,6 +57,32 @@ async function onSignOut(): Promise<void> {
   linkSent.value = false;
   email.value = '';
 }
+
+const confirmingDelete = ref(false);
+/** Deleting needs the server; offline the button is disabled with a hint. */
+const online = ref(typeof navigator === 'undefined' || navigator.onLine);
+function updateOnline(): void {
+  online.value = navigator.onLine;
+}
+onMounted(() => {
+  window.addEventListener('online', updateOnline);
+  window.addEventListener('offline', updateOnline);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('online', updateOnline);
+  window.removeEventListener('offline', updateOnline);
+});
+
+async function onDeleteAccount(): Promise<void> {
+  confirmingDelete.value = false;
+  if (await deleteAccount()) {
+    linkSent.value = false;
+    email.value = '';
+    toaster.success('Account deleted');
+  } else if (error.value) {
+    toaster.error("Couldn't delete your account", { description: error.value });
+  }
+}
 </script>
 
 <template>
@@ -106,6 +132,21 @@ async function onSignOut(): Promise<void> {
       <kt-alert v-if="status === 'offline'" variant="warning" description="No connection. Changes are saved here and sync once you're back online." />
       <kt-button slot="footer" variant="secondary" size="medium" icon="refresh-cw" :disabled="status === 'syncing'" @click="syncNow">Sync now</kt-button>
     </kt-form>
+
+    <kt-form heading="Delete account" description="Deletes your account and everything synced to it. The decks and cards on this device stay.">
+      <kt-alert v-if="!online" variant="warning" description="Connect to the internet to delete your account." />
+      <kt-button slot="footer" type="button" variant="danger" size="medium" icon="trash-2" :disabled="deleting || !online" @click="confirmingDelete = true">Delete account</kt-button>
+    </kt-form>
+    <kt-confirm-dialog
+      :open="confirmingDelete"
+      heading="Delete your account?"
+      message="Your account and everything synced to it are deleted. The decks and cards on this device stay."
+      confirm-label="Delete account"
+      cancel-label="Cancel"
+      variant="danger"
+      @kt-confirm="onDeleteAccount"
+      @kt-cancel="confirmingDelete = false"
+    />
   </template>
 </template>
 
