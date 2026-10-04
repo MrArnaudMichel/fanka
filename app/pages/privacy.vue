@@ -10,7 +10,15 @@ useHead({ title: 'Privacy policy · Fanka' });
 
   <section>
     <h2>Without an account</h2>
-    <p>Everything you create and every answer you give stays on your device. Nothing is sent anywhere.</p>
+    <p>Everything you create and every answer you give stays on your device.</p>
+  </section>
+
+  <section>
+    <h2>Fonts and hosting</h2>
+    <p>
+      Fanka loads its Chinese fonts from Google Fonts, which receives your IP address and browser details when the fonts
+      are fetched. The web version is served by Vercel, which keeps standard access logs.
+    </p>
   </section>
 
   <section>
@@ -18,7 +26,7 @@ useHead({ title: 'Privacy policy · Fanka' });
     <p>
       An account syncs your study across devices. Fanka then stores your email address, used to send the sign-in link,
       and your decks, cards, review history, writing attempts and settings with Supabase, a hosted database provider,
-      in {{ DATA_REGION }}. Only your account can read them.
+      in {{ DATA_REGION }}. Only your account can read them. Supabase also logs sign-ins, with their IP address.
     </p>
   </section>
 
@@ -29,7 +37,7 @@ useHead({ title: 'Privacy policy · Fanka' });
 
   <section>
     <h2>What Fanka never does</h2>
-    <p>No ads, no analytics, no tracking. Your data is never sold or shared.</p>
+    <p>No ads, no analytics, no tracking. Your data is never sold, and shared only with the providers named above.</p>
   </section>
 
   <section>

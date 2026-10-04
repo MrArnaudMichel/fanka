@@ -4,6 +4,11 @@ test('the privacy policy is public and names the contact address', async ({ page
   await page.goto('/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy policy', level: 1 })).toBeVisible();
   await expect(page.getByText('contact@arnaudmichel.fr').first()).toBeVisible();
+  // Every launch fetches fonts from Google, and the web build is served by
+  // Vercel: the policy has to say so rather than claim nothing leaves the device.
+  await expect(page.getByText(/Google Fonts/).first()).toBeVisible();
+  await expect(page.getByText(/Vercel/).first()).toBeVisible();
+  await expect(page.getByText('Nothing is sent anywhere.', { exact: false })).toHaveCount(0);
   // The legal layout has no sidebar: its Search button (AppSidebar.vue) is absent.
   await expect(page.getByRole('button', { name: 'Search' })).toHaveCount(0);
 });
