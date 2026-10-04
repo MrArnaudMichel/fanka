@@ -102,3 +102,12 @@ test('account deletion is offered only to a signed-in learner', async ({ page })
   await expect(page.getByRole('button', { name: 'Send link' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Delete account' })).toHaveCount(0);
 });
+
+test('about links to the privacy policy, account deletion and licences', async ({ page }) => {
+  await page.goto('/settings/about');
+  await page.getByRole('button', { name: 'Privacy policy' }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await page.goBack();
+  await page.getByRole('button', { name: 'Open source licences' }).click();
+  await expect(page).toHaveURL(/\/licences$/);
+});

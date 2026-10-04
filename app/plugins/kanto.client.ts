@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   Bell,
   ChartLine,
   Check,
@@ -26,9 +27,11 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
+  Scale,
   Search,
   Send,
   Settings,
+  Shield,
   SquarePen,
   SunMoon,
   Trash2,
@@ -37,6 +40,7 @@ import {
   Undo2,
   Upload,
   User,
+  UserX,
   Volume2,
   X,
 } from 'lucide';
@@ -73,6 +77,7 @@ export default defineNuxtPlugin(async () => {
   // Account's Sign out; Send is Reminders' test notification; SunMoon is the
   // palette's theme switch.
   registerIcons({
+    ArrowLeft,
     Bell,
     ChartLine,
     Check,
@@ -99,9 +104,11 @@ export default defineNuxtPlugin(async () => {
     Plus,
     RefreshCw,
     RotateCcw,
+    Scale,
     Search,
     Send,
     Settings,
+    Shield,
     SquarePen,
     SunMoon,
     Trash2,
@@ -110,6 +117,7 @@ export default defineNuxtPlugin(async () => {
     Undo2,
     Upload,
     User,
+    UserX,
     Volume2,
     X,
   });

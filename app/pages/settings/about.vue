@@ -19,9 +19,17 @@ const builtLabel = builtAt ? new Date(builtAt).toLocaleString() : 'Unknown';
       </template>
     </dl>
   </kt-card>
+  <kt-card>
+    <div class="links">
+      <kt-button variant="secondary-no-bg" size="small" icon="shield" @click="navigateTo('/privacy')">Privacy policy</kt-button>
+      <kt-button variant="secondary-no-bg" size="small" icon="user-x" @click="navigateTo('/delete-account')">Delete your account</kt-button>
+      <kt-button variant="secondary-no-bg" size="small" icon="scale" @click="navigateTo('/licences')">Open source licences</kt-button>
+    </div>
+  </kt-card>
 </template>
 
 <style scoped>
+.links { display: flex; flex-wrap: wrap; gap: var(--gap-element); }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--gap-element) var(--gap-card); margin: 0; }
 .facts dt { color: var(--text-muted); font: var(--font-normal-regular); }
 .facts dd { margin: 0; color: var(--text-body); font: var(--font-normal-medium); }
