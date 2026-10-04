@@ -20,7 +20,14 @@ export function versionCode(version) {
   return major * 10000 + minor * 100 + patch;
 }
 
+// With an argument, checks that version instead of package.json's (tests).
+// A bad version prints only the reason, which Gradle shows as its error.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  process.stdout.write(`${versionCode(version)} ${version}\n`);
+  const version = process.argv[2] ?? JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+  try {
+    process.stdout.write(`${versionCode(version)} ${version}\n`);
+  } catch (err) {
+    process.stderr.write(`${err instanceof Error ? err.message : err}\n`);
+    process.exit(1);
+  }
 }

@@ -2,10 +2,15 @@ apply plugin: 'com.android.application'
 
 // One version for the web bundle, About and Play: package.json, through
 // scripts/version-code.mjs, which also rejects versions that would collide.
-def fankaVersion = providers.exec {
+def versionExec = providers.exec {
     workingDir rootProject.projectDir.parentFile
     commandLine 'node', 'scripts/version-code.mjs'
-}.standardOutput.asText.get().trim().split(' ')
+    ignoreExitValue = true
+}
+if (versionExec.result.get().exitValue != 0) {
+    throw new GradleException("package.json version: ${versionExec.standardError.asText.get().trim()}")
+}
+def fankaVersion = versionExec.standardOutput.asText.get().trim().split(' ')
 
 // Upload key for Play App Signing: FANKA_* environment variables first (CI),
 // then android/keystore.properties (local, untracked). Debug builds need none.

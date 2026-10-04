@@ -15,3 +15,17 @@ describe('versionCode', () => {
     expect(() => versionCode('1.0.100')).toThrow(/99/);
   });
 });
+
+describe('version-code.mjs on the command line', () => {
+  it('prints only the reason and exits non-zero for a bad version, so Gradle can show it', async () => {
+    const { spawnSync } = await import('node:child_process');
+    const { join } = await import('node:path');
+    const script = join(__dirname, '..', '..', 'scripts', 'version-code.mjs');
+
+    const result = spawnSync(process.execPath, [script, '1.2.3-beta'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr.trim()).toBe('version must be x.y.z with no suffix, got "1.2.3-beta"');
+    expect(result.stdout).toBe('');
+  });
+});
