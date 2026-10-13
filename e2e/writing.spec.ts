@@ -255,3 +255,21 @@ test('Retry draws the word again after its verdict, and the first try still grad
   );
   expect(stored).toEqual({ grades: [1], practice: 1 });
 });
+
+test('focused practice on a single card brings the pad back after each answer', async ({ page }) => {
+  await setStrokeFeedback(page, false);
+  await page.goto('/writing?endless=1&cards=hsk1-traditional:hsk1-01');
+  await expect(page.getByText(/Practising 1 weak word/)).toBeVisible();
+  const check = page.getByRole('button', { name: 'Check', exact: true });
+
+  for (let round = 0; round < 2; round++) {
+    await expect(page.locator('svg.pad')).toBeVisible();
+    // The one card: 學習, two characters.
+    for (const _ of '學習') {
+      await scribble(page);
+      await check.click();
+    }
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  }
+  await expect(page.locator('svg.pad')).toBeVisible();
+});

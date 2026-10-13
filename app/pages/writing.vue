@@ -105,9 +105,12 @@ const cardMissing = computed(() => !session.busy.value && session.current.value 
 let attemptFor: string | null = null;
 watch(
   () => [session.current.value?.id, session.card.value?.id, session.revealed.value] as const,
-  () => {
+  (_now, [, , wasRevealed]) => {
     const card = session.card.value;
     const item = session.current.value;
+    // The same item drawn again — endless practice on a single card — comes
+    // back unrevealed: that is a new attempt, not the one already checked.
+    if (wasRevealed && !session.revealed.value) attemptFor = null;
     if (!card || !item || item.cardId !== card.id) {
       attemptFor = null;
       redraw.clear();
