@@ -10,11 +10,14 @@ import type { Grade } from '~core/srs/types';
  * replaces 3 for a right verdict — stroke-by-stroke writing grades 2 (Hard)
  * when a hint was needed.
  *
+ * Retry draws the word again; the page keeps grading the first try (see
+ * `useWritingRetry`), so `correct` and `rightGrade` are the first try's.
+ *
  * Mounts in the same instant the Check button unmounts, so it takes focus
  * the way `GradeButtons` does, for the same reason.
  */
 const props = withDefaults(defineProps<{ correct: boolean; busy: boolean; rightGrade?: Grade }>(), { rightGrade: 3 });
-const emit = defineEmits<{ grade: [Grade] }>();
+const emit = defineEmits<{ grade: [Grade]; retry: [] }>();
 
 const continueButton = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
 
@@ -26,6 +29,7 @@ useFocusWhenEnabled(
 
 <template>
   <div class="verdict-buttons">
+    <kt-button variant="secondary" size="large" icon="rotate-ccw" full-width :disabled="busy" @click="emit('retry')">Retry</kt-button>
     <kt-button
       v-if="!correct"
       variant="secondary"

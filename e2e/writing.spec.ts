@@ -208,3 +208,50 @@ test('Review shows the hanzi alone until the answer is revealed', async ({ page 
   await page.getByRole('button', { name: 'Show answer', exact: true }).click();
   await expect(page.locator('.answer .meaning')).toHaveText(/\S+/);
 });
+
+test('Retry draws the word again after its verdict, and the first try still grades the card', async ({ page }) => {
+  const hanzi = await openWriting(page);
+  const check = page.getByRole('button', { name: 'Check', exact: true });
+
+  for (const _ of hanzi) {
+    await scribble(page);
+    await check.click();
+  }
+  await expect.poll(() => heading(page)).toMatch(/^Character: .*wrong/);
+
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(page.locator('svg.pad')).toBeVisible();
+  await expect(page.locator('.answer .hanzi')).toHaveCount(0);
+
+  for (const character of hanzi) {
+    await draw(page, await mediansFor(page, character));
+    await check.click();
+  }
+  await expect.poll(() => heading(page)).toBe('Character: Right');
+  await expect(page.getByText('Graded on your first try: Wrong.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Count it as right' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.locator('.progress').getByText(/^2 \/ \d+$/)).toBeVisible();
+
+  const stored = await page.evaluate(
+    () =>
+      new Promise<{ grades: number[]; practice: number }>((resolve, reject) => {
+        const open = indexedDB.open('fanka');
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const tx = open.result.transaction(['reviews', 'attempts'], 'readonly');
+          const reviews = tx.objectStore('reviews').getAll();
+          const attempts = tx.objectStore('attempts').getAll();
+          tx.oncomplete = () => {
+            open.result.close();
+            resolve({
+              grades: (reviews.result as { grade: number }[]).map((r) => r.grade),
+              practice: (attempts.result as { source: string }[]).filter((a) => a.source === 'practice').length,
+            });
+          };
+        };
+      }),
+  );
+  expect(stored).toEqual({ grades: [1], practice: 1 });
+});

@@ -6,6 +6,7 @@ import type HanziPad from '~/components/HanziPad.vue';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { usePracticeSession } from '~/composables/usePracticeSession';
 import { focusCardIds } from '~/utils/focus';
+import { useWritingRetry } from '~/composables/useWritingRetry';
 import { SELF_GRADED, useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
 import { useSpeech } from '~/composables/useSpeech';
@@ -47,6 +48,7 @@ const endless = useRoute().query.endless === '1';
 const focus = endless ? focusCardIds(useRoute().query.cards) : undefined;
 const practice = endless ? usePracticeSession('writing', { cardIds: focus }) : null;
 const session = practice ?? useReviewSession('writing');
+const redraw = useWritingRetry();
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
 
@@ -108,10 +110,12 @@ watch(
     const item = session.current.value;
     if (!card || !item || item.cardId !== card.id) {
       attemptFor = null;
+      redraw.clear();
       attempt.reset();
       return;
     }
     if (attemptFor === item.id) return;
+    redraw.clear();
     if (session.revealed.value) {
       attempt.reset();
       return;
@@ -181,7 +185,36 @@ function giveUp(): void {
 }
 
 const checked = computed(() => session.revealed.value && attempt.status.value === 'checked');
-const unchecked = computed(() => session.revealed.value && attempt.status.value !== 'checked');
+/** Redrawing after the verdict: the pad is back, the answer hidden again. */
+const redrawing = computed(() => session.revealed.value && redraw.retrying.value);
+const unchecked = computed(() => session.revealed.value && attempt.status.value !== 'checked' && !redraw.retrying.value);
+
+/**
+ * The first check of a card sets its grade; each retry's check is logged as
+ * practice instead (see `useWritingRetry`).
+ */
+watch(checked, (isChecked) => {
+  if (!isChecked) return;
+  const item = session.current.value;
+  if (redraw.retrying.value && item) {
+    redraw.logRetry(item, attempt.results.value).catch((err: unknown) => {
+      console.error('writing: failed to log the retry', err);
+    });
+  } else {
+    redraw.keepFirst(attempt.correct.value, rightGrade.value, attempt.results.value);
+  }
+});
+/** What Continue and Enter grade: the first try, even after a retry. */
+const firstCorrect = computed(() => redraw.first.value?.correct ?? attempt.correct.value);
+const firstRightGrade = computed<Grade>(() => redraw.first.value?.rightGrade ?? rightGrade.value);
+
+function startRetry(): void {
+  const card = session.card.value;
+  if (!card || session.busy.value || !checked.value) return;
+  redraw.start();
+  drawn.value = [];
+  void attempt.start(card.hanzi);
+}
 const givenUp = computed(() => unchecked.value && gaveUp.value);
 const selfGraded = computed(() => unchecked.value && !gaveUp.value);
 
@@ -212,7 +245,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 
 async function grade(value: Grade) {
   hasGraded.value = true;
-  const detail = checked.value ? { checked: true, writing: [...attempt.results.value] } : SELF_GRADED;
+  const first = redraw.first.value;
+  const detail = first ? { checked: true, writing: [...first.results] } : checked.value ? { checked: true, writing: [...attempt.results.value] } : SELF_GRADED;
   try {
     await session.grade(value, detail);
   } catch (err) {
@@ -242,7 +276,10 @@ function onKey(event: KeyboardEvent) {
   if (checked.value) {
     if (event.key === 'Enter' || event.code === 'Space') {
       event.preventDefault();
-      void grade(attempt.correct.value ? rightGrade.value : 1);
+      void grade(firstCorrect.value ? firstRightGrade.value : 1);
+    } else if (event.key.toLowerCase() === 'r') {
+      event.preventDefault();
+      startRetry();
     }
   } else if (givenUp.value) {
     if (event.key === 'Enter' || event.code === 'Space') {
@@ -261,7 +298,7 @@ function onKey(event: KeyboardEvent) {
     if (event.key === 'Enter' && !attempt.live.value) {
       event.preventDefault();
       check();
-    } else if (event.key.toLowerCase() === 'n') {
+    } else if (event.key.toLowerCase() === 'n' && !redrawing.value) {
       event.preventDefault();
       giveUp();
     }
@@ -362,14 +399,19 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
     >
       <WritingCard
         :card="session.card.value"
-        :revealed="session.revealed.value"
+        :revealed="session.revealed.value && !redrawing"
         :settings="settings"
         :can-speak="canSpeak"
         @speak="speak"
       >
-        <WritingVerdict v-if="checked" :attempts="attempt.attempts.value" />
+        <template v-if="checked">
+          <p v-if="redraw.retries.value > 0 && redraw.first.value" class="note">
+            Graded on your first try: {{ redraw.first.value.correct ? 'Right' : 'Wrong' }}. Retries are practice.
+          </p>
+          <WritingVerdict :attempts="attempt.attempts.value" />
+        </template>
 
-        <template v-else-if="!session.revealed.value">
+        <template v-else-if="!session.revealed.value || redrawing">
           <div v-if="attempt.status.value === 'drawing'" class="pad-area">
             <span v-if="attempt.characters.value.length > 1" class="mono">
               Character {{ attempt.position.value + 1 }} / {{ attempt.characters.value.length }}
@@ -396,10 +438,11 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
       <div class="actions fk-session-actions">
         <VerdictButtons
           v-if="checked"
-          :correct="attempt.correct.value"
-          :right-grade="rightGrade"
+          :correct="firstCorrect"
+          :right-grade="firstRightGrade"
           :busy="session.busy.value"
           @grade="grade"
+          @retry="startRetry"
         />
         <kt-button
           v-else-if="givenUp"
@@ -416,6 +459,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
           <kt-button variant="secondary" size="large" icon="undo-2" label="Undo stroke" :disabled="drawn.length === 0" @click="undoStroke" />
           <kt-button variant="secondary" size="large" icon="x" label="Clear" :disabled="drawn.length === 0" @click="clearPad" />
           <kt-button
+            v-if="!redrawing"
             variant="secondary"
             size="large"
             icon="circle-help"
