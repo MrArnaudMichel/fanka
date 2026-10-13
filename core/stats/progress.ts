@@ -65,7 +65,8 @@ export function knownTimeline(
     for (const ch of cardsById.get(item.cardId)?.hanzi ?? '') if (HAN.test(ch)) characters.add(ch);
   }
 
-  const earliest = reviews.length === 0 ? null : Math.min(...reviews.map((r) => r.reviewedAt));
+  // A reduce, not Math.min(...): spreading a long history overflows the call stack.
+  const earliest = reviews.reduce<number | null>((min, r) => (min === null || r.reviewedAt < min ? r.reviewedAt : min), null);
   const series = timeBuckets(window, now, earliest).map((b) => ({
     key: b.key,
     known: history.filter((h) => knownBefore(h.item, h.reviews, b.end)).length,

@@ -99,3 +99,11 @@ describe('weakWords', () => {
     expect(weakWords(attempts, cards, '30d', NOW)).toEqual([]);
   });
 });
+
+describe('knownTimeline on a long history', () => {
+  it('handles hundreds of thousands of reviews without overflowing the stack', () => {
+    const item = anItem('c1', 'recognition', { scheduledDays: 30 });
+    const reviews = Array.from({ length: 300_000 }, (_, i) => aReview(`r${i}`, item.id, { reviewedAt: local(1, 1) + i }));
+    expect(() => knownTimeline([item], reviews, cardsById([aCard('c1', 'd1')]), '7d', NOW)).not.toThrow();
+  });
+});
