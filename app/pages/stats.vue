@@ -2,13 +2,15 @@
 import StatsActivity from '~/components/stats/StatsActivity.vue';
 import StatsJournal from '~/components/stats/StatsJournal.vue';
 import StatsMemory from '~/components/stats/StatsMemory.vue';
+import StatsOverview from '~/components/stats/StatsOverview.vue';
 import StatsWriting from '~/components/stats/StatsWriting.vue';
 import { useStats } from '~/composables/useStats';
 
-const { loading, loadError, filter, filtered, deckOptions, now, load } = useStats();
+const { loading, loadError, filter, filtered, everyMode, deckOptions, now, load } = useStats();
 
-const tab = ref<'activity' | 'memory' | 'writing' | 'journal'>('activity');
+const tab = ref<'overview' | 'activity' | 'memory' | 'writing' | 'journal'>('overview');
 const tabs = [
+  { value: 'overview', label: 'Overview' },
   { value: 'activity', label: 'Activity' },
   { value: 'memory', label: 'Memory' },
   { value: 'writing', label: 'Writing' },
@@ -28,11 +30,16 @@ const modes = [
 ];
 
 onMounted(load);
+
+/** Endless practice on these cards only (`?cards=`), in recognition: the weak words come from both modes. */
+function practise(cardIds: string[]): void {
+  void navigateTo({ path: '/review', query: { endless: '1', cards: cardIds.join(',') } });
+}
 </script>
 
 <template>
   <div class="stats">
-    <kt-page-header eyebrow="Progress" heading="Statistics" description="Activity, memory, writing and every answer you gave." />
+    <kt-page-header eyebrow="Progress" heading="Statistics" description="Where you stand, how you study and every answer you gave." />
 
     <kt-skeleton v-if="loading" height="200px" />
 
@@ -49,7 +56,8 @@ onMounted(load);
 
       <kt-tabs label="Statistics" :tabs="tabs" :value="tab" @kt-change="(e: CustomEvent) => (tab = e.detail.value)" />
 
-      <StatsActivity v-if="tab === 'activity'" :data="filtered" :window="filter.window" :now="now" />
+      <StatsOverview v-if="tab === 'overview'" :data="filtered" :every-mode="everyMode!" :window="filter.window" :now="now" @practise="practise" />
+      <StatsActivity v-else-if="tab === 'activity'" :data="filtered" :window="filter.window" :now="now" />
       <StatsMemory v-else-if="tab === 'memory'" :data="filtered" :window="filter.window" :now="now" />
       <StatsWriting v-else-if="tab === 'writing'" :data="filtered" :window="filter.window" :now="now" />
       <StatsJournal v-else :data="filtered" :window="filter.window" :now="now" />

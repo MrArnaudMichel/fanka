@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Bell,
+  Calendar,
   ChartLine,
   Check,
   ChevronLeft,
@@ -44,6 +45,8 @@ import {
   SquarePen,
   SunMoon,
   Trash2,
+  TrendingDown,
+  TrendingUp,
   TriangleAlert,
   Trophy,
   Type,
@@ -89,10 +92,12 @@ export default defineNuxtPlugin(async () => {
   // legal links and the legal pages' way back; ShieldCheck, Smartphone,
   // Cloud, EyeOff, Server, Type, Mail, Copy, CircleCheck and FileText are the
   // legal pages' sections and contact actions (Smartphone is also the dev
-  // /install nav entry).
+  // /install nav entry). Calendar, TrendingUp and TrendingDown are the
+  // statistics Overview's tiles and insights.
   registerIcons({
     ArrowLeft,
     Bell,
+    Calendar,
     ChartLine,
     Check,
     ChevronLeft,
@@ -135,6 +140,8 @@ export default defineNuxtPlugin(async () => {
     SquarePen,
     SunMoon,
     Trash2,
+    TrendingDown,
+    TrendingUp,
     TriangleAlert,
     Trophy,
     Type,

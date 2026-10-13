@@ -19,6 +19,11 @@ export function useStats() {
     snapshot.value ? applyFilter(snapshot.value, { deckId: filter.deckId, mode: filter.mode }) : null,
   );
 
+  /** The deck filter alone: words known go through recognition items whatever the mode filter. */
+  const everyMode = computed<FilteredSnapshot | null>(() =>
+    snapshot.value ? applyFilter(snapshot.value, { deckId: filter.deckId, mode: null }) : null,
+  );
+
   const deckOptions = computed<KtOption[]>(() =>
     (snapshot.value?.decks ?? [])
       .filter((d) => d.deletedAt === null)
@@ -40,5 +45,5 @@ export function useStats() {
     }
   }
 
-  return { loading, loadError, filter, filtered, deckOptions, now, load };
+  return { loading, loadError, filter, filtered, everyMode, deckOptions, now, load };
 }
