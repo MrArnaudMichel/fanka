@@ -8,6 +8,11 @@ import { saveStudyDeckIds } from '~core/db/study-decks';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 
+/** Puts every item in review, as if each had been studied before. */
+async function scheduleEverything(): Promise<void> {
+  await db.items.toCollection().modify({ state: 'review', scheduledDays: 5, reps: 3, lastReview: NOW });
+}
+
 const aDeck = (id: string) => ({
   id, name: id, description: '', colorToken: 'var(--chart-series-1)',
   tag: '', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null,
@@ -91,7 +96,8 @@ describe('usePracticeSession', () => {
     }
   });
 
-  it('writes nothing: no review log, no change to any item', async () => {
+  it('leaves items already scheduled alone: no review log, no change', async () => {
+    await scheduleEverything();
     const before = await db.items.toArray();
     const session = usePracticeSession('review');
     await session.start();
@@ -109,6 +115,7 @@ describe('usePracticeSession', () => {
   });
 
   it('logs each answer as a practice attempt and leaves the schedule alone', async () => {
+    await scheduleEverything();
     const session = usePracticeSession('writing');
     await session.start();
     const item = session.current.value!;
@@ -126,5 +133,35 @@ describe('usePracticeSession', () => {
     await session.start();
     await session.grade(3);
     expect((await db.attempts.toArray())[0]).toMatchObject({ mode: 'review', ...SELF_GRADED });
+  });
+});
+
+describe('practice on a new card', () => {
+  it('starts its schedule: one review, and the item leaves New', async () => {
+    await saveStudyDeckIds(['d2']);
+    const session = usePracticeSession('review');
+    await session.start();
+    const item = session.current.value!;
+    expect(item.state).toBe('new');
+
+    await session.grade(3);
+
+    expect(await db.reviews.count()).toBe(1);
+    expect((await db.items.get(item.id))!.state).not.toBe('new');
+    const logged = await db.attempts.toArray();
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toMatchObject({ itemId: item.id, source: 'practice', grade: 3 });
+  });
+
+  it('schedules only the first answer of the session on that card', async () => {
+    await saveStudyDeckIds(['d2']);
+    const session = usePracticeSession('writing');
+    await session.start();
+    await session.grade(3);
+    await session.grade(1);
+    await session.grade(4);
+
+    expect(await db.reviews.count()).toBe(1);
+    expect(await db.attempts.count()).toBe(3);
   });
 });

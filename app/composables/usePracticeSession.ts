@@ -1,8 +1,9 @@
-import { attempts, cards, items } from '~core/db/repositories';
+import { attempts, cards, items, reviews } from '~core/db/repositories';
 import { type AttemptDetail, type Card, type Item, SELF_GRADED } from '~core/db/schema';
 import { MODE_DIRECTION, type SessionMode } from '~core/db/session';
+import { loadSettings } from '~core/db/settings';
 import { studyDeckFilter } from '~core/db/study-decks';
-import type { Grade, SrsState } from '~core/srs';
+import { type Grade, type SrsState, schedulerFor } from '~core/srs';
 import { pickNext, weightAfter } from '~core/srs/practice';
 
 /** How many cards endless practice in this mode would draw from right now. */
@@ -13,9 +14,10 @@ export async function practicePoolSize(mode: SessionMode): Promise<number> {
 /**
  * Endless practice in one direction, outside the schedule: cards are drawn
  * from the studied decks (`studyDeckFilter`) for as long as the learner keeps
- * going, missed ones more often (`pickNext`). Nothing is scheduled — no
- * review, no item update — but every answer is logged as a practice attempt
- * for the journal and statistics.
+ * going, missed ones more often (`pickNext`). Every answer is logged as a
+ * practice attempt for the journal and statistics. Only a new card's first
+ * answer touches the schedule (`startSchedule`): practising a word counts as
+ * starting to learn it, and deck progress and known words follow.
  *
  * Returns the fields of `useReviewSession` that `review.vue` and
  * `writing.vue` read, so either page can run on it in its endless mode:
@@ -61,6 +63,23 @@ export function usePracticeSession(mode: SessionMode) {
     }
   }
 
+  /**
+   * A new card answered in practice has been studied: its first answer is a
+   * real review, so the card leaves New and the schedule brings it back. The
+   * pool keeps the scheduled copy, so a later answer in this session on the
+   * same card is a plain practice attempt.
+   */
+  async function startSchedule(item: Item, value: Grade, at: number, detail: AttemptDetail): Promise<void> {
+    const settings = await loadSettings();
+    const next = schedulerFor(settings.algorithm).apply(item, value, at, {
+      desiredRetention: settings.desiredRetention,
+      maxInterval: settings.maxInterval,
+    });
+    const scheduled: Item = { ...item, ...next, updatedAt: at };
+    await reviews.record({ item: scheduled, before: { ...item }, grade: value, reviewedAt: at, durationMs: at - shownAt.value, detail, source: 'practice' });
+    pool.value = pool.value.map((i) => (i.id === item.id ? scheduled : i));
+  }
+
   async function grade(value: Grade, detail: AttemptDetail = SELF_GRADED): Promise<void> {
     const item = current.value;
     if (!item || busy.value) return;
@@ -69,7 +88,8 @@ export function usePracticeSession(mode: SessionMode) {
       const at = Date.now();
       // Logged first: a failed write surfaces to the page (a toast) and the
       // card stays on screen, rather than the answer silently vanishing.
-      await attempts.log({ item, grade: value, at, durationMs: at - shownAt.value, detail });
+      if (item.state === 'new') await startSchedule(item, value, at, detail);
+      else await attempts.log({ item, grade: value, at, durationMs: at - shownAt.value, detail });
       const correct = value > 1;
       weights.set(item.id, weightAfter(weights.get(item.id) ?? 1, correct));
       recent.push(item.id);

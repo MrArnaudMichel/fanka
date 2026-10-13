@@ -1,6 +1,6 @@
 import { buildAttempt } from './attempts';
 import { db } from './db';
-import { type Attempt, type AttemptDetail, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
+import { type Attempt, type AttemptDetail, type AttemptSource, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { type Grade, type ItemState, type SrsState, newSrsState } from '~core/srs';
 import { MATURE_DAYS as MATURE_SCHEDULED_DAYS } from '~core/stats/memory';
@@ -567,10 +567,12 @@ export interface RecordedReview {
   durationMs: number;
   /** How the answer was judged; self-graded when absent. */
   detail?: AttemptDetail;
+  /** Where it was given: endless practice schedules a new card's first answer too. */
+  source?: AttemptSource;
 }
 
 export const reviews = {
-  async record({ item, before, grade, reviewedAt, durationMs, detail = SELF_GRADED }: RecordedReview): Promise<string> {
+  async record({ item, before, grade, reviewedAt, durationMs, detail = SELF_GRADED, source = 'scheduled' }: RecordedReview): Promise<string> {
     const reviewId = uid();
     await db.transaction('rw', db.items, db.reviews, db.cards, db.attempts, db.outbox, async () => {
       // The caller's `before` is typed as `SrsState`, which has no
@@ -596,7 +598,7 @@ export const reviews = {
 
       const card = await db.cards.get(item.cardId);
       await db.attempts.put(
-        buildAttempt({ id: reviewId, item, deckId: card?.deckId ?? '', source: 'scheduled', grade, at: reviewedAt, durationMs, detail }),
+        buildAttempt({ id: reviewId, item, deckId: card?.deckId ?? '', source, grade, at: reviewedAt, durationMs, detail }),
       );
       await db.outbox.put(outboxEntry('attempt', reviewId, 'put', reviewedAt));
     });
