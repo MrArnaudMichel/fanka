@@ -24,7 +24,16 @@ export async function practicePoolSize(mode: SessionMode): Promise<number> {
  * `ended` is always false, `log` stays empty (no undo), and `grade` only
  * decides whether the answer was right (any grade above 1).
  */
-export function usePracticeSession(mode: SessionMode) {
+/** Focused practice honours this many cards at most, so a link cannot ask for a whole deck. */
+export const FOCUS_LIMIT = 20;
+
+export interface PracticeOptions {
+  /** Practise only these cards (weak words from Statistics), studied decks or not. */
+  cardIds?: readonly string[];
+}
+
+export function usePracticeSession(mode: SessionMode, options: PracticeOptions = {}) {
+  const focus = options.cardIds ? new Set(options.cardIds.slice(0, FOCUS_LIMIT)) : null;
   const pool = ref<Item[]>([]);
   const current = ref<Item | null>(null);
   const card = ref<Card | null>(null);
@@ -52,7 +61,9 @@ export function usePracticeSession(mode: SessionMode) {
   async function start(): Promise<void> {
     busy.value = true;
     try {
-      pool.value = await items.pool(MODE_DIRECTION[mode], await studyDeckFilter());
+      pool.value = focus
+        ? (await items.pool(MODE_DIRECTION[mode])).filter((i) => focus.has(i.cardId))
+        : await items.pool(MODE_DIRECTION[mode], await studyDeckFilter());
       weights.clear();
       recent.length = 0;
       seen.value = 0;

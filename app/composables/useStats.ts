@@ -24,6 +24,9 @@ export function useStats() {
     snapshot.value ? applyFilter(snapshot.value, { deckId: filter.deckId, mode: null }) : null,
   );
 
+  /** No deck and no mode: Memory's Decks table compares every deck. */
+  const everyDeck = computed<FilteredSnapshot | null>(() => (snapshot.value ? applyFilter(snapshot.value, { deckId: null, mode: null }) : null));
+
   const deckOptions = computed<KtOption[]>(() =>
     (snapshot.value?.decks ?? [])
       .filter((d) => d.deletedAt === null)
@@ -45,5 +48,5 @@ export function useStats() {
     }
   }
 
-  return { loading, loadError, filter, filtered, everyMode, deckOptions, now, load };
+  return { loading, loadError, filter, filtered, everyMode, everyDeck, deckOptions, now, load };
 }

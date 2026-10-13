@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { KtTableColumn, KtTableRow } from 'kanto-ds';
 import { html } from 'lit';
-import { type FilteredSnapshot, type HardItem, type StatsWindow, memorySummary, rate, trimChart } from '~core/stats';
+import { type DeckRow, type FilteredSnapshot, type HardItem, type StatsWindow, deckComparison, memorySummary, rate, trimChart } from '~core/stats';
 import { formatPercent, plural, shortDate } from '~/utils/format';
 
-const props = defineProps<{ data: FilteredSnapshot; window: StatsWindow; now: number }>();
+/** `everyDeck` is the snapshot on no deck and no mode: the Decks table compares them all. */
+const props = defineProps<{ data: FilteredSnapshot; everyDeck: FilteredSnapshot; window: StatsWindow; now: number }>();
+const emit = defineEmits<{ deck: [deckId: string] }>();
 const s = computed(() => memorySummary(props.data, props.window, props.now));
 /**
  * `kt-chart`'s `values` is `readonly number[]` (model.d.ts) — no `null` gap
@@ -49,6 +51,27 @@ function renderCell(row: KtTableRow, column: KtTableColumn): unknown {
   if (column.key === 'mode') return r.mode === 'writing' ? 'Writing' : 'Review';
   if (column.key === 'failureRate') return `${formatPercent(r.failureRate)} of ${r.reviews}`;
   return undefined;
+}
+
+const decks = computed(() => deckComparison(props.everyDeck, props.window, props.now).map((d) => ({ ...d, id: d.deckId })));
+const deckColumns: KtTableColumn[] = [
+  { key: 'name', label: 'Deck' },
+  { key: 'known', label: 'Known', align: 'right' },
+  { key: 'learning', label: 'Learning', align: 'right' },
+  { key: 'retention', label: 'Mature retention', align: 'right' },
+  { key: 'practice', label: 'Practised', align: 'right' },
+];
+
+function renderDeckCell(row: KtTableRow, column: KtTableColumn): unknown {
+  const r = row as unknown as DeckRow;
+  if (column.key === 'known') return `${r.known} / ${r.words}`;
+  if (column.key === 'retention') return formatPercent(rate(r.retention));
+  if (column.key === 'practice') return r.practised === 0 ? '—' : `${plural(r.practised, 'word')} · ${formatPercent(rate(r.practice))}`;
+  return undefined;
+}
+
+function openDeck(event: CustomEvent<{ row: DeckRow }>): void {
+  emit('deck', event.detail.row.deckId);
 }
 
 function openCard(event: CustomEvent<{ row: HardItem }>): void {
@@ -102,6 +125,12 @@ function openCard(event: CustomEvent<{ row: HardItem }>): void {
     </div>
 
     <kt-card>
+      <div slot="header" class="card-heading">Decks</div>
+      <p class="caption">Every deck in the period, whatever the filters above. Select one to filter the page on it.</p>
+      <kt-table label="Decks" :columns="deckColumns" :data="decks" :renderCell="renderDeckCell" compact empty-text="No decks yet." @kt-row-click="openDeck" />
+    </kt-card>
+
+    <kt-card>
       <div slot="header" class="card-heading">Hardest cards</div>
       <kt-table label="Hardest cards" :columns="columns" :data="s.hardest" :renderCell="renderCell" compact empty-text="No lapses yet." @kt-row-click="openCard" />
     </kt-card>
@@ -113,4 +142,5 @@ function openCard(event: CustomEvent<{ row: HardItem }>): void {
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--gap-button); }
 .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--gap-card); }
 .card-heading { font: var(--font-title-h6); color: var(--text-body); }
+.caption { font: var(--font-normal-small); color: var(--text-muted); margin: 0 0 var(--gap-element); }
 </style>

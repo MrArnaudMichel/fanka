@@ -1,5 +1,5 @@
 import type { WritingError } from '~core/chinese/strokes';
-import type { Attempt, WritingResult } from '~core/db/schema';
+import type { Attempt, Card, WritingResult } from '~core/db/schema';
 import { type Ratio, rate } from './memory';
 import { type StatsWindow, findBucket, inWindow, timeBuckets } from './time';
 
@@ -13,6 +13,8 @@ export interface MissedCharacter {
   orderRate: number | null;
   lastError: WritingError | null;
   lastAt: number;
+  /** Last time it was drawn with the right shape in the right order; null if never in the window. */
+  lastRightAt: number | null;
 }
 
 export interface WritingSummary {
@@ -75,6 +77,7 @@ export function writingSummary(attempts: readonly Attempt[], window: StatsWindow
       orderRate: shapes.length ? shapes.filter(({ r }) => r.orderCorrect).length / shapes.length : null,
       lastError: last.r.error,
       lastAt: last.at,
+      lastRightAt: results.filter(({ r }) => r.error === null).reduce<number | null>((x, { at }) => (x === null || at > x ? at : x), null),
     });
   }
   missed.sort((x, y) => x.shapeRate - y.shapeRate || (x.orderRate ?? 0) - (y.orderRate ?? 0) || y.lastAt - x.lastAt);
@@ -87,4 +90,10 @@ export function writingSummary(attempts: readonly Attempt[], window: StatsWindow
     errors,
     missed: missed.slice(0, MISSED_LIMIT),
   };
+}
+
+/** For each character, the live cards whose hanzi hold it, in card order. */
+export function cardsContaining(characters: readonly string[], cardsById: ReadonlyMap<string, Card>): Map<string, string[]> {
+  const live = [...cardsById.values()].filter((c) => c.deletedAt === null);
+  return new Map(characters.map((ch) => [ch, live.filter((c) => c.hanzi.includes(ch)).map((c) => c.id)]));
 }

@@ -165,3 +165,21 @@ describe('practice on a new card', () => {
     expect(await db.attempts.count()).toBe(3);
   });
 });
+
+describe('focused practice', () => {
+  it('draws only from the given cards, whatever decks are studied', async () => {
+    await saveStudyDeckIds(['d2']);
+    const session = usePracticeSession('review', { cardIds: ['a', 'b'] });
+    await session.start();
+    expect(session.total.value).toBe(2);
+    expect(['a', 'b']).toContain(session.current.value?.cardId);
+  });
+
+  it('ignores unknown cards and honours at most twenty', async () => {
+    const ids = ['missing', 'c', ...Array.from({ length: 30 }, (_, i) => `x${i}`)];
+    const session = usePracticeSession('writing', { cardIds: ids });
+    await session.start();
+    expect(session.total.value).toBe(1);
+    expect(session.current.value?.cardId).toBe('c');
+  });
+});

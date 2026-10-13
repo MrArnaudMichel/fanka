@@ -6,3 +6,4 @@ export * from './time';
 export * from './writing';
 export * from './insights';
 export * from './progress';
+export * from './decks';

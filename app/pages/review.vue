@@ -2,6 +2,7 @@
 import { toaster } from 'kanto-ds';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { usePracticeSession } from '~/composables/usePracticeSession';
+import { focusCardIds } from '~/utils/focus';
 import { useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
 import { useSpeech } from '~/composables/useSpeech';
@@ -15,7 +16,9 @@ import type { Grade } from '~core/srs/types';
  */
 definePageMeta({ key: (route) => route.fullPath });
 const endless = useRoute().query.endless === '1';
-const practice = endless ? usePracticeSession('review') : null;
+/** `?cards=` from Statistics' "Practise these": endless practice on those cards only. */
+const focus = endless ? focusCardIds(useRoute().query.cards) : undefined;
+const practice = endless ? usePracticeSession('review', { cardIds: focus }) : null;
 const session = practice ?? useReviewSession('review');
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
@@ -179,6 +182,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 <template>
   <div class="review">
     <kt-page-header :eyebrow="endless ? 'Endless practice' : undefined" heading="Review" />
+    <FocusBanner v-if="practice && focus" :count="practice.total.value" />
 
     <!--
       Undo and Leave sit with the count rather than in the page header's

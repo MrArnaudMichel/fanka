@@ -5,6 +5,7 @@ import type { Grade } from '~core/srs/types';
 import type HanziPad from '~/components/HanziPad.vue';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { usePracticeSession } from '~/composables/usePracticeSession';
+import { focusCardIds } from '~/utils/focus';
 import { SELF_GRADED, useReviewSession } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
 import { useSpeech } from '~/composables/useSpeech';
@@ -42,7 +43,9 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
  */
 definePageMeta({ key: (route) => route.fullPath });
 const endless = useRoute().query.endless === '1';
-const practice = endless ? usePracticeSession('writing') : null;
+/** `?cards=` from Statistics' "Practise these": endless practice on those cards only. */
+const focus = endless ? focusCardIds(useRoute().query.cards) : undefined;
+const practice = endless ? usePracticeSession('writing', { cardIds: focus }) : null;
 const session = practice ?? useReviewSession('writing');
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
@@ -284,6 +287,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 <template>
   <div class="writing">
     <kt-page-header :eyebrow="endless ? 'Endless practice' : undefined" heading="Writing" />
+    <FocusBanner v-if="practice && focus" :count="practice.total.value" />
 
     <!--
       Undo and Leave sit with the count rather than in the page header's

@@ -6,7 +6,7 @@ import StatsOverview from '~/components/stats/StatsOverview.vue';
 import StatsWriting from '~/components/stats/StatsWriting.vue';
 import { useStats } from '~/composables/useStats';
 
-const { loading, loadError, filter, filtered, everyMode, deckOptions, now, load } = useStats();
+const { loading, loadError, filter, filtered, everyMode, everyDeck, deckOptions, now, load } = useStats();
 
 const tab = ref<'overview' | 'activity' | 'memory' | 'writing' | 'journal'>('overview');
 const tabs = [
@@ -31,9 +31,12 @@ const modes = [
 
 onMounted(load);
 
-/** Endless practice on these cards only (`?cards=`), in recognition: the weak words come from both modes. */
-function practise(cardIds: string[]): void {
-  void navigateTo({ path: '/review', query: { endless: '1', cards: cardIds.join(',') } });
+/**
+ * Endless practice on these cards only (`?cards=`): weak words in Review,
+ * since they come from both modes; missed characters in Writing.
+ */
+function practise(cardIds: string[], page: '/review' | '/writing' = '/review'): void {
+  void navigateTo({ path: page, query: { endless: '1', cards: cardIds.join(',') } });
 }
 </script>
 
@@ -58,8 +61,8 @@ function practise(cardIds: string[]): void {
 
       <StatsOverview v-if="tab === 'overview'" :data="filtered" :every-mode="everyMode!" :window="filter.window" :now="now" @practise="practise" />
       <StatsActivity v-else-if="tab === 'activity'" :data="filtered" :window="filter.window" :now="now" />
-      <StatsMemory v-else-if="tab === 'memory'" :data="filtered" :window="filter.window" :now="now" />
-      <StatsWriting v-else-if="tab === 'writing'" :data="filtered" :window="filter.window" :now="now" />
+      <StatsMemory v-else-if="tab === 'memory'" :data="filtered" :every-deck="everyDeck!" :window="filter.window" :now="now" @deck="(id) => (filter.deckId = id)" />
+      <StatsWriting v-else-if="tab === 'writing'" :data="filtered" :window="filter.window" :now="now" @practise="(ids) => practise(ids, '/writing')" />
       <StatsJournal v-else :data="filtered" :window="filter.window" :now="now" />
     </template>
   </div>

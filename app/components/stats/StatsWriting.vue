@@ -2,11 +2,12 @@
 import type { KtTableColumn, KtTableRow } from 'kanto-ds';
 import { html } from 'lit';
 import type { CharacterStrokes } from '~core/chinese/strokes';
-import { type FilteredSnapshot, type MissedCharacter, type StatsWindow, rate, trimChart, writingSummary } from '~core/stats';
+import { type FilteredSnapshot, type MissedCharacter, type StatsWindow, cardsContaining, rate, trimChart, writingSummary } from '~core/stats';
 import { useStrokeData } from '~/composables/useStrokeData';
-import { formatPercent, plural, shortDate } from '~/utils/format';
+import { formatPercent, plural, shortDate, timeAgo } from '~/utils/format';
 
 const props = defineProps<{ data: FilteredSnapshot; window: StatsWindow; now: number }>();
+const emit = defineEmits<{ practise: [cardIds: string[]] }>();
 const s = computed(() => writingSummary(props.data.attempts, props.window, props.now));
 /** See StatsMemory.vue's `pct` for why a missing bucket falls back to 0 rather than `null`, and `accuracyChart` for why that is now the only case left. */
 const pct = (v: number | null) => (v === null ? 0 : Math.round(v * 100));
@@ -30,7 +31,13 @@ const columns: KtTableColumn[] = [
   { key: 'shapeRate', label: 'Right', align: 'right' },
   { key: 'orderRate', label: 'In order', align: 'right' },
   { key: 'lastError', label: 'Last error' },
+  { key: 'words', label: 'In words', align: 'right' },
+  { key: 'lastRightAt', label: 'Last right' },
 ];
+
+/** The live cards holding each listed character: the table's "In words" and what Practise these draws on. */
+const containing = computed(() => cardsContaining(s.value.missed.map((m) => m.character), props.data.cardsById));
+const practiseIds = computed(() => [...new Set([...containing.value.values()].flat())]);
 
 function renderCell(row: KtTableRow, column: KtTableColumn): unknown {
   const r = row as unknown as MissedCharacter;
@@ -38,6 +45,8 @@ function renderCell(row: KtTableRow, column: KtTableColumn): unknown {
   if (column.key === 'shapeRate') return formatPercent(r.shapeRate);
   if (column.key === 'orderRate') return formatPercent(r.orderRate);
   if (column.key === 'lastError') return r.lastError ? ERROR_LABELS[r.lastError] : '—';
+  if (column.key === 'words') return String(containing.value.get(r.character)?.length ?? 0);
+  if (column.key === 'lastRightAt') return r.lastRightAt === null ? 'Never' : timeAgo(r.lastRightAt, props.now);
   return undefined;
 }
 
@@ -85,6 +94,7 @@ async function openCharacter(event: CustomEvent<{ row: MissedCharacter }>): Prom
     <kt-card>
       <div slot="header" class="card-heading">Characters to work on</div>
       <kt-table label="Characters to work on" :columns="columns" :data="s.missed.map((m) => ({ ...m, id: m.character }))" :renderCell="renderCell" compact empty-text="No mistakes in this period." @kt-row-click="openCharacter" />
+      <kt-button v-if="practiseIds.length > 0" slot="footer" variant="primary" size="medium" icon="pen-line" @click="emit('practise', practiseIds)">Practise these</kt-button>
     </kt-card>
 
     <kt-side-panel :open="panelOpen" eyebrow="Stroke order" :heading="open?.character ?? ''" @kt-close="panelOpen = false">
