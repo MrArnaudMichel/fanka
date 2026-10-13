@@ -43,7 +43,7 @@ const poolText = (n: number) => `${n} card${n === 1 ? '' : 's'} in your studied 
     <kt-page-header
       eyebrow="Learn"
       heading="Practice"
-      description="Endless drill on the decks you study. Missed cards come back more often. A new card you answer here starts its schedule; the others keep theirs."
+      description="Endless drill on the decks you study. Missed cards come back more often. A new card you answer here starts its schedule and counts toward today's new cards; the others keep theirs."
     />
 
     <div class="modes">

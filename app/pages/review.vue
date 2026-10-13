@@ -137,7 +137,8 @@ async function grade(value: Grade) {
     toaster.error("Couldn't save that answer", { description: 'Try again.' });
     return;
   }
-  if (!endless) await refresh();
+  // Practice can start a new card's schedule too, which changes what is due.
+  await refresh();
 }
 
 async function undo() {

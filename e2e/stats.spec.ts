@@ -34,3 +34,18 @@ test('memory compares decks, and a deck row filters the page', async ({ page }) 
   await row.click();
   await expect(page.locator('kt-select')).toHaveJSProperty('value', 'hsk1-traditional');
 });
+
+test('practising a new card updates the due counts in the sidebar at once', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  const review = page.getByRole('link', { name: /^Review/ });
+  await expect(review).toHaveAccessibleName(/15/);
+
+  await page.goto('/review?endless=1&cards=hsk1-traditional:hsk1-01');
+  await expect(page.getByRole('button', { name: 'Show answer', exact: true })).toBeVisible();
+  await page.keyboard.press('Space');
+  await page.keyboard.press('3');
+
+  // The card used one of today's new cards: one fewer left to review.
+  await expect(review).toHaveAccessibleName(/14/);
+});
