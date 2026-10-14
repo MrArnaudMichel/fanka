@@ -32,7 +32,7 @@ test('memory compares decks, and a deck row filters the page', async ({ page }) 
   const row = page.locator('kt-table tr[part=row]', { hasText: 'HSK 1' });
   await expect(row).toBeVisible();
   await row.click();
-  await expect(page.locator('kt-select')).toHaveJSProperty('value', 'hsk1-traditional');
+  await expect(page.locator('kt-select.deck-filter')).toHaveJSProperty('value', 'hsk1-traditional');
 });
 
 test('practising a new card updates the due counts in the sidebar at once', async ({ page }) => {

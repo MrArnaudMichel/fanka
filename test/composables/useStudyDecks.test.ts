@@ -114,6 +114,17 @@ describe('useStudyDecks', () => {
     expect(await loadStudyDeckIds()).toEqual(['d2']);
   });
 
+  it("adds or removes a lesson's decks at once, leaving the rest of the selection alone", async () => {
+    const study = useStudyDecks();
+    await study.load();
+    await study.toggle('other', true);
+    await study.toggleMany(['d1', 'd2', 'other'], true);
+    expect(study.ids.value).toEqual(['other', 'd1', 'd2']);
+    await study.toggleMany(['d1', 'd2'], false);
+    expect(study.ids.value).toEqual(['other']);
+    expect(await loadStudyDeckIds()).toEqual(['other']);
+  });
+
   it('clears the selection', async () => {
     const study = useStudyDecks();
     await study.toggle('d1', true);

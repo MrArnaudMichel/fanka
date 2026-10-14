@@ -14,10 +14,13 @@ import type { Deck } from '~core/db/schema';
  * `summary` is required in full mode — the counts and the meter both read it
  * — and ignored in compact mode, which only ever needed `deck`. So is
  * `studying`, the full card's "study this deck" checkbox.
+ *
+ * `hideTag` is for a card shown under its lesson's heading, which already
+ * says what the tag would.
  */
 const props = withDefaults(
-  defineProps<{ deck: Deck; mode?: 'compact' | 'full'; summary?: DeckSummary; studying?: boolean }>(),
-  { mode: 'compact', studying: false },
+  defineProps<{ deck: Deck; mode?: 'compact' | 'full'; summary?: DeckSummary; studying?: boolean; hideTag?: boolean }>(),
+  { mode: 'compact', studying: false, hideTag: false },
 );
 
 const emit = defineEmits<{ edit: [deck: Deck]; delete: [deck: Deck]; study: [deck: Deck, studying: boolean] }>();
@@ -87,7 +90,7 @@ const meterSegments = computed<KtMeterSegment[]>(() => {
       />
       <span class="swatch" :style="{ background: deck.colorToken }" />
       <span class="name">{{ deck.name }}</span>
-      <kt-badge v-if="deck.tag" variant="category" tone="neutral" size="small" :label="deck.tag" />
+      <kt-badge v-if="deck.tag && !hideTag" variant="category" tone="neutral" size="small" :label="deck.tag" />
 
       <!--
         align="end": the trigger sits at the row's right edge (`.menu`'s

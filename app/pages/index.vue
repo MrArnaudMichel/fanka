@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Deck } from '~core/db/schema';
+import { groupByLesson } from '~core/lessons';
 import type { SessionMode } from '~core/db/session';
 import { useDecks } from '~/composables/useDecks';
 import { useDueCounts } from '~/composables/useDueCounts';
@@ -10,6 +11,9 @@ const { failed: seedFailed, retry: retrySeedStatus } = useSeedStatus();
 const { listAll: listDecks } = useDecks();
 
 const decks = ref<Deck[]>([]);
+/** Folded by lesson once any deck carries one; otherwise the plain list. */
+const lessons = computed(() => groupByLesson(decks.value, (d) => d));
+const grouped = computed(() => lessons.value.some((g) => g.lesson !== null));
 
 /**
  * Distinguishes "still fetching the deck list" from "fetched, and there
@@ -191,7 +195,18 @@ async function retrySeed(): Promise<void> {
 
     <kt-card v-else>
       <p class="overline" slot="header">Decks</p>
-      <div class="decks">
+      <div v-if="grouped" class="lessons">
+        <kt-collapsible
+          v-for="group in lessons"
+          :key="group.lesson ?? ''"
+          :heading="`${group.lesson ?? 'Other decks'} · ${group.items.length} deck${group.items.length === 1 ? '' : 's'}`"
+        >
+          <div class="decks">
+            <DeckCard v-for="deck in group.items" :key="deck.id" :deck="deck" hide-tag />
+          </div>
+        </kt-collapsible>
+      </div>
+      <div v-else class="decks">
         <DeckCard v-for="deck in decks" :key="deck.id" :deck="deck" />
       </div>
     </kt-card>
@@ -217,4 +232,5 @@ async function retrySeed(): Promise<void> {
 .counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .eta { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 .decks { display: flex; flex-direction: column; gap: var(--gap-button); }
+.lessons { display: flex; flex-direction: column; }
 </style>

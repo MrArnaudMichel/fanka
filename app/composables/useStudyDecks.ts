@@ -20,10 +20,13 @@ export function useStudyDecks() {
     await refreshDueCounts();
   }
 
-  function toggle(deckId: string, studying: boolean): Promise<void> {
-    const rest = ids.value.filter((id) => id !== deckId);
-    return save(studying ? [...rest, deckId] : rest);
+  /** Several decks in or out at once — a lesson's — as one save and one recount. */
+  function toggleMany(deckIds: readonly string[], studying: boolean): Promise<void> {
+    if (!studying) return save(ids.value.filter((id) => !deckIds.includes(id)));
+    return save([...ids.value, ...deckIds.filter((id) => !ids.value.includes(id))]);
   }
 
-  return { ids: readonly(ids), load, toggle, clear: () => save([]) };
+  const toggle = (deckId: string, studying: boolean): Promise<void> => toggleMany([deckId], studying);
+
+  return { ids: readonly(ids), load, toggle, toggleMany, clear: () => save([]) };
 }

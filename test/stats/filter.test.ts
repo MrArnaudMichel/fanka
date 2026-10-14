@@ -22,6 +22,14 @@ describe('applyFilter', () => {
     expect(f.attempts.map((a) => a.id)).toEqual(['a1']);
   });
 
+  it("narrows to a lesson's decks by their tag, as the deck stands now", () => {
+    const tagged = { ...snapshot, decks: [aDeck('d1', { tag: 'Lesson 1' }), aDeck('d2', { tag: 'Lesson 2' }), aDeck('gone', { deletedAt: 1 })] };
+    const f = applyFilter(tagged, { deckId: null, mode: null, lesson: 'Lesson 2' });
+    expect(f.items.map((i) => i.id)).toEqual(['c2:production']);
+    expect(f.reviews.map((r) => r.id)).toEqual(['r2']);
+    expect(f.attempts.map((a) => a.id)).toEqual(['a2']);
+  });
+
   it('keeps every card and deck in the lookups, deleted ones included, for history', () => {
     const f = applyFilter(snapshot, { deckId: null, mode: null });
     expect(f.cardsById.has('c4')).toBe(true);

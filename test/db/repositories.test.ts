@@ -35,6 +35,13 @@ describe('decks', () => {
     await decks.put(aDeck({ id: 'd2', deletedAt: NOW }));
     expect((await decks.listAll()).map((d) => d.id)).toEqual(['d1']);
   });
+
+  it('lists decks by name, numbers by value', async () => {
+    await decks.put(aDeck({ id: 'd10', name: 'Lesson 10' }));
+    await decks.put(aDeck({ id: 'd2', name: 'Lesson 2' }));
+    expect((await decks.listAll()).map((d) => d.id)).toEqual(['d2', 'd10']);
+    expect((await decks.summaries(NOW)).map((s) => s.deck.id)).toEqual(['d2', 'd10']);
+  });
 });
 
 describe('cards', () => {
@@ -524,6 +531,13 @@ describe('cards.list', () => {
     await setUp();
     const rows = await cards.list({ deckId: 'd2', now: NOW });
     expect(rows.map((r) => r.card.id)).toEqual(['c2']);
+  });
+
+  it("filters by lesson, the decks' shared tag", async () => {
+    await setUp();
+    await decks.put(aDeck({ id: 'd2', name: 'HSK 2', tag: 'Lesson 2' }));
+    expect((await cards.list({ lesson: 'Lesson 2', now: NOW })).map((r) => r.card.id)).toEqual(['c2']);
+    expect((await cards.list({ lesson: 'HSK', now: NOW })).map((r) => r.card.id)).toEqual(['c1']);
   });
 
   it('filters by state, treating every-item-suspended as the suspended state', async () => {

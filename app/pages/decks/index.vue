@@ -7,6 +7,7 @@ import { useDecks } from '~/composables/useDecks';
 import { useStudyDecks } from '~/composables/useStudyDecks';
 import type { DeckSummary } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';
+import { groupByLesson } from '~core/lessons';
 
 const { summaries: fetchSummaries, remove } = useDecks();
 
@@ -62,6 +63,33 @@ async function clearStudy(): Promise<void> {
   } catch (err) {
     console.error('decks: failed to clear the study selection', err);
     toaster.error("Couldn't clear your selection", { description: 'Try again.' });
+  }
+}
+
+/** No tag on any deck: no lesson headings, the decks as one grid. */
+const lessons = computed(() => groupByLesson(rows.value, (r) => r.deck));
+const grouped = computed(() => lessons.value.some((g) => g.lesson !== null));
+
+function lessonStudy(group: { items: DeckSummary[] }): { all: boolean; some: boolean } {
+  const n = group.items.filter((r) => study.ids.value.includes(r.deck.id)).length;
+  return { all: n === group.items.length, some: n > 0 && n < group.items.length };
+}
+
+function lessonCounts(group: { items: DeckSummary[] }): string {
+  const due = group.items.reduce((sum, r) => sum + r.due, 0);
+  const fresh = group.items.reduce((sum, r) => sum + r.fresh, 0);
+  return `${group.items.length} deck${group.items.length === 1 ? '' : 's'} · ${due} due · ${fresh} new`;
+}
+
+async function onStudyLesson(group: { items: DeckSummary[] }, studying: boolean): Promise<void> {
+  try {
+    await study.toggleMany(
+      group.items.map((r) => r.deck.id),
+      studying,
+    );
+  } catch (err) {
+    console.error('decks: failed to save the study selection', err);
+    toaster.error("Couldn't save your selection", { description: 'Try again.' });
   }
 }
 
@@ -147,7 +175,37 @@ async function confirmDelete(): Promise<void> {
         <kt-button v-if="studyingCount > 0" variant="secondary-no-bg" size="small" @click="clearStudy">Clear</kt-button>
       </div>
 
-      <div class="grid">
+      <template v-if="grouped">
+        <section v-for="group in lessons" :key="group.lesson ?? ''" class="lesson">
+          <div class="lesson-head">
+            <kt-checkbox
+              size="small"
+              :checked="lessonStudy(group).all"
+              :indeterminate="lessonStudy(group).some"
+              :label="`Study ${group.lesson ?? 'the other decks'}`"
+              @kt-change="(e: CustomEvent<{ checked: boolean }>) => onStudyLesson(group, e.detail.checked)"
+            />
+            <h2>{{ group.lesson ?? 'Other decks' }}</h2>
+            <span class="lesson-counts">{{ lessonCounts(group) }}</span>
+          </div>
+          <div class="grid">
+            <DeckCard
+              v-for="row in group.items"
+              :key="row.deck.id"
+              :deck="row.deck"
+              mode="full"
+              :summary="row"
+              :studying="study.ids.value.includes(row.deck.id)"
+              hide-tag
+              @edit="openEdit"
+              @delete="openDelete"
+              @study="onStudy"
+            />
+          </div>
+        </section>
+      </template>
+
+      <div v-else class="grid">
         <DeckCard
           v-for="row in rows"
           :key="row.deck.id"
@@ -180,5 +238,9 @@ async function confirmDelete(): Promise<void> {
 .decks { display: flex; flex-direction: column; gap: 24px; }
 .study-line { display: flex; align-items: center; gap: var(--gap-button); }
 .study-line p { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
+.lesson { display: flex; flex-direction: column; gap: var(--gap-element); }
+.lesson-head { display: flex; align-items: center; gap: var(--gap-element); }
+.lesson-head h2 { margin: 0; font: var(--font-title-h6); color: var(--text-body); }
+.lesson-counts { margin-left: auto; font: var(--font-normal-small); color: var(--text-muted); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap-button); }
 </style>

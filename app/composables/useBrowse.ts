@@ -1,6 +1,7 @@
 import type { KtSortDirection } from 'kanto-ds';
 import { attempts, type CardRow, cards, items } from '~core/db/repositories';
 import type { Attempt, Card, Direction, Item } from '~core/db/schema';
+import { compareNames } from '~core/lessons';
 import type { ItemState } from '~core/srs';
 import { refreshDueCounts } from '~/composables/useDueCounts';
 
@@ -8,6 +9,8 @@ export type BrowseState = ItemState | 'suspended';
 
 export interface BrowseFilter {
   deckId: string | null;
+  /** The decks tagged with this lesson; see `~core/lessons`. */
+  lesson: string | null;
   state: BrowseState | null;
   dir: Direction | null;
   query: string;
@@ -71,7 +74,7 @@ export const STATE_META: Record<BrowseState, { label: string; tone: 'neutral' | 
  * given.
  */
 export function useBrowse(scope?: { deckId: string }) {
-  const filter = reactive<BrowseFilter>({ deckId: scope?.deckId ?? null, state: null, dir: null, query: '' });
+  const filter = reactive<BrowseFilter>({ deckId: scope?.deckId ?? null, lesson: null, state: null, dir: null, query: '' });
   const sort = ref<BrowseSort>({ key: null, direction: null });
   const raw = ref<CardRow[]>([]);
   const selected = ref<string[]>([]);
@@ -105,6 +108,7 @@ export function useBrowse(scope?: { deckId: string }) {
     try {
       const result = await cards.list({
         deckId: scope?.deckId ?? filter.deckId ?? undefined,
+        lesson: scope ? undefined : (filter.lesson ?? undefined),
         state: filter.state ?? undefined,
         dir: filter.dir ?? undefined,
         query: filter.query.trim() || undefined,
@@ -143,7 +147,7 @@ export function useBrowse(scope?: { deckId: string }) {
       return a.due - b.due;
     }
     if (key === 'translation') return a.card.translation.localeCompare(b.card.translation);
-    if (key === 'deckName') return a.deckName.localeCompare(b.deckName);
+    if (key === 'deckName') return compareNames(a.deckName, b.deckName);
     if (key === 'state') return a.state.localeCompare(b.state);
     return 0;
   }
@@ -177,7 +181,10 @@ export function useBrowse(scope?: { deckId: string }) {
     filter.state = null;
     filter.dir = null;
     filter.query = '';
-    if (!scope) filter.deckId = null;
+    if (!scope) {
+      filter.deckId = null;
+      filter.lesson = null;
+    }
   }
 
   /** Item ids for every direction of the given cards — what `items.setSuspended` needs. */

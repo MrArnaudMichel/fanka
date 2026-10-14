@@ -109,6 +109,22 @@ describe('useBrowse', () => {
     await vi.waitFor(() => expect(ids(browse.rows.value)).toEqual(['c2']));
   });
 
+  it("narrows to a lesson's decks, and clearing the filters lets every lesson back in", async () => {
+    await decks.put(aDeck({ tag: 'Lesson 1' }));
+    await decks.put(aDeck({ id: 'd2', name: 'Lesson 2 - 1', tag: 'Lesson 2' }));
+    await cards.create(aCard({ id: 'c1' }), ['recognition'], NOW);
+    await cards.create(aCard({ id: 'c2', deckId: 'd2', hanzi: '你好', translation: 'hello' }), ['recognition'], NOW);
+
+    const browse = useBrowse();
+    await ready(browse);
+    browse.filter.lesson = 'Lesson 2';
+    await vi.waitFor(() => expect(ids(browse.rows.value)).toEqual(['c2']));
+
+    browse.clearFilters();
+    expect(browse.filter.lesson).toBeNull();
+    await vi.waitFor(() => expect(ids(browse.rows.value).sort()).toEqual(['c1', 'c2']));
+  });
+
   it('a bulk suspend updates the affected rows', async () => {
     await decks.put(aDeck());
     await cards.create(aCard({ id: 'c1' }), ['recognition', 'production'], NOW);

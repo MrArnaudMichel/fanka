@@ -1,9 +1,12 @@
 import { type Attempt, type Card, type Deck, type Item, type Review, type StudyMode, DIRECTION_MODE } from '~core/db/schema';
+import { lessonOf } from '~core/lessons';
 import type { StatsWindow } from './time';
 
 export interface StatsFilter {
   window: StatsWindow;
   deckId: string | null;
+  /** The decks tagged with this lesson; `deckId`, when also set, narrows further. */
+  lesson: string | null;
   mode: StudyMode | null;
 }
 
@@ -30,14 +33,23 @@ export interface FilteredSnapshot {
 }
 
 /**
- * Narrows a snapshot to a deck and a mode. The window is left to each
- * aggregate: streaks and the year calendar look past it.
+ * Narrows a snapshot to a deck or a lesson, and a mode. The window is left to
+ * each aggregate: streaks and the year calendar look past it.
  */
-export function applyFilter(snapshot: StatsSnapshot, filter: Pick<StatsFilter, 'deckId' | 'mode'>): FilteredSnapshot {
+export function applyFilter(
+  snapshot: StatsSnapshot,
+  filter: Pick<StatsFilter, 'deckId' | 'mode'> & Partial<Pick<StatsFilter, 'lesson'>>,
+): FilteredSnapshot {
   const decksById = new Map(snapshot.decks.map((d) => [d.id, d]));
   const cardsById = new Map(snapshot.cards.map((c) => [c.id, c]));
   const itemsById = new Map(snapshot.items.map((i) => [i.id, i]));
-  const deckOk = (deckId: string | undefined) => filter.deckId === null || deckId === filter.deckId;
+  const lesson = filter.lesson ?? null;
+  const deckOk = (deckId: string | undefined) => {
+    if (filter.deckId !== null && deckId !== filter.deckId) return false;
+    if (lesson === null) return true;
+    const deck = deckId === undefined ? undefined : decksById.get(deckId);
+    return deck !== undefined && lessonOf(deck) === lesson;
+  };
   const modeOk = (item: Item) => filter.mode === null || DIRECTION_MODE[item.dir] === filter.mode;
   const live = (card: Card | undefined) => card !== undefined && card.deletedAt === null && decksById.get(card.deckId)?.deletedAt === null;
 

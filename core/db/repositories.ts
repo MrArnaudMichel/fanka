@@ -2,6 +2,7 @@ import { buildAttempt } from './attempts';
 import { db } from './db';
 import { type Attempt, type AttemptDetail, type AttemptSource, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
 import { toZhuyin } from '~core/chinese/zhuyin';
+import { compareNames, lessonOf } from '~core/lessons';
 import { type Grade, type ItemState, type SrsState, newSrsState } from '~core/srs';
 import { MATURE_DAYS as MATURE_SCHEDULED_DAYS } from '~core/stats/memory';
 import type { StatsSnapshot } from '~core/stats/filter';
@@ -102,6 +103,8 @@ const STATE_RANK: Record<ItemState, number> = { new: 0, learning: 1, relearning:
 
 export interface CardFilter {
   deckId?: string;
+  /** The decks whose tag is this lesson; see `~core/lessons`. */
+  lesson?: string;
   state?: ItemState | 'suspended';
   dir?: Direction;
   query?: string;
@@ -183,7 +186,7 @@ export const decks = {
 
   async listAll(): Promise<Deck[]> {
     const all = await db.decks.toArray();
-    return all.filter((d) => d.deletedAt === null).sort((a, b) => a.name.localeCompare(b.name));
+    return all.filter((d) => d.deletedAt === null).sort((a, b) => compareNames(a.name, b.name));
   },
 
   async create(input: { name: string; description: string; colorToken: DeckColor; tag: string }, now: number): Promise<Deck> {
@@ -244,7 +247,7 @@ export const decks = {
   async summaries(now: number): Promise<DeckSummary[]> {
     const allDecks = await db.decks.toArray();
     const decksById = byId(allDecks);
-    const liveDecks = allDecks.filter((d) => d.deletedAt === null).sort((a, b) => a.name.localeCompare(b.name));
+    const liveDecks = allDecks.filter((d) => d.deletedAt === null).sort((a, b) => compareNames(a.name, b.name));
 
     const visibleCards = (await db.cards.toArray()).filter((c) => cardVisible(c, decksById));
     const cardsByDeck = new Map<string, Card[]>();
@@ -426,7 +429,7 @@ export const cards = {
   },
 
   /**
-   * `state`, `dir`, `deckId` and `query` combine with AND. `state`/`due` are
+   * `state`, `dir`, `deckId`, `lesson` and `query` combine with AND. `state`/`due` are
    * computed by the same `rowStateAndDue` rule everywhere, so a row never
    * disagrees with itself between filters.
    */
@@ -437,6 +440,9 @@ export const cards = {
     let candidates = (await db.cards.toArray()).filter((c) => cardVisible(c, decksById));
     if (filter.deckId !== undefined) {
       candidates = candidates.filter((c) => c.deckId === filter.deckId);
+    }
+    if (filter.lesson !== undefined) {
+      candidates = candidates.filter((c) => lessonOf(decksById.get(c.deckId)!) === filter.lesson);
     }
     const trimmedQuery = filter.query?.trim() ?? '';
     if (trimmedQuery.length > 0) {

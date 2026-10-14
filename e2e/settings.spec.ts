@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 test('settings opens on Account with the sections beside it on a wide screen', async ({ page }) => {
@@ -110,4 +111,19 @@ test('about links to the privacy policy, account deletion and licences', async (
   await page.goBack();
   await page.getByRole('button', { name: 'Open source licences' }).click();
   await expect(page).toHaveURL(/\/licences$/);
+});
+
+test('a backup exported here restores without an error', async ({ page }) => {
+  await page.goto('/settings/data');
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup' }).click();
+  const exported = await download;
+  const buffer = readFileSync(await exported.path());
+  await page.locator('kt-drag-drop input[type="file"]').setInputFiles({ name: exported.suggestedFilename(), mimeType: 'application/json', buffer });
+  await page.getByRole('button', { name: 'Restore', exact: true }).click();
+  // A restore that lands reloads the page; one that fails toasts instead.
+  const reloaded = page.waitForEvent('load');
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Restore', exact: true }).click();
+  await reloaded;
+  await expect(page.getByText("Couldn't restore the backup")).toHaveCount(0);
 });

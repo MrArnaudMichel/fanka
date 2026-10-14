@@ -108,8 +108,9 @@ defineExpose({ validate, resetValidation });
       </div>
     </kt-label-input>
 
-    <kt-label-input label="Tag">
-      <kt-input name="tag" :value="tag" @kt-input="onTagInput" />
+    <!-- The tag is the deck's lesson: decks that share one are listed and studied together. -->
+    <kt-label-input label="Lesson">
+      <kt-input name="tag" placeholder="Lesson 3" :value="tag" @kt-input="onTagInput" />
     </kt-label-input>
   </kt-form>
 </template>

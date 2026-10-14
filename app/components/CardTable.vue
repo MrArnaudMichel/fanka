@@ -8,6 +8,7 @@ import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useDecks } from '~/composables/useDecks';
 import { toneColorToken } from '~core/chinese/tones';
 import type { Attempt, Deck } from '~core/db/schema';
+import { lessonNames, lessonOf } from '~core/lessons';
 import { formatInterval } from '~core/srs/format';
 
 /**
@@ -54,6 +55,14 @@ async function retryLoad(): Promise<void> {
 
 const deckOptions = computed<KtOption[]>(() => decks.value.map((d) => ({ id: d.id, label: d.name })));
 
+/** Empty when no deck carries a tag: the lesson filter is then not shown. */
+const lessonOptions = computed<KtOption[]>(() => lessonNames(decks.value).map((l) => ({ id: l, label: l })));
+
+/** The deck filter offers only the chosen lesson's decks; Move still offers every deck. */
+const deckFilterOptions = computed<KtOption[]>(() =>
+  filter.lesson === null ? deckOptions.value : decks.value.filter((d) => lessonOf(d) === filter.lesson).map((d) => ({ id: d.id, label: d.name })),
+);
+
 // --- Filters ---------------------------------------------------------------
 
 // Behaviour, not a styling duration — see CLAUDE.md's "Never hard-code a
@@ -88,6 +97,12 @@ function onDeckFilterChange(event: CustomEvent<{ value: string | number | null }
   filter.deckId = typeof event.detail.value === 'string' ? event.detail.value : null;
 }
 
+/** A deck outside the new lesson would leave the table empty; it is dropped. */
+function onLessonFilterChange(event: CustomEvent<{ value: string | number | null }>): void {
+  filter.lesson = typeof event.detail.value === 'string' ? event.detail.value : null;
+  if (filter.deckId !== null && !deckFilterOptions.value.some((o) => o.id === filter.deckId)) filter.deckId = null;
+}
+
 // Ruling 2: "Both" means `dir` is undefined — the segmented control needs a
 // concrete value to display as selected, so `null` is presented as `'both'`
 // and mapped back on the way out.
@@ -103,7 +118,7 @@ function onDirectionChange(event: CustomEvent<{ value: string | number }>): void
 }
 
 const isFiltered = computed(
-  () => filter.state !== null || filter.dir !== null || filter.query.trim() !== '' || (!props.scope && filter.deckId !== null),
+  () => filter.state !== null || filter.dir !== null || filter.query.trim() !== '' || (!props.scope && (filter.deckId !== null || filter.lesson !== null)),
 );
 
 const addCardHref = computed(() => {
@@ -375,11 +390,21 @@ async function onPanelUnsuspend(cardId: string): Promise<void> {
     <div class="filters">
       <kt-input class="search" icon="search" placeholder="Search hanzi, pinyin or translation" :value="filter.query" @kt-input="onSearchInput" />
       <kt-select
+        v-if="!scope && lessonOptions.length > 0"
+        class="deck-filter"
+        label="Lesson"
+        placeholder="All lessons"
+        clearable
+        :options="lessonOptions"
+        :value="filter.lesson"
+        @kt-change="onLessonFilterChange"
+      />
+      <kt-select
         v-if="!scope"
         class="deck-filter"
         label="Deck"
         placeholder="All decks"
-        :options="deckOptions"
+        :options="deckFilterOptions"
         :value="filter.deckId"
         @kt-change="onDeckFilterChange"
       />

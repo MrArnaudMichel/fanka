@@ -9,7 +9,9 @@ const { user } = useAuth();
 const { exportBackup, readFile, restore, reset } = useBackup();
 
 const exporting = ref(false);
-const pending = ref<Backup | null>(null);
+// Shallow: a deep ref would hand restore() reactive proxies, which
+// IndexedDB refuses to store (DataCloneError).
+const pending = shallowRef<Backup | null>(null);
 const restoreError = ref('');
 const confirmRestore = ref(false);
 const confirmReset = ref(false);

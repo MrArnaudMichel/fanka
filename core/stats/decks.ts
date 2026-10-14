@@ -1,3 +1,4 @@
+import { compareNames } from '~core/lessons';
 import type { FilteredSnapshot } from './filter';
 import { MATURE_DAYS, type Ratio } from './memory';
 import { type StatsWindow, inWindow } from './time';
@@ -82,5 +83,5 @@ export function deckComparison(data: FilteredSnapshot, window: StatsWindow, now:
   }
   for (const [deckId, cards] of practisedCards) rows.get(deckId)!.practised = cards.size;
 
-  return [...rows.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return [...rows.values()].sort((a, b) => compareNames(a.name, b.name));
 }

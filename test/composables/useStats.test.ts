@@ -29,4 +29,25 @@ describe('useStats', () => {
     await s.load();
     expect(s.deckOptions.value).toEqual([{ id: 'd1', label: 'd1' }]);
   });
+
+  it("offers each lesson, narrows the decks to it, and drops a deck outside it", async () => {
+    await decks.put({ ...aDeck('L1 - 1'), tag: 'Lesson 1' });
+    await decks.put({ ...aDeck('L2 - 1'), tag: 'Lesson 2' });
+    const s = useStats();
+    await s.load();
+    expect(s.lessonOptions.value.map((o) => o.id)).toEqual(['Lesson 1', 'Lesson 2']);
+    s.selectDeck('L1 - 1');
+    s.selectLesson('Lesson 2');
+    expect(s.deckOptions.value.map((o) => o.id)).toEqual(['L2 - 1']);
+    expect(s.filter.deckId).toBeNull();
+  });
+
+  it('clears the lesson when a deck outside it is picked', async () => {
+    await decks.put({ ...aDeck('L2 - 1'), tag: 'Lesson 2' });
+    const s = useStats();
+    await s.load();
+    s.selectLesson('Lesson 2');
+    s.selectDeck('d1');
+    expect(s.filter).toMatchObject({ lesson: null, deckId: 'd1' });
+  });
 });

@@ -6,7 +6,7 @@ import StatsOverview from '~/components/stats/StatsOverview.vue';
 import StatsWriting from '~/components/stats/StatsWriting.vue';
 import { useStats } from '~/composables/useStats';
 
-const { loading, loadError, filter, filtered, everyMode, everyDeck, deckOptions, now, load } = useStats();
+const { loading, loadError, filter, filtered, everyMode, everyDeck, lessonOptions, deckOptions, selectLesson, selectDeck, now, load } = useStats();
 
 const tab = ref<'overview' | 'activity' | 'memory' | 'writing' | 'journal'>('overview');
 const tabs = [
@@ -54,14 +54,15 @@ function practise(cardIds: string[], page: '/review' | '/writing' = '/review'): 
       <div class="filters">
         <kt-segmented-control size="small" label="Period" :options="windows" :value="filter.window" @kt-change="(e: CustomEvent) => (filter.window = e.detail.value)" />
         <kt-segmented-control size="small" label="Mode" :options="modes" :value="filter.mode ?? 'all'" @kt-change="(e: CustomEvent) => (filter.mode = e.detail.value === 'all' ? null : e.detail.value)" />
-        <kt-select size="small" label="Deck" placeholder="All decks" clearable :options="deckOptions" :value="filter.deckId" @kt-change="(e: CustomEvent) => (filter.deckId = e.detail?.value ?? null)" />
+        <kt-select v-if="lessonOptions.length > 0" size="small" label="Lesson" placeholder="All lessons" clearable :options="lessonOptions" :value="filter.lesson" @kt-change="(e: CustomEvent) => selectLesson(e.detail?.value ?? null)" />
+        <kt-select class="deck-filter" size="small" label="Deck" placeholder="All decks" clearable :options="deckOptions" :value="filter.deckId" @kt-change="(e: CustomEvent) => selectDeck(e.detail?.value ?? null)" />
       </div>
 
       <kt-tabs label="Statistics" :tabs="tabs" :value="tab" @kt-change="(e: CustomEvent) => (tab = e.detail.value)" />
 
       <StatsOverview v-if="tab === 'overview'" :data="filtered" :every-mode="everyMode!" :window="filter.window" :now="now" @practise="practise" />
       <StatsActivity v-else-if="tab === 'activity'" :data="filtered" :window="filter.window" :now="now" />
-      <StatsMemory v-else-if="tab === 'memory'" :data="filtered" :every-deck="everyDeck!" :window="filter.window" :now="now" @deck="(id) => (filter.deckId = id)" />
+      <StatsMemory v-else-if="tab === 'memory'" :data="filtered" :every-deck="everyDeck!" :window="filter.window" :now="now" @deck="selectDeck" />
       <StatsWriting v-else-if="tab === 'writing'" :data="filtered" :window="filter.window" :now="now" @practise="(ids) => practise(ids, '/writing')" />
       <StatsJournal v-else :data="filtered" :window="filter.window" :now="now" />
     </template>
