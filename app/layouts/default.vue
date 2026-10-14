@@ -142,17 +142,6 @@ async function onNavigate(event: CustomEvent<{ item: KtNavItem }>): Promise<void
   .mobile-header::part(base) {
     padding-top: env(safe-area-inset-top);
   }
-  /*
-    kt-header's bar is a three-column grid sized for brand · nav · actions.
-    Below its breakpoint the nav column is hidden, so the brand, the
-    actions and the menu button shift into those three columns instead —
-    the menu button ends up in the middle one, not flush right. Two columns
-    here: the brand takes the space, the menu button sits at the end.
-    Logged in docs/deferred-minors.md for a fix in Kanto itself.
-  */
-  .mobile-header::part(bar) {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
 }
 
 .brand { display: flex; align-items: center; gap: 8px; min-width: 0; font: var(--font-title-h6); color: var(--text-body); }

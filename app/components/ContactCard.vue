@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { toaster } from 'kanto-ds';
 import { CONTACT_EMAIL } from '~/utils/legal';
 
 /** The legal pages' contact block: the address, plus email and copy actions. */
@@ -11,15 +10,6 @@ withDefaults(defineProps<{ heading?: string; description?: string }>(), {
 function email(): void {
   window.location.href = `mailto:${CONTACT_EMAIL}`;
 }
-
-async function copy(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(CONTACT_EMAIL);
-    toaster.success('Address copied');
-  } catch {
-    toaster.error("Couldn't copy the address", { description: CONTACT_EMAIL });
-  }
-}
 </script>
 
 <template>
@@ -29,7 +19,8 @@ async function copy(): Promise<void> {
     <slot />
     <div class="actions">
       <kt-button variant="primary" size="small" icon="mail" @click="email">Email us</kt-button>
-      <kt-button variant="secondary" size="small" icon="copy" @click="copy">Copy address</kt-button>
+      <!-- Says "Address copied" on the button itself; a refused clipboard shakes it, and the address stays readable above. -->
+      <kt-copy-button :value="CONTACT_EMAIL" variant="secondary" size="small" label="Copy address" copied-label="Address copied" />
     </div>
   </LegalSection>
 </template>
