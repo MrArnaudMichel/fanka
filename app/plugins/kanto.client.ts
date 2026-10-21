@@ -41,6 +41,7 @@ import {
   Send,
   Server,
   Settings,
+  Shapes,
   Shield,
   ShieldCheck,
   Smartphone,
@@ -98,7 +99,7 @@ export default defineNuxtPlugin(async () => {
   // /install nav entry). Calendar, TrendingUp and TrendingDown are the
   // statistics Overview's tiles and insights. Mic is the Speaking nav entry;
   // Eye and EyeOff show and hide its model answers, and
-  // Square stops its playback.
+  // Square stops its playback. Shapes is the Radicals nav entry.
   registerIcons({
     ArrowLeft,
     Bell,
@@ -141,6 +142,7 @@ export default defineNuxtPlugin(async () => {
     Send,
     Server,
     Settings,
+    Shapes,
     Shield,
     ShieldCheck,
     Smartphone,
