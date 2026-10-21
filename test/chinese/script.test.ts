@@ -19,6 +19,10 @@ describe('simplifiedCharactersIn', () => {
     expect(simplifiedCharactersIn('皇后干里')).toEqual([]);
   });
 
+  it("accepts Taiwan's standard forms, which OpenCC's table maps to an older variant", () => {
+    expect(simplifiedCharactersIn('床上')).toEqual([]);
+  });
+
   it('reports each character once, in order of first appearance', () => {
     expect(simplifiedCharactersIn('这个这个')).toEqual(['这', '个']);
   });

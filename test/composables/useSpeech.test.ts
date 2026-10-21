@@ -26,6 +26,22 @@ describe('useSpeech', () => {
     expect(calls).toEqual(['cancel', 'speak:你好:zh-TW:0.9']);
   });
 
+  it('speaks slowly when asked', async () => {
+    const { engine, calls } = fakeEngine(['zh-TW']);
+    const s = useSpeech(engine);
+    await s.speak('你好', { slow: true });
+    expect(calls).toEqual(['cancel', 'speak:你好:zh-TW:0.6']);
+  });
+
+  it('stops, and clears the speaking flag', async () => {
+    const { engine, calls } = fakeEngine(['zh-TW']);
+    const s = useSpeech(engine);
+    await s.ready;
+    await s.stop();
+    expect(s.speaking.value).toBe(false);
+    expect(calls).toEqual(['cancel']);
+  });
+
   it('falls back to any other Chinese voice', async () => {
     const { engine, calls } = fakeEngine(['en-US', 'zh-CN']);
     const s = useSpeech(engine);

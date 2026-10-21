@@ -13,6 +13,7 @@ import {
   Copy,
   Database,
   Ellipsis,
+  Eye,
   EyeOff,
   FileQuestion,
   FileText,
@@ -26,6 +27,7 @@ import {
   List,
   LogOut,
   Mail,
+  Mic,
   Move,
   Palette,
   Pause,
@@ -42,6 +44,7 @@ import {
   Shield,
   ShieldCheck,
   Smartphone,
+  Square,
   SquarePen,
   SunMoon,
   Trash2,
@@ -93,7 +96,9 @@ export default defineNuxtPlugin(async () => {
   // Cloud, EyeOff, Server, Type, Mail, Copy, CircleCheck and FileText are the
   // legal pages' sections and contact actions (Smartphone is also the dev
   // /install nav entry). Calendar, TrendingUp and TrendingDown are the
-  // statistics Overview's tiles and insights.
+  // statistics Overview's tiles and insights. Mic is the Speaking nav entry;
+  // Eye and EyeOff show and hide its model answers, and
+  // Square stops its playback.
   registerIcons({
     ArrowLeft,
     Bell,
@@ -109,6 +114,7 @@ export default defineNuxtPlugin(async () => {
     Copy,
     Database,
     Ellipsis,
+    Eye,
     EyeOff,
     FileQuestion,
     FileText,
@@ -121,6 +127,7 @@ export default defineNuxtPlugin(async () => {
     List,
     LogOut,
     Mail,
+    Mic,
     Move,
     Palette,
     Pause,
@@ -137,6 +144,7 @@ export default defineNuxtPlugin(async () => {
     Shield,
     ShieldCheck,
     Smartphone,
+    Square,
     SquarePen,
     SunMoon,
     Trash2,

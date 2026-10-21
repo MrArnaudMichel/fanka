@@ -8,7 +8,8 @@
  * (simplified -> traditional) whose targets do not include `c`, and `c` is
  * not itself a key in TSCharacters.txt (traditional -> simplified). This
  * excludes characters such as 后, 干 and 里 that are both a simplified form
- * and a standalone traditional character.
+ * and a standalone traditional character. A character TWVariants.txt maps
+ * to is Taiwan's standard form (牀 -> 床), so it is excluded too.
  *
  * The app ships this generated JSON, never the dictionary: `opencc-data` is
  * a devDependency only, read here at build time and not imported at runtime.
@@ -38,10 +39,11 @@ function parseTable(filePath) {
 
 const stMap = parseTable(path.join(dataDir, 'STCharacters.txt'));
 const tsMap = parseTable(path.join(dataDir, 'TSCharacters.txt'));
+const taiwanForms = new Set([...parseTable(path.join(dataDir, 'TWVariants.txt')).values()].flat());
 
 const flagged = [];
 for (const [character, targets] of stMap) {
-  if (!targets.includes(character) && !tsMap.has(character)) {
+  if (!targets.includes(character) && !tsMap.has(character) && !taiwanForms.has(character)) {
     flagged.push(character);
   }
 }

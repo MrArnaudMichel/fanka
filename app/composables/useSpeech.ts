@@ -11,6 +11,8 @@ export interface SpeechEngine {
 }
 
 const RATE = 0.9;
+/** For listening closely to a long sentence before repeating it. */
+const SLOW_RATE = 0.6;
 
 const nativeEngine: SpeechEngine = {
   async languages() {
@@ -94,14 +96,14 @@ export function useSpeech(engine?: SpeechEngine) {
     console.error('useSpeech: could not list voices', err);
   });
 
-  async function speak(text: string): Promise<void> {
+  async function speak(text: string, { slow = false }: { slow?: boolean } = {}): Promise<void> {
     await ready;
     if (!lang || !text) return;
     const mine = ++turn;
     try {
       await tts.cancel();
       speaking.value = true;
-      await tts.speak(text, lang, RATE);
+      await tts.speak(text, lang, slow ? SLOW_RATE : RATE);
     } catch (err) {
       console.error('useSpeech: could not speak', err);
     } finally {
@@ -110,5 +112,15 @@ export function useSpeech(engine?: SpeechEngine) {
     }
   }
 
-  return { supported, speaking, speak, ready };
+  async function stop(): Promise<void> {
+    ++turn;
+    speaking.value = false;
+    try {
+      await tts.cancel();
+    } catch (err) {
+      console.error('useSpeech: could not stop', err);
+    }
+  }
+
+  return { supported, speaking, speak, stop, ready };
 }
