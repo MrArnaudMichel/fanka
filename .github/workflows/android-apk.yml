@@ -30,7 +30,8 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - uses: android-actions/setup-android@v3
+      # The runner image ships the Android SDK, with ANDROID_HOME set; Gradle
+      # installs any platform it is missing.
 
       # Every build must be signed with the same debug key, or Android refuses
       # to install it over the previous one.
