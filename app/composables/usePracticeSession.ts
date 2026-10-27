@@ -6,6 +6,28 @@ import { studyDeckFilter } from '~core/db/study-decks';
 import { type Grade, type SrsState, schedulerFor } from '~core/srs';
 import { pickNext, weightAfter } from '~core/srs/practice';
 
+/**
+ * Writes one answer given outside the schedule. A new card answered in
+ * practice has been studied: its first answer is a real review, so the card
+ * leaves New and the schedule brings it back; the scheduled item is returned
+ * for the caller to keep. Any other answer is logged as a practice attempt
+ * and the item comes back unchanged.
+ */
+export async function recordPracticeAnswer(item: Item, value: Grade, at: number, durationMs: number, detail: AttemptDetail = SELF_GRADED): Promise<Item> {
+  if (item.state !== 'new') {
+    await attempts.log({ item, grade: value, at, durationMs, detail });
+    return item;
+  }
+  const settings = await loadSettings();
+  const next = schedulerFor(settings.algorithm).apply(item, value, at, {
+    desiredRetention: settings.desiredRetention,
+    maxInterval: settings.maxInterval,
+  });
+  const scheduled: Item = { ...item, ...next, updatedAt: at };
+  await reviews.record({ item: scheduled, before: { ...item }, grade: value, reviewedAt: at, durationMs, detail, source: 'practice' });
+  return scheduled;
+}
+
 /** How many cards endless practice in this mode would draw from right now. */
 export async function practicePoolSize(mode: SessionMode): Promise<number> {
   return (await items.pool(MODE_DIRECTION[mode], await studyDeckFilter())).length;
@@ -16,7 +38,7 @@ export async function practicePoolSize(mode: SessionMode): Promise<number> {
  * from the studied decks (`studyDeckFilter`) for as long as the learner keeps
  * going, missed ones more often (`pickNext`). Every answer is logged as a
  * practice attempt for the journal and statistics. Only a new card's first
- * answer touches the schedule (`startSchedule`): practising a word counts as
+ * answer touches the schedule (`recordPracticeAnswer`): practising a word counts as
  * starting to learn it, and deck progress and known words follow.
  *
  * Returns the fields of `useReviewSession` that `review.vue` and
@@ -74,23 +96,6 @@ export function usePracticeSession(mode: SessionMode, options: PracticeOptions =
     }
   }
 
-  /**
-   * A new card answered in practice has been studied: its first answer is a
-   * real review, so the card leaves New and the schedule brings it back. The
-   * pool keeps the scheduled copy, so a later answer in this session on the
-   * same card is a plain practice attempt.
-   */
-  async function startSchedule(item: Item, value: Grade, at: number, detail: AttemptDetail): Promise<void> {
-    const settings = await loadSettings();
-    const next = schedulerFor(settings.algorithm).apply(item, value, at, {
-      desiredRetention: settings.desiredRetention,
-      maxInterval: settings.maxInterval,
-    });
-    const scheduled: Item = { ...item, ...next, updatedAt: at };
-    await reviews.record({ item: scheduled, before: { ...item }, grade: value, reviewedAt: at, durationMs: at - shownAt.value, detail, source: 'practice' });
-    pool.value = pool.value.map((i) => (i.id === item.id ? scheduled : i));
-  }
-
   async function grade(value: Grade, detail: AttemptDetail = SELF_GRADED): Promise<void> {
     const item = current.value;
     if (!item || busy.value) return;
@@ -99,8 +104,8 @@ export function usePracticeSession(mode: SessionMode, options: PracticeOptions =
       const at = Date.now();
       // Logged first: a failed write surfaces to the page (a toast) and the
       // card stays on screen, rather than the answer silently vanishing.
-      if (item.state === 'new') await startSchedule(item, value, at, detail);
-      else await attempts.log({ item, grade: value, at, durationMs: at - shownAt.value, detail });
+      const after = await recordPracticeAnswer(item, value, at, at - shownAt.value, detail);
+      if (after !== item) pool.value = pool.value.map((i) => (i.id === item.id ? after : i));
       const correct = value > 1;
       weights.set(item.id, weightAfter(weights.get(item.id) ?? 1, correct));
       recent.push(item.id);

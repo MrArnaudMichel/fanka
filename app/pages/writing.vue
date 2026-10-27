@@ -4,10 +4,9 @@ import type { CharacterStrokes, Point } from '~core/chinese/strokes';
 import type { Grade } from '~core/srs/types';
 import type HanziPad from '~/components/HanziPad.vue';
 import { useDueCounts } from '~/composables/useDueCounts';
-import { usePracticeSession } from '~/composables/usePracticeSession';
-import { focusCardIds } from '~/utils/focus';
+import { useStudyRun } from '~/composables/useStudyRun';
 import { useWritingRetry } from '~/composables/useWritingRetry';
-import { SELF_GRADED, useReviewSession } from '~/composables/useReviewSession';
+import { SELF_GRADED } from '~/composables/useReviewSession';
 import { useSettings } from '~/composables/useSettings';
 import { useSpeech } from '~/composables/useSpeech';
 import { useStrokeData } from '~/composables/useStrokeData';
@@ -37,17 +36,14 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
  * expected stroke, shown after three misses in a row) was needed.
  */
 /**
- * `?endless=1` (from the Practice page) runs the same screen on an endless,
- * unscheduled session instead: nothing is graded into the schedule, there is
- * no progress to show and nothing to undo. Keyed on the full path so moving
- * between the two modes remounts the page rather than keeping the old session.
+ * `?endless=1` (from Endless practice) or `?lesson=` (from Lessons) runs the
+ * same screen on an unscheduled session instead (see `useStudyRun`). Keyed on
+ * the full path so moving between them remounts the page rather than keeping
+ * the old session.
  */
 definePageMeta({ key: (route) => route.fullPath });
-const endless = useRoute().query.endless === '1';
-/** `?cards=` from Statistics' "Practise these": endless practice on those cards only. */
-const focus = endless ? focusCardIds(useRoute().query.cards) : undefined;
-const practice = endless ? usePracticeSession('writing', { cardIds: focus }) : null;
-const session = practice ?? useReviewSession('writing');
+const run = useStudyRun('writing');
+const { practice, session, focus } = run;
 const redraw = useWritingRetry();
 const { settings } = useSettings();
 const { refresh } = useDueCounts();
@@ -322,47 +318,26 @@ function onKey(event: KeyboardEvent) {
   }
 }
 
-const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.value / session.total.value) * 100));
+async function again(): Promise<void> {
+  await session.start();
+}
 </script>
 
 <template>
   <div class="writing">
-    <kt-page-header :eyebrow="endless ? 'Endless practice' : undefined" heading="Writing" />
-    <FocusBanner v-if="practice && focus" :count="practice.total.value" />
+    <kt-page-header :eyebrow="run.eyebrow" heading="Writing" />
+    <FocusBanner v-if="run.kind === 'endless' && focus" :count="session.total.value" />
 
-    <!--
-      Undo and Leave sit with the count rather than in the page header's
-      actions: at phone width kt-page-header wraps its actions onto a row
-      of their own, which cost a card's worth of height for two icons.
-    -->
-    <div v-if="practice" class="progress-row">
-      <span class="mono">{{ practice.seen.value }} seen · {{ practice.right.value }} right</span>
-      <kt-button variant="secondary-no-bg" size="small" icon="x" label="Leave practice" @click="navigateTo('/practice')" />
-    </div>
-
-    <div v-else class="progress">
-      <div class="progress-row">
-        <span class="mono">{{ session.position.value }} / {{ session.total.value }}</span>
-        <span class="session-actions">
-          <kt-button
-            variant="secondary-no-bg"
-            size="small"
-            icon="undo-2"
-            label="Undo"
-            :disabled="session.busy.value || session.log.value.length === 0"
-            @click="undo"
-          />
-          <kt-button
-            variant="secondary-no-bg"
-            size="small"
-            icon="x"
-            label="Leave session"
-            @click="navigateTo('/')"
-          />
-        </span>
-      </div>
-      <kt-progress-bar :value="progress" label="Session progress" />
-    </div>
+    <SessionProgress
+      :kind="run.kind"
+      :position="session.position.value"
+      :total="session.total.value"
+      :seen="practice?.seen.value ?? 0"
+      :right="practice?.right.value ?? 0"
+      :can-undo="!session.busy.value && session.log.value.length > 0"
+      :leave-href="run.leaveHref"
+      @undo="undo"
+    />
 
     <kt-skeleton v-if="loading" height="320px" />
 
@@ -373,6 +348,15 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
       description="Something went wrong reading the database. Try again."
     >
       <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retry">Retry</kt-button>
+    </kt-empty-state>
+
+    <kt-empty-state
+      v-else-if="run.kind === 'lesson' && session.total.value === 0"
+      icon="book-open"
+      heading="Nothing to write here"
+      :description="`No deck tagged ${run.lesson} has cards to write.`"
+    >
+      <kt-button slot="actions" variant="secondary" size="medium" icon="book-open" @click="navigateTo('/lessons')">Back to lessons</kt-button>
     </kt-empty-state>
 
     <kt-empty-state
@@ -389,14 +373,15 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
       description="Everything scheduled for today is done. Come back tomorrow, or add cards."
     />
 
-    <kt-card v-else-if="session.ended.value" class="done">
-      <div class="done-body">
-        <span class="seal">完</span>
-        <h2>Session complete</h2>
-        <p>{{ session.log.value.length }} cards graded.</p>
-        <kt-button variant="primary" size="medium" icon="house" @click="navigateTo('/')">Back to today</kt-button>
-      </div>
-    </kt-card>
+    <SessionDone
+      v-else-if="session.ended.value"
+      :kind="run.kind"
+      :graded="session.log.value.length"
+      :total="session.total.value"
+      :first-try="run.lessonSession?.firstTry.value ?? 0"
+      :lesson="run.lesson"
+      @again="again"
+    />
 
     <template
       v-else-if="session.card.value && session.current.value && session.card.value.id === session.current.value.cardId"
@@ -510,14 +495,7 @@ const progress = computed(() => (session.total.value === 0 ? 0 : (session.index.
 
 <style scoped>
 .writing { display: flex; flex-direction: column; gap: var(--gap-card); }
-.progress { display: flex; flex-direction: column; gap: 6px; }
-.progress-row { display: flex; align-items: center; justify-content: space-between; }
-.session-actions { display: flex; gap: var(--gap-button); }
 .mono { font: var(--font-normal-small); font-family: var(--font-family-code); color: var(--text-muted); }
-.done-body { display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
-.seal { font-family: var(--fk-font-hanzi-serif); font-size: 56px; color: var(--color-primary-base); }
-.done-body h2 { margin: 0; font: var(--font-title-h1); color: var(--text-body); }
-.done-body p { margin: 0; color: var(--text-muted); }
 .pad-area { display: flex; flex-direction: column; align-items: center; gap: var(--gap-element); width: 100%; }
 /*
   Wide enough to draw in comfortably, never so tall that the sticky action
