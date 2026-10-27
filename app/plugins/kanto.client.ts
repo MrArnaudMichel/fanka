@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Bell,
+  BookOpen,
   Calendar,
   ChartLine,
   Check,
@@ -23,6 +24,7 @@ import {
   // Aliased: `Infinity` would shadow the global number.
   Infinity as InfinityIcon,
   Info,
+  Languages,
   Layers,
   List,
   LogOut,
@@ -100,9 +102,12 @@ export default defineNuxtPlugin(async () => {
   // statistics Overview's tiles and insights. Mic is the Speaking nav entry;
   // Eye and EyeOff show and hide its model answers, and
   // Square stops its playback. Shapes is the Radicals nav entry.
+  // BookOpen is the Lessons nav entry and its way back; Languages is the
+  // Translation nav entry and a lesson's Translation action.
   registerIcons({
     ArrowLeft,
     Bell,
+    BookOpen,
     Calendar,
     ChartLine,
     Check,
@@ -124,6 +129,7 @@ export default defineNuxtPlugin(async () => {
     House,
     Infinity: InfinityIcon,
     Info,
+    Languages,
     Layers,
     List,
     LogOut,

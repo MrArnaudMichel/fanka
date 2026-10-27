@@ -43,3 +43,35 @@ export function lessonNames(decks: readonly Pick<Deck, 'tag'>[]): string[] {
 export function deckIdsInLesson(decks: readonly Pick<Deck, 'id' | 'tag'>[], lesson: string): string[] {
   return decks.filter((d) => lessonOf(d) === lesson).map((d) => d.id);
 }
+
+/** What a lesson holds, summed over its decks; item counts are unsuspended items, both directions. */
+export interface LessonSummary {
+  lesson: string;
+  deckIds: string[];
+  decks: number;
+  cards: number;
+  /** Items never answered. */
+  fresh: number;
+  /** Items started but not yet mature. */
+  young: number;
+  mature: number;
+  due: number;
+}
+
+type CountedDeck = { deck: Pick<Deck, 'id' | 'name' | 'tag'>; total: number; due: number; fresh: number; mature: number; young: number };
+
+/** One summary per lesson, in natural order; decks without a lesson are left out. */
+export function summarizeLessons(rows: readonly CountedDeck[]): LessonSummary[] {
+  return groupByLesson(rows, (r) => r.deck)
+    .filter((g): g is LessonGroup<CountedDeck> & { lesson: string } => g.lesson !== null)
+    .map(({ lesson, items }) => ({
+      lesson,
+      deckIds: items.map((r) => r.deck.id),
+      decks: items.length,
+      cards: items.reduce((n, r) => n + r.total, 0),
+      fresh: items.reduce((n, r) => n + r.fresh, 0),
+      young: items.reduce((n, r) => n + r.young, 0),
+      mature: items.reduce((n, r) => n + r.mature, 0),
+      due: items.reduce((n, r) => n + r.due, 0),
+    }));
+}

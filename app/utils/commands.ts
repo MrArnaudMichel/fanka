@@ -21,6 +21,7 @@ export function buildCommands({ sections, settings, decks, signedIn, dark }: Com
   const settingsPages = settings.flatMap((item) => goTo(item, 'Settings', ['settings', 'preferences']));
   const deckPages: KtCommand[] = decks.map((deck) => ({ id: `go:/decks/${deck.id}`, label: deck.name, group: 'Decks', icon: 'layers', keywords: ['deck'] }));
   const actions: KtCommand[] = [
+    { id: 'go:/cards/new', label: 'Add a card', group: 'Actions', icon: 'plus', keywords: ['new', 'card', 'add'] },
     ...(signedIn ? [{ id: 'action:sync', label: 'Sync now', group: 'Actions', icon: 'refresh-cw' }] : []),
     { id: 'action:theme', label: dark ? 'Switch to light theme' : 'Switch to dark theme', group: 'Actions', icon: 'sun-moon', keywords: ['theme', 'dark', 'light'] },
   ];

@@ -49,7 +49,7 @@ async function addDeck(): Promise<void> {
 <template>
   <div class="radicals">
     <kt-page-header
-      eyebrow="Learn"
+      eyebrow="Practice"
       heading="Radicals"
       :description="`Radicals are the building blocks dictionaries file characters under. Learn the ${RADICALS.length} you will meet most, then test yourself.`"
     >

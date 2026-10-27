@@ -166,3 +166,9 @@ export const SPEAKING_LESSONS: SpeakingLesson[] = [
 export function answerText(question: Pick<SpeakingQuestion, 'answer'>): string {
   return question.answer.map((line) => line.hanzi).join('');
 }
+
+/** The speaking lesson a deck lesson matches by name ("Lesson 5"), if any. */
+export function speakingLessonFor(lesson: string): SpeakingLesson | undefined {
+  const name = lesson.trim().toLowerCase();
+  return SPEAKING_LESSONS.find((l) => l.label.toLowerCase() === name);
+}

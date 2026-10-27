@@ -9,6 +9,10 @@ describe('navActiveHref', () => {
   it('keeps a settings section as is, so its own entry under Settings is the active one', () => {
     expect(navActiveHref('/settings/account')).toBe('/settings/account');
   });
+  it('maps adding or editing a card to Cards', () => {
+    expect(navActiveHref('/cards/new')).toBe('/browse');
+    expect(navActiveHref('/cards/abc')).toBe('/browse');
+  });
   it('leaves other paths alone', () => {
     expect(navActiveHref('/review')).toBe('/review');
   });

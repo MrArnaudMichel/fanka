@@ -21,6 +21,8 @@ export const SETTINGS_SECTIONS: KtNavItem[] = [
  */
 export function navActiveHref(path: string): string {
   if (path.startsWith('/decks/')) return '/decks';
+  // Adding or editing a card has no entry of its own: it belongs to Cards.
+  if (path.startsWith('/cards/')) return '/browse';
   return path;
 }
 
@@ -39,13 +41,22 @@ export function useNavigation(counts: Readonly<Ref<Readonly<Record<SessionMode, 
   const badge = (n: number) => (n > 0 ? String(n) : undefined);
 
   const sections = computed<KtNavSection[]>(() => [
+    // Learn is the schedule and the lessons; Practice is everything outside
+    // the schedule; Collection is what there is to study.
     {
       title: 'Learn',
       items: [
         { label: 'Today', href: '/', icon: 'house' },
+        { label: 'Lessons', href: '/lessons', icon: 'book-open' },
         { label: 'Review', href: '/review', icon: 'play', badge: badge(counts.value.review.total) },
         { label: 'Writing', href: '/writing', icon: 'pen-line', badge: badge(counts.value.writing.total) },
-        { label: 'Practice', href: '/practice', icon: 'infinity' },
+      ],
+    },
+    {
+      title: 'Practice',
+      items: [
+        { label: 'Translation', href: '/translation', icon: 'languages' },
+        { label: 'Endless', href: '/practice', icon: 'infinity' },
         { label: 'Speaking', href: '/speaking', icon: 'mic' },
         { label: 'Radicals', href: '/radicals', icon: 'shapes' },
       ],
@@ -55,7 +66,6 @@ export function useNavigation(counts: Readonly<Ref<Readonly<Record<SessionMode, 
       items: [
         { label: 'Decks', href: '/decks', icon: 'layers' },
         { label: 'Cards', href: '/browse', icon: 'list' },
-        { label: 'Add', href: '/cards/new', icon: 'plus' },
         { label: 'Import', href: '/import', icon: 'upload' },
       ],
     },

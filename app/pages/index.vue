@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Deck } from '~core/db/schema';
-import { groupByLesson } from '~core/lessons';
 import type { SessionMode } from '~core/db/session';
 import { useDecks } from '~/composables/useDecks';
 import { useDueCounts } from '~/composables/useDueCounts';
@@ -10,10 +9,27 @@ const { counts, refresh } = useDueCounts();
 const { failed: seedFailed, retry: retrySeedStatus } = useSeedStatus();
 const { listAll: listDecks } = useDecks();
 
+const { lessons, load: loadLessons } = useLessons();
+
 const decks = ref<Deck[]>([]);
-/** Folded by lesson once any deck carries one; otherwise the plain list. */
-const lessons = computed(() => groupByLesson(decks.value, (d) => d));
-const grouped = computed(() => lessons.value.some((g) => g.lesson !== null));
+
+/**
+ * The lessons worth a place here, at most four: those with cards due first,
+ * then those already started, then the rest, each in lesson order.
+ */
+const TODAY_LESSONS = 4;
+const featured = computed(() => {
+  const rank = (l: (typeof lessons.value)[number]) => (l.due > 0 ? 0 : l.young + l.mature > 0 ? 1 : 2);
+  return [...lessons.value].sort((a, b) => rank(a) - rank(b)).slice(0, TODAY_LESSONS);
+});
+
+/** Everything outside the schedule, one tap from Today. */
+const PRACTICE = [
+  { href: '/translation', icon: 'languages', heading: 'Translation', line: 'Match words and meanings.' },
+  { href: '/practice', icon: 'infinity', heading: 'Endless', line: 'Drill your decks, no schedule.' },
+  { href: '/speaking', icon: 'mic', heading: 'Speaking', line: 'Answer lesson questions aloud.' },
+  { href: '/radicals', icon: 'shapes', heading: 'Radicals', line: 'The parts characters are built from.' },
+];
 
 /**
  * Distinguishes "still fetching the deck list" from "fetched, and there
@@ -39,6 +55,7 @@ async function loadToday(): Promise<void> {
   try {
     await refresh();
     decks.value = await listDecks();
+    await loadLessons();
   } catch (err) {
     console.error('index: failed to load today’s data', err);
     loadError.value = true;
@@ -193,23 +210,31 @@ async function retrySeed(): Promise<void> {
       description="Seeded decks load on first launch. If none appeared, reload the page."
     />
 
-    <kt-card v-else>
-      <p class="overline" slot="header">Decks</p>
-      <div v-if="grouped" class="lessons">
-        <kt-collapsible
-          v-for="group in lessons"
-          :key="group.lesson ?? ''"
-          :heading="`${group.lesson ?? 'Other decks'} · ${group.items.length} deck${group.items.length === 1 ? '' : 's'}`"
-        >
-          <div class="decks">
-            <DeckCard v-for="deck in group.items" :key="deck.id" :deck="deck" hide-tag />
+    <section v-else class="section" aria-labelledby="today-lessons">
+      <div class="section-head">
+        <h2 id="today-lessons" class="overline">Lessons</h2>
+        <kt-button v-if="lessons.length > 0" variant="text" size="small" icon="chevron-right" icon-position="right" @click="navigateTo('/lessons')">All lessons</kt-button>
+      </div>
+      <div v-if="featured.length > 0" class="lesson-grid">
+        <LessonCard v-for="l in featured" :key="l.lesson" :lesson="l" compact />
+      </div>
+      <kt-alert v-else variant="info" description="Tag decks with a lesson name, such as Lesson 5, to learn each lesson in one go.">
+        <kt-button slot="actions" variant="secondary" size="small" icon="layers" @click="navigateTo('/decks')">Go to decks</kt-button>
+      </kt-alert>
+    </section>
+
+    <section class="section" aria-labelledby="today-practice">
+      <h2 id="today-practice" class="overline">Practice</h2>
+      <div class="practice-grid">
+        <kt-card v-for="p in PRACTICE" :key="p.href" clickable :aria-label="p.heading" @kt-card-click="navigateTo(p.href)">
+          <div class="tile">
+            <kt-icon :name="p.icon" size="20" />
+            <span class="tile-heading">{{ p.heading }}</span>
+            <span class="tile-line">{{ p.line }}</span>
           </div>
-        </kt-collapsible>
+        </kt-card>
       </div>
-      <div v-else class="decks">
-        <DeckCard v-for="deck in decks" :key="deck.id" :deck="deck" />
-      </div>
-    </kt-card>
+    </section>
   </div>
 </template>
 
@@ -231,6 +256,15 @@ async function retrySeed(): Promise<void> {
    honest choice (name-plus-value match wins over value alone). */
 .counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .eta { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
-.decks { display: flex; flex-direction: column; gap: var(--gap-button); }
-.lessons { display: flex; flex-direction: column; }
+.section { display: flex; flex-direction: column; gap: var(--gap-button); }
+.section-head { display: flex; align-items: center; justify-content: space-between; }
+.lesson-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap-card); }
+.practice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-button); }
+@media (min-width: 900px) {
+  .lesson-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .practice-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; color: var(--text-body); }
+.tile-heading { font: var(--font-title-h6); color: var(--text-body); }
+.tile-line { font: var(--font-normal-small); color: var(--text-muted); }
 </style>

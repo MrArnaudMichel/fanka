@@ -13,7 +13,9 @@ const checked = ref(false);
 onMounted(() => ready.then(() => (checked.value = true)));
 onBeforeUnmount(() => void stop());
 
-const lessonId = ref(SPEAKING_LESSONS[0]!.id);
+/** `?lesson=lesson-5` from Lessons opens that lesson's questions. */
+const asked = useRoute().query.lesson;
+const lessonId = ref(SPEAKING_LESSONS.find((l) => l.id === asked)?.id ?? SPEAKING_LESSONS[0]!.id);
 const lesson = computed(() => SPEAKING_LESSONS.find((l) => l.id === lessonId.value) ?? SPEAKING_LESSONS[0]!);
 const lessonOptions = SPEAKING_LESSONS.map((l) => ({ value: l.id, label: l.label }));
 
@@ -27,7 +29,7 @@ const play = (text: string) => void speak(text, { slow: slow.value });
 <template>
   <div class="speaking">
     <kt-page-header
-      eyebrow="Learn"
+      eyebrow="Practice"
       heading="Speaking"
       description="Answer each question aloud first. Then reveal the model answer, play it sentence by sentence and repeat after it."
     />

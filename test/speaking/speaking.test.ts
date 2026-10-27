@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { simplifiedCharactersIn } from '~core/chinese/script';
-import { SPEAKING_LESSONS, answerText } from '~core/speaking';
+import { SPEAKING_LESSONS, answerText, speakingLessonFor } from '~core/speaking';
 
 const lines = SPEAKING_LESSONS.flatMap((lesson) => [lesson.title, ...lesson.questions.flatMap((q) => [q.prompt, ...q.answer])]);
 
@@ -26,5 +26,12 @@ describe('speaking lessons', () => {
 describe('answerText', () => {
   it('runs the sentences together', () => {
     expect(answerText({ answer: [{ hanzi: '我很好。', pinyin: '', translation: '' }, { hanzi: '你呢？', pinyin: '', translation: '' }] })).toBe('我很好。你呢？');
+  });
+});
+
+describe('speakingLessonFor', () => {
+  it('matches a deck lesson by name, ignoring case and spaces', () => {
+    expect(speakingLessonFor(' lesson 5 ')?.id).toBe('lesson-5');
+    expect(speakingLessonFor('Lesson 9')).toBeUndefined();
   });
 });

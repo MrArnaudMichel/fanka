@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareNames, deckIdsInLesson, groupByLesson, lessonNames, lessonOf } from '~core/lessons';
+import { compareNames, deckIdsInLesson, groupByLesson, lessonNames, lessonOf, summarizeLessons } from '~core/lessons';
 
 const deck = (id: string, name: string, tag = '') => ({ id, name, tag });
 
@@ -59,5 +59,15 @@ describe('lessonNames', () => {
 describe('deckIdsInLesson', () => {
   it("is every deck carrying the lesson's tag", () => {
     expect(deckIdsInLesson([deck('a', 'x', 'L1'), deck('b', 'y', ' L1'), deck('c', 'z', 'L2')], 'L1')).toEqual(['a', 'b']);
+  });
+});
+
+describe('summarizeLessons', () => {
+  const row = (id: string, tag: string, n: number) => ({ deck: deck(id, id, tag), total: n, due: 1, fresh: n, mature: 1, young: 2 });
+
+  it('sums each lesson over its decks, in natural order, without untagged decks', () => {
+    const out = summarizeLessons([row('b', 'Lesson 10', 3), row('a', 'Lesson 2', 4), row('c', 'Lesson 2', 5), row('x', '', 9)]);
+    expect(out.map((l) => l.lesson)).toEqual(['Lesson 2', 'Lesson 10']);
+    expect(out[0]).toEqual({ lesson: 'Lesson 2', deckIds: ['a', 'c'], decks: 2, cards: 9, fresh: 9, young: 4, mature: 2, due: 2 });
   });
 });
