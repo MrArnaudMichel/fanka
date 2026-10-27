@@ -82,7 +82,7 @@ async function addDeck(): Promise<void> {
       <RadicalQuiz :can-speak="supported" @speak="speak" @open="showId" />
     </div>
 
-    <kt-side-panel :open="panelOpen" eyebrow="Radical" :heading="open ? `${open.radical} ${open.meaning}` : ''" @kt-close="panelOpen = false">
+    <kt-side-panel :open="panelOpen" size="medium" eyebrow="Radical" :heading="open ? `${open.radical} ${open.meaning}` : ''" @kt-close="panelOpen = false">
       <RadicalDetail v-if="open" :radical="open" :can-speak="supported" @speak="speak" />
     </kt-side-panel>
   </div>
