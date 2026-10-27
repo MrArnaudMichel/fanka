@@ -72,12 +72,6 @@ function next(): void {
   chosen.value = null;
 }
 
-function choiceVariant(i: number): string {
-  if (chosen.value === null) return 'secondary';
-  if (i === current.value?.answer) return 'success';
-  return i === chosen.value ? 'danger' : 'secondary';
-}
-
 const missedRadicals = computed(() => missed.value.map(findRadical).filter((r) => r !== undefined));
 </script>
 
@@ -99,44 +93,27 @@ const missedRadicals = computed(() => missed.value.map(findRadical).filter((r) =
       </div>
     </kt-card>
 
-    <kt-card v-else-if="phase === 'running' && current">
-      <div slot="header" class="progress">
-        <span class="overline">Question {{ index + 1 }} of {{ questions.length }}</span>
-        <span class="overline">Score {{ score }}</span>
-      </div>
-      <kt-progress-bar size="small" label="Progress" :value="index + (chosen === null ? 0 : 1)" :max="questions.length" />
-
-      <div class="question">
-        <p class="ask">{{ KIND_PROMPTS[current.kind] }}</p>
-        <div class="prompt-row">
-          <p :class="current.hanziPrompt ? 'prompt-hanzi fk-selectable' : 'prompt-text'">{{ current.prompt }}</p>
-          <kt-button
-            v-if="current.spoken"
-            variant="secondary-no-bg"
-            size="small"
-            icon="volume-2"
-            :label="canSpeak ? 'Play pronunciation' : 'No Chinese voice on this device'"
-            :disabled="!canSpeak"
-            @click="emit('speak', current.spoken)"
-          />
-        </div>
-        <p v-if="current.detail && (current.kind === 'spot' || chosen !== null)" class="detail">{{ current.detail }}</p>
-      </div>
-
-      <div class="choices" :class="{ hanzi: current.hanziChoices }">
-        <kt-button
-          v-for="(choice, i) in current.choices"
-          :key="`${index}-${i}`"
-          :variant="choiceVariant(i)"
-          size="large"
-          full-width
-          @click="choose(i)"
-        >
-          {{ choice }}
-        </kt-button>
-      </div>
-
-      <template v-if="chosen !== null && radical">
+    <ChoiceQuestion
+      v-else-if="phase === 'running' && current"
+      :index="index"
+      :count="questions.length"
+      :score="score"
+      :ask="KIND_PROMPTS[current.kind]"
+      :prompt="current.prompt"
+      :prompt-hanzi="current.hanziPrompt"
+      :detail="current.detail"
+      :detail-after="current.kind !== 'spot'"
+      :spoken="current.spoken"
+      :can-speak="canSpeak"
+      :choices="current.choices"
+      :answer="current.answer"
+      :chosen="chosen"
+      :hanzi-choices="current.hanziChoices"
+      @choose="choose"
+      @speak="(text: string) => emit('speak', text)"
+      @next="next"
+    >
+      <template v-if="radical">
         <kt-alert
           :variant="correct ? 'success' : 'danger'"
           :heading="correct ? 'Correct' : `It is ${radicalForms(radical).join(' ')}`"
@@ -149,7 +126,7 @@ const missedRadicals = computed(() => missed.value.map(findRadical).filter((r) =
           </kt-button>
         </div>
       </template>
-    </kt-card>
+    </ChoiceQuestion>
 
     <kt-card v-else-if="phase === 'done'">
       <p slot="header" class="overline">Results</p>
@@ -177,16 +154,7 @@ const missedRadicals = computed(() => missed.value.map(findRadical).filter((r) =
 .quiz { display: flex; flex-direction: column; gap: var(--gap-card); }
 .overline { margin: 0; font: var(--font-title-overline); letter-spacing: var(--letter-spacing-overline); text-transform: uppercase; color: var(--text-muted); }
 .setup, .results { display: flex; flex-direction: column; gap: var(--gap-form); align-items: flex-start; }
-.progress { display: flex; justify-content: space-between; gap: var(--gap-button); }
-.question { display: flex; flex-direction: column; align-items: center; gap: var(--gap-button); text-align: center; }
 .ask { margin: 0; font: var(--font-normal-regular); color: var(--text-muted); }
-.prompt-row { display: flex; align-items: center; gap: var(--gap-button); }
-.prompt-hanzi { margin: 0; font-family: var(--fk-font-hanzi); font-size: 88px; line-height: 1.1; color: var(--text-body); }
-.prompt-text { margin: 0; font: var(--font-title-h4); color: var(--text-body); }
-.detail { margin: 0; font: var(--font-normal-regular); color: var(--text-muted); }
-.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-button); }
-/* The hanzi choices read in the hanzi face, a step up from button text. */
-.choices.hanzi kt-button::part(button) { font-family: var(--fk-font-hanzi); font-size: 22px; }
 .after, .missed { display: flex; flex-wrap: wrap; gap: var(--gap-button); }
 .after { justify-content: flex-end; width: 100%; }
 </style>
