@@ -401,7 +401,7 @@ async function again(): Promise<void> {
         </template>
 
         <template v-else-if="!session.revealed.value || redrawing">
-          <div v-if="attempt.status.value === 'drawing'" class="pad-area">
+          <div v-if="attempt.status.value === 'drawing'" class="pad-area" :class="{ several: attempt.characters.value.length > 1 }">
             <span v-if="attempt.characters.value.length > 1" class="mono">
               Character {{ attempt.position.value + 1 }} / {{ attempt.characters.value.length }}
         </span>
@@ -501,10 +501,17 @@ async function again(): Promise<void> {
   Wide enough to draw in comfortably, never so tall that the sticky action
   bar covers the pad's lower edge — a stroke started there would land on
   the bar, not the pad. 440px is roughly everything else on screen (header,
-  title, progress, prompt, actions); no token measures that. Never below
-  200px, where a character stops being drawable.
+  title, progress, prompt, actions), plus the "Character 1 / 2" line on a
+  longer word; no token measures that. On Android's edge-to-edge WebView
+  100dvh includes the status and navigation bars, which the shell pads
+  away, so the safe-area insets come off too. Never below 200px, where a
+  character stops being drawable.
 */
-.pad-area, .pad-skeleton { max-width: min(100%, 420px, max(200px, calc(100dvh - 440px))); }
+.pad-area, .pad-skeleton {
+  --pad-reserve: 440px;
+  max-width: min(100%, 420px, max(200px, calc(100dvh - var(--pad-reserve) - env(safe-area-inset-top) - env(safe-area-inset-bottom))));
+}
+.pad-area.several { --pad-reserve: 476px; }
 .pad-skeleton { width: 100%; aspect-ratio: 1; }
 .note { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 .pad-controls { display: grid; grid-template-columns: auto auto auto 1fr; gap: var(--gap-button); }
