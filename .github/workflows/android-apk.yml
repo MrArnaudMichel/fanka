@@ -33,12 +33,20 @@ jobs:
       # The runner image ships the Android SDK, with ANDROID_HOME set; Gradle
       # installs any platform it is missing.
 
-      # Every build must be signed with the same debug key, or Android refuses
-      # to install it over the previous one.
-      - uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: android-debug-keystore
+      # Every build must be signed with the same key, or Android refuses to
+      # install it over the previous one. The FANKA_DEBUG_KEYSTORE secret holds
+      # that key, base64-encoded: a standard debug keystore (store and key
+      # password "android", alias "androiddebugkey").
+      - name: Debug signing key
+        env:
+          KEYSTORE: ${{ secrets.FANKA_DEBUG_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then
+            echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/debug.keystore"
+            echo "FANKA_DEBUG_KEYSTORE_FILE=$RUNNER_TEMP/debug.keystore" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No FANKA_DEBUG_KEYSTORE secret: this APK is signed with a one-off key and will not install over an earlier build."
+          fi
 
       - run: npm ci
 
