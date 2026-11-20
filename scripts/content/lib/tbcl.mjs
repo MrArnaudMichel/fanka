@@ -66,7 +66,12 @@ export function tbclWords(rows, cedict) {
     const word = col(row, 'word');
     const level = Number(/(\d+)/.exec(col(row, 'ji'))?.[1]);
     if (!word || !Number.isInteger(level)) continue;
-    const [hanzi, ...variants] = word.split('/').map((s) => s.trim()).filter(Boolean);
+    // Homographs are numbered in the source (長1, 長2); the digit is not part of the word.
+    const [hanzi, ...rest] = word
+      .split('/')
+      .map((s) => s.trim().replace(/\d+$/, ''))
+      .filter(Boolean);
+    const variants = rest.filter((v) => v !== hanzi);
     const zhuyin = firstZhuyin(col(row, 'bopomofo'));
     if (zhuyin === '') continue;
     const pinyin = toNumbered(fromZhuyin(zhuyin));
@@ -78,7 +83,7 @@ export function tbclWords(rows, cedict) {
       core: col(row, 'situation') === '核心詞',
       frequency: (Number(col(row, 'wfreq')) || 0) + (Number(col(row, 'sfreq')) || 0),
       id: Number(col(row, 'id')) || 0,
-      reading: { pinyin, zhuyin, meanings },
+      readings: [{ pinyin, zhuyin, meanings }],
     });
   }
   staged.sort(
@@ -86,12 +91,12 @@ export function tbclWords(rows, cedict) {
   );
   const unique = dedupeLowestLevel(staged);
   return assignIds(
-    unique.map(({ hanzi, variants, level, reading }) => ({
+    unique.map(({ hanzi, variants, level, readings }) => ({
       hanzi,
       ...(variants.length > 0 ? { variants } : {}),
-      readings: [reading],
+      readings,
       level,
-      ...(reading.meanings.length === 0 ? { needsMeaning: /** @type {const} */ (true) } : {}),
+      ...(readings.some((r) => r.meanings.length === 0) ? { needsMeaning: /** @type {const} */ (true) } : {}),
     })),
     'tbcl',
   );

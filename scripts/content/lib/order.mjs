@@ -1,9 +1,10 @@
 // Shared by the HSK and TBCL normalisers: ordering, ids and duplicate removal.
 
 /**
- * Keeps each hanzi once, at its lowest level. `words` carry a `level` and are
- * already in the order that should win ties (first seen kept).
- * @template {{ hanzi: string, level: number }} T
+ * Keeps each hanzi once, at its lowest level (first seen wins a tie), in the
+ * position of that kept word. The readings of the other duplicates are merged
+ * in after its own, skipping any pinyin it already has.
+ * @template {{ hanzi: string, level: number, readings: Array<{ pinyin: string }> }} T
  * @param {T[]} words
  * @returns {T[]}
  */
@@ -14,7 +15,18 @@ export function dedupeLowestLevel(words) {
     const seen = best.get(word.hanzi);
     if (!seen || word.level < seen.level) best.set(word.hanzi, word);
   }
-  return words.filter((word) => best.get(word.hanzi) === word);
+  return words
+    .filter((word) => best.get(word.hanzi) === word)
+    .map((kept) => {
+      const readings = [...kept.readings];
+      for (const other of words) {
+        if (other === kept || other.hanzi !== kept.hanzi) continue;
+        for (const reading of other.readings) {
+          if (!readings.some((r) => r.pinyin === reading.pinyin)) readings.push(reading);
+        }
+      }
+      return readings.length === kept.readings.length ? kept : { ...kept, readings };
+    });
 }
 
 /**

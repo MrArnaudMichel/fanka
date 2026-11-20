@@ -66,6 +66,36 @@ describe('tbclWords', () => {
   });
 });
 
+describe('tbclWords homographs', () => {
+  const longDict = parseCedict(
+    ['長 长 [chang2] /long/', '長 长 [zhang3] /to grow/'].join('\n'),
+  );
+
+  it('merges numbered homographs into one word at the lower level with both readings', () => {
+    const words = tbclWords(
+      [HEADER, row(1, '長2', 3, '', 1, 1, 'ㄓㄤˇ'), row(2, '長1', 1, '', 1, 1, 'ㄔㄤˊ')],
+      longDict,
+    );
+    expect(words).toEqual([
+      {
+        id: 'tbcl1-0001',
+        hanzi: '長',
+        readings: [
+          { pinyin: 'chang2', zhuyin: 'ㄔㄤˊ', meanings: ['long'] },
+          { pinyin: 'zhang3', zhuyin: 'ㄓㄤˇ', meanings: ['to grow'] },
+        ],
+        level: 1,
+      },
+    ]);
+  });
+
+  it('strips the digit from variants too', () => {
+    const [word] = tbclWords([HEADER, row(1, '好1/好子2', 1, '', 1, 1, 'ㄏㄠˇ')], cedict);
+    expect(word?.hanzi).toBe('好');
+    expect(word?.variants).toEqual(['好子']);
+  });
+});
+
 describe('firstZhuyin', () => {
   it.each([
     ['ㄅㄚˋ ˙ㄅㄚ / ㄅㄚˋ', 'ㄅㄚˋ ˙ㄅㄚ'],
