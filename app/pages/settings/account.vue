@@ -4,7 +4,7 @@ import { useAuth } from '~/composables/useAuth';
 import { useSync } from '~/composables/useSync';
 import { timeAgo } from '~/utils/format';
 
-const { user, loading, error, displayName, signIn, signOut, updateProfile, deleteAccount, deleting } = useAuth();
+const { user, error, displayName, signOut, updateProfile, deleteAccount, deleting } = useAuth();
 const { status, lastSyncedAt, error: syncError, details, syncNow, refreshDetails } = useSync();
 onMounted(refreshDetails);
 
@@ -32,17 +32,9 @@ onBeforeUnmount(() => clearInterval(tick));
 const lastSyncedLabel = computed(() => (lastSyncedAt.value ? `Last synced ${timeAgo(lastSyncedAt.value, now.value)}` : 'Not synced on this device yet'));
 const lastSyncedExact = computed(() => (lastSyncedAt.value ? new Date(lastSyncedAt.value).toLocaleString() : ''));
 
-const email = ref('');
-const linkSent = ref(false);
 const nameDraft = ref('');
 const savingName = ref(false);
 watch(displayName, (name) => (nameDraft.value = name), { immediate: true });
-
-async function onSendLink(): Promise<void> {
-  linkSent.value = false;
-  await signIn(email.value);
-  if (!error.value) linkSent.value = true;
-}
 
 async function onSaveName(): Promise<void> {
   savingName.value = true;
@@ -50,12 +42,6 @@ async function onSaveName(): Promise<void> {
   savingName.value = false;
   if (ok) toaster.success('Profile saved');
   else toaster.error("Couldn't save your profile", { description: error.value || 'Try again.' });
-}
-
-async function onSignOut(): Promise<void> {
-  await signOut();
-  linkSent.value = false;
-  email.value = '';
 }
 
 const confirmingDelete = ref(false);
@@ -76,8 +62,6 @@ onBeforeUnmount(() => {
 async function onDeleteAccount(): Promise<void> {
   confirmingDelete.value = false;
   if (await deleteAccount()) {
-    linkSent.value = false;
-    email.value = '';
     toaster.success('Account deleted');
   } else if (error.value) {
     toaster.error("Couldn't delete your account", { description: error.value });
@@ -88,16 +72,7 @@ async function onDeleteAccount(): Promise<void> {
 <template>
   <SettingsHeader heading="Account" description="Your profile and how this device syncs." />
 
-  <form v-if="!user" novalidate @submit.prevent="onSendLink">
-    <kt-form heading="Sign in" description="An account syncs your decks and progress across devices. Fanka works fully offline without one.">
-      <kt-label-input label="Email">
-        <kt-input type="email" name="email" autocomplete="email" placeholder="you@example.com" :value="email" :error="error"
-          @kt-input="(e: CustomEvent<{ value: string }>) => { email = e.detail.value; linkSent = false; }" />
-      </kt-label-input>
-      <kt-alert v-if="linkSent && !error" variant="success" description="Check your inbox for the sign-in link." />
-      <kt-button slot="footer" type="submit" variant="primary" size="medium" :disabled="loading || !email">Send link</kt-button>
-    </kt-form>
-  </form>
+  <SignInForm v-if="!user" />
 
   <template v-else>
     <form novalidate @submit.prevent="onSaveName">
@@ -112,7 +87,7 @@ async function onDeleteAccount(): Promise<void> {
         <kt-label-input label="Display name">
           <kt-input name="display-name" autocomplete="nickname" :value="nameDraft" @kt-input="(e: CustomEvent<{ value: string }>) => (nameDraft = e.detail.value)" />
         </kt-label-input>
-        <kt-button slot="footer" type="button" variant="dark" size="medium" icon="log-out" @click="onSignOut">Sign out</kt-button>
+        <kt-button slot="footer" type="button" variant="dark" size="medium" icon="log-out" @click="signOut">Sign out</kt-button>
         <kt-button slot="footer" type="submit" variant="primary" size="medium" :disabled="savingName || nameDraft.trim() === displayName">Save</kt-button>
       </kt-form>
     </form>

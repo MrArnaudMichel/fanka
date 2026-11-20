@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 /**
  * Ruling 6 (task-13-report.md): the active tab lives in `?tab=cards|settings`,

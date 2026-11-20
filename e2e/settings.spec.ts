@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 test('settings opens on Account with the sections beside it on a wide screen', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });

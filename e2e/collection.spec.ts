@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { type Page, expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 /**
  * The phase's three end-to-end scenarios, plus one carried regression test
@@ -162,7 +163,10 @@ async function seedDueCardsForDeletion(
         const tx = db.transaction(['decks', 'cards', 'items', 'settings'], 'readwrite');
         tx.onerror = () => reject(tx.error);
 
-        tx.objectStore('settings').put({ key: 'settings', value: { newPerDay: 0 } });
+        // Merged, not replaced: the onboarding's choices live in the same row.
+        const settings = tx.objectStore('settings');
+        const current = settings.get('settings');
+        current.onsuccess = () => settings.put({ key: 'settings', value: { ...(current.result?.value ?? {}), newPerDay: 0 } });
 
         const now = Date.now();
         const dueState = {
@@ -184,6 +188,8 @@ async function seedDueCardsForDeletion(
           description: '',
           colorToken: 'var(--chart-series-1)',
           tag: '',
+          // The onboarding chose Taiwan, and only that bundle's decks are shown.
+          bundle: 'taiwan',
           translationLang: 'en',
           createdAt: now,
           updatedAt: now,

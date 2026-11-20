@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 /**
  * `kt-input-menu` computes the Enter key's active option synchronously

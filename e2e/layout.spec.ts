@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 /**
  * `.shell` in `app/layouts/default.vue` used to be a flex *row* at every

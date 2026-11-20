@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 test('statistics open on Overview, empty before any answer, then with this week and the words to work on', async ({ page }) => {
   await page.goto('/stats');

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 import { installReadFaults } from './fixtures/read-faults';
 
 /**
@@ -229,7 +229,10 @@ test('a learner can finish a session and return to Today', async ({ page }) => {
         open.onsuccess = () => {
           const db = open.result;
           const tx = db.transaction('settings', 'readwrite');
-          tx.objectStore('settings').put({ key: 'settings', value: { newPerDay: 2 } });
+          // Merged, not replaced: the onboarding's choices live in the same row.
+          const settings = tx.objectStore('settings');
+          const current = settings.get('settings');
+          current.onsuccess = () => settings.put({ key: 'settings', value: { ...(current.result?.value ?? {}), newPerDay: 2 } });
           tx.oncomplete = () => {
             db.close();
             resolve();

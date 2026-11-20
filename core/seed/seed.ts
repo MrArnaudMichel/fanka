@@ -45,6 +45,11 @@ function seedCardId(deckId: string, entryId: string): string {
   return `${deckId}:${entryId}`;
 }
 
+/** Whether a card is one the seed wrote, rather than one the learner made or imported. */
+export function isSeededCard(card: Pick<Card, 'id' | 'deckId'>): boolean {
+  return SEEDS.some((seed) => card.deckId === seed.id && card.id.startsWith(`${seed.id}:`));
+}
+
 /**
  * Runs every entry in every seed deck through the shared validator before
  * `seedIfNeeded` writes anything — a bad `hsk1.json` (or any future seed

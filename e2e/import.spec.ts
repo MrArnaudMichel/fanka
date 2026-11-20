@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 /**
  * The spec's own end-to-end scenario: import a small CSV and find its cards

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/onboarded';
 
 test('the privacy policy is public and names the contact address', async ({ page }) => {
   await page.goto('/privacy');
