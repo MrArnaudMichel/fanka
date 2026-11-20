@@ -129,6 +129,10 @@ device shows) and the splash screen. It does not touch the legacy flat
 
 ## Release
 
+Day to day, a `vX.Y.Z` tag ships through CI: see `docs/play-store.md` for the
+workflow, the secrets and the Play Console walkthrough. The steps below are
+the local equivalent.
+
 Google Play gets a signed Android App Bundle. Play App Signing holds the app
 signing key; you keep only the upload key, which Google can reset if lost.
 
@@ -152,9 +156,9 @@ signing key; you keep only the upload key, which Google can reset if lost.
 3. Upload it to a Play Console track.
 
 Without an upload key, `bundleRelease` stops with "No upload key"; debug
-builds never need one. CI can set `FANKA_KEYSTORE_FILE`,
+builds never need one. CI sets `FANKA_KEYSTORE_FILE`,
 `FANKA_KEYSTORE_PASSWORD`, `FANKA_KEY_ALIAS` and `FANKA_KEY_PASSWORD` instead
-of the properties file.
+of the properties file (`.github/workflows/release.yml`).
 
 ### Play Console checklist (first release)
 
