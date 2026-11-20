@@ -5,7 +5,7 @@ import { db } from '~core/db/db';
 import { cards, decks } from '~core/db/repositories';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
-const aDeck = (id: string, deletedAt: number | null = null) => ({ id, name: id, description: '', colorToken: 'var(--chart-series-1)', tag: '', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt });
+const aDeck = (id: string, deletedAt: number | null = null) => ({ id, name: id, description: '', colorToken: 'var(--chart-series-1)', tag: '', bundle: 'taiwan' as const, translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt });
 
 beforeEach(async () => {
   await db.delete();

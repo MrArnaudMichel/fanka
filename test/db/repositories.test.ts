@@ -10,7 +10,7 @@ const DAY = 86_400_000;
 
 const aDeck = (over = {}) => ({
   id: 'd1', name: 'HSK 1', description: '', colorToken: 'var(--chart-series-1)',
-  tag: 'HSK', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null, ...over,
+  tag: 'HSK', bundle: 'taiwan' as const, translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null, ...over,
 });
 
 const aCard = (over = {}) => ({

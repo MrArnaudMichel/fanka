@@ -15,7 +15,7 @@ async function makeDeck(id = 'd1', name = 'HSK 1'): Promise<void> {
     description: '',
     colorToken: 'var(--chart-series-1)',
     tag: 'HSK',
-    translationLang: 'en',
+    bundle: 'taiwan' as const, translationLang: 'en',
     createdAt: NOW,
     updatedAt: NOW,
     deletedAt: null,

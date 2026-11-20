@@ -6,7 +6,7 @@ import { type WritingResult, SELF_GRADED, itemId } from '~core/db/schema';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 
-const aDeck = { id: 'd1', name: 'HSK 1', description: '', colorToken: 'var(--chart-series-1)', tag: '', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null };
+const aDeck = { id: 'd1', name: 'HSK 1', description: '', colorToken: 'var(--chart-series-1)', tag: '', bundle: 'taiwan' as const, translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null };
 const aCard = { id: 'c1', deckId: 'd1', hanzi: '十', pinyin: [{ text: 'shí', tone: 2 as const }], zhuyin: '', translation: 'ten', pos: 'noun' as const, example: '', examplePinyin: '', exampleTranslation: '', tags: [], note: '', createdAt: NOW, updatedAt: NOW, deletedAt: null };
 const WRITING: WritingResult[] = [{ character: '十', shapeCorrect: true, orderCorrect: false, error: 'stroke-order', strokeIndex: 0, expected: 2, drawn: 2 }];
 

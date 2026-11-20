@@ -15,7 +15,7 @@ const aDeck = (over: Partial<Deck> = {}): Deck => ({
   description: '',
   colorToken: 'var(--chart-series-1)',
   tag: 'HSK',
-  translationLang: 'en',
+  bundle: 'taiwan' as const, translationLang: 'en',
   createdAt: NOW,
   updatedAt: NOW,
   deletedAt: null,

@@ -4,7 +4,7 @@ export const local = (m: number, d: number, h = 10, min = 0) => new Date(2026, m
 export const NOW = local(9, 29, 12);
 
 export const aDeck = (id: string, over: Partial<Deck> = {}): Deck => ({
-  id, name: id.toUpperCase(), description: '', colorToken: 'var(--chart-series-1)', tag: '', translationLang: 'en',
+  id, name: id.toUpperCase(), description: '', colorToken: 'var(--chart-series-1)', tag: '', bundle: 'taiwan' as const, translationLang: 'en',
   createdAt: 0, updatedAt: 0, deletedAt: null, ...over,
 });
 

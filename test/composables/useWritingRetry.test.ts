@@ -13,7 +13,7 @@ const result = (shapeCorrect: boolean): WritingResult => ({
 beforeEach(async () => {
   await db.delete();
   await db.open();
-  await decks.put({ id: 'd1', name: 'd1', description: '', colorToken: 'var(--chart-series-1)', tag: '', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null });
+  await decks.put({ id: 'd1', name: 'd1', description: '', colorToken: 'var(--chart-series-1)', tag: '', bundle: 'taiwan' as const, translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null });
   await cards.create(
     { id: 'c1', deckId: 'd1', hanzi: '學', pinyin: [{ text: 'xué', tone: 2 }], zhuyin: '', translation: 'to study', pos: 'verb', example: '', examplePinyin: '', exampleTranslation: '', tags: [], note: '', createdAt: NOW, updatedAt: NOW, deletedAt: null },
     ['production'],

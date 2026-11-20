@@ -15,7 +15,7 @@ async function scheduleEverything(): Promise<void> {
 
 const aDeck = (id: string) => ({
   id, name: id, description: '', colorToken: 'var(--chart-series-1)',
-  tag: '', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null,
+  tag: '', bundle: 'taiwan' as const, translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null,
 });
 
 const aCard = (id: string, deckId: string) => ({

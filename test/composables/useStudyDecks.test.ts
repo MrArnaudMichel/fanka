@@ -11,7 +11,7 @@ const NOW = Date.parse('2026-09-16T08:00:00Z');
 
 const aDeck = (id: string, over = {}) => ({
   id, name: id, description: '', colorToken: 'var(--chart-series-1)',
-  tag: '', translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null, ...over,
+  tag: '', bundle: 'taiwan' as const, translationLang: 'en', createdAt: NOW, updatedAt: NOW, deletedAt: null, ...over,
 });
 
 const aCard = (id: string, deckId: string, createdAt = NOW) => ({

@@ -52,7 +52,7 @@ describe('a write made while signed out', () => {
       description: '',
       colorToken: 'var(--chart-series-1)',
       tag: '',
-      translationLang: 'en',
+      bundle: 'taiwan' as const, translationLang: 'en',
       createdAt: NOW,
       updatedAt: NOW,
       deletedAt: null,
