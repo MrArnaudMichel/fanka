@@ -5,10 +5,26 @@ import type { SessionMode } from '~core/db/session';
 import { useDecks } from '~/composables/useDecks';
 import { useDueCounts } from '~/composables/useDueCounts';
 import { useSeedStatus } from '~/composables/useSeedStatus';
+import { useLessons } from '~/composables/useLessons';
+import { writingId } from '~core/curriculum/engine';
 
 const { counts, refresh } = useDueCounts();
 const { failed: seedFailed, retry: retrySeedStatus } = useSeedStatus();
 const { listAll: listDecks } = useDecks();
+
+const { next, todayCount, goal } = useLessons();
+const nextLabel = computed(() => {
+  const step = next.value;
+  if (!step) return null;
+  return step.kind === 'lesson'
+    ? `Next: Lesson ${step.level.lessons.findIndex((l) => l.id === step.lesson.id) + 1} · ${step.level.name}`
+    : `Next: Writing · unit ${step.level.units.findIndex((u) => u.id === step.unit.id) + 1}`;
+});
+const nextHref = computed(() => {
+  const step = next.value;
+  if (!step) return '/lessons';
+  return `/lessons/${step.kind === 'lesson' ? step.lesson.id : writingId(step.unit.id)}`;
+});
 
 const decks = ref<Deck[]>([]);
 /** Folded by lesson once any deck carries one; otherwise the plain list. */
@@ -125,6 +141,15 @@ async function retrySeed(): Promise<void> {
   <div class="today">
     <kt-page-header eyebrow="Dashboard" heading="Today" />
 
+    <kt-card v-if="nextLabel">
+      <p class="overline" slot="header">Lessons</p>
+      <div class="summary">
+        <p class="next">{{ nextLabel }}</p>
+        <p class="eta">Today: {{ todayCount }} of {{ goal }} lesson{{ goal === 1 ? '' : 's' }}</p>
+        <kt-button variant="primary" size="large" icon="book-open" full-width @click="navigateTo(nextHref)">Start</kt-button>
+      </div>
+    </kt-card>
+
     <div class="modes">
     <kt-card v-for="{ mode, heading, href, secondsPerCard } in MODES" :key="mode">
       <p class="overline" slot="header">{{ heading }}</p>
@@ -230,6 +255,7 @@ async function retrySeed(): Promise<void> {
    interaction this grid has nothing to do with, so a literal is the
    honest choice (name-plus-value match wins over value alone). */
 .counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.next { margin: 0; font: var(--font-normal-medium); color: var(--text-body); }
 .eta { margin: 0; font: var(--font-normal-small); color: var(--text-muted); }
 .decks { display: flex; flex-direction: column; gap: var(--gap-button); }
 .lessons { display: flex; flex-direction: column; }

@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Bell,
+  BookOpen,
   Calendar,
   ChartLine,
   Check,
@@ -97,6 +98,7 @@ export default defineNuxtPlugin(async () => {
   // statistics Overview's tiles and insights. Shapes is the Radicals nav entry.
   registerIcons({
     ArrowLeft,
+    BookOpen,
     Bell,
     Calendar,
     ChartLine,
