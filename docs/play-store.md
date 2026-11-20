@@ -158,7 +158,7 @@ for 14 days in a row before it can apply for production.
 >
 > Traditional characters only.
 
-**Graphics** (`store/`, rebuilt with `node scripts/build-store-graphics.mjs`):
+**Graphics** (`store/`, rebuilt with `node scripts/build-brand.mjs`):
 
 - App icon: `store/icon-512.png`
 - Feature graphic: `store/feature-graphic.png`

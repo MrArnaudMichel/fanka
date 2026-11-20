@@ -86,17 +86,26 @@ from `npm run build`, `npm run build:app`, or the Android app itself.
 
 ## App icon / splash
 
-Generated from `assets/logo.png` (the 繁 mark, Noto Serif CJK TC Bold, white
-on transparent) via `@capacitor/assets` in Easy Mode, with the Kanto brand
-primary colour (`#6562F8`) as the icon/splash background:
+The mark is a flashcard mid-flip, F on the back, 繁 on the front, on Kanto's
+dark page colour. Its geometry lives in `app/utils/brandMark.ts`, shared by
+`BrandMark.vue` (in-app, coloured with CSS tokens) and
+`scripts/build-brand.mjs`, which resolves the same Kanto tokens from
+`node_modules/kanto-ds/dist/tokens` and writes every image:
 
-    npx capacitor-assets generate --android \
-      --iconBackgroundColor '#6562F8' --iconBackgroundColorDark '#6562F8' \
-      --splashBackgroundColor '#6562F8' --splashBackgroundColorDark '#6562F8'
+    node scripts/build-brand.mjs                # store/, assets/, favicon, launcher colour
+    npx capacitor-assets generate --android     # every density from assets/
 
-This covers the adaptive icon (`mipmap-anydpi-v26`, what every Android 8+
-device shows) and the splash screen. It does not touch the legacy flat
-`ic_launcher.png` fallback used only below Android 8 — see gaps below.
+- `assets/icon-only.png`: the legacy launcher icon (below Android 8).
+- `assets/icon-foreground.png` and `icon-background.png`: the adaptive icon;
+  `mipmap-anydpi-v26` insets the foreground 16.7%, which keeps the cards
+  inside a round mask.
+- `assets/splash.png`, `splash-dark.png`: the pre-Android 12 splash.
+- `values/ic_launcher_background.xml`: the brand colour, also the Android 12+
+  splash background (`windowSplashScreenBackground` in `styles.xml`).
+- `public/favicon.ico`, `store/icon-512.png`, `store/feature-graphic.png`.
+
+The script rasterises text, so it needs Manrope and Noto Serif CJK TC
+installed. Its output is committed; CI never runs it.
 
 ## Known gaps
 
@@ -106,11 +115,6 @@ device shows) and the splash screen. It does not touch the legacy flat
   Today/Review/Decks/deck detail/Browse/card editor/Import were not
   clicked through on-device or in an emulator. Install it and smoke-test
   each of those before relying on this build.
-- **Legacy (pre-Android 8) launcher icon** is the bare white 繁 glyph with
-  a transparent background rather than the brand colour — only the
-  adaptive icon (Android 8+, i.e. effectively every real device) got the
-  purple background baked in. `minSdkVersion` is 24, so this only shows on
-  Android 7.0/7.1, which is not worth chasing for a prototype.
 - **`env(safe-area-inset-top)` on the sticky mobile header** relies on the
   header's own shadow-DOM `position: sticky; top: 0`; the padding is
   applied to the host element from outside (not touching Kanto). This is
