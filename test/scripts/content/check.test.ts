@@ -53,6 +53,22 @@ describe('examplePinyin', () => {
   it('falls back to model syllables for an unknown segment', () => {
     expect(examplePinyin(['我', '龘'], readingOf, ['wo5', 'da2'])).toBe('wo3 da2');
   });
+  it('prefers the reading that matches the model', () => {
+    const r = (w: string) => (w === '都' ? ['du1', 'dou1'] : w === '我' ? 'wo3' : undefined);
+    expect(examplePinyin(['我', '都'], r, ['wo3', 'dou1'])).toBe('wo3 dou1');
+    expect(examplePinyin(['我', '都'], r, ['wo3', 'dou4'])).toBe('wo3 dou1');
+    expect(examplePinyin(['我', '都'], r, ['wo3', 'du5'])).toBe('wo3 du1');
+    expect(examplePinyin(['我', '都'], r, ['wo3', 'xx5'])).toBe('wo3 du1');
+  });
+  it('uses dictionary readings for an unknown single character', () => {
+    const chars = (c: string) => (c === '龘' ? ['da2', 'ta4'] : undefined);
+    expect(examplePinyin(['龘'], () => undefined, ['ta5'], chars)).toBe('ta4');
+    expect(examplePinyin(['龘'], () => undefined, ['da2'], chars)).toBe('da2');
+    expect(examplePinyin(['龘'], () => undefined, ['zz5'], chars)).toBe('zz5');
+  });
+  it('keeps erhua as its own r5 syllable, one per character', () => {
+    expect(examplePinyin(['一', '点', '儿'], (w) => ({ 一: 'yi1', 点: 'dian3', 儿: 'r5' })[w], ['yi1', 'dian3', 'r5'])).toBe('yi1 dian3 r5');
+  });
   it('rejects a toneless multi-character fallback segment', () => {
     const r = checkExample(
       { text: '我想喝咖啡。', pinyin: 'wo xiang he ka fei', translation: 'x' },

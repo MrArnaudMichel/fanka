@@ -1,0 +1,56 @@
+{"id":"tbcl1-0001","v":"v2","example":{"text":"這是我的書。","pinyin":"zhe4 shi4 wo3 de5 shu1","translation":"This is my book.","segments":["這","是","我","的","書","。"]}}
+{"id":"tbcl1-0002","v":"v2","example":{"text":"妳說的是真的。","pinyin":"ni3 shuo1 de5 shi4 zhen1 de5","translation":"You are saying it is true.","segments":["妳","說","的","是","真的","。"]}}
+{"id":"tbcl1-0003","v":"v2","example":{"text":"我有一個杯子。","pinyin":"wo3 you3 yi1 ge5 bei1 zi5","translation":"I have a cup.","segments":["我","有","一","個","杯子","。"]}}
+{"id":"tbcl1-0004","v":"v2","rejected":["unknown words: 自 兒","unknown words: 自 兒","unknown words: 自 兒"]}
+{"id":"tbcl1-0005","v":"v2","example":{"text":"我喜歡吃麵包。","pinyin":"wo3 xi3 huan1 chi1 mian4 bao1","translation":"I like eating bread.","segments":["我","喜歡","吃","麵包","。"]}}
+{"id":"tbcl1-0006","v":"v2","example":{"text":"這是我的書。","pinyin":"zhe4 shi4 wo3 de5 shu1","translation":"This is my book.","segments":["這","是","我","的","書","。"]}}
+{"id":"tbcl1-0007","v":"v2","example":{"text":"這裡有魚。","pinyin":"zhe4 li3 you3 yu2","translation":"There are fish here.","segments":["這裡","有","魚","。"]}}
+{"id":"tbcl1-0008","v":"v2","example":{"text":"書在桌子上。","pinyin":"shu1 zai4 zhuo1 zi5 shang4","translation":"The book is on the desk.","segments":["書","在","桌子","上","。"]}}
+{"id":"tbcl1-0009","v":"v2","example":{"text":"就吃一碗麵。","pinyin":"jiu4 chi1 yi1 wan3 mian4","translation":"Eat a bowl of noodles immediately.","segments":["就","吃","一","碗","麵","。"]}}
+{"id":"tbcl1-0010","v":"v2","example":{"text":"我有兩個哥哥。","pinyin":"wo3 you3 liang3 ge5 ge1 ge5","translation":"I have two older brothers.","segments":["我","有","兩","個","哥哥","。"]}}
+{"id":"tbcl1-0011","v":"v2","example":{"text":"我不會寫字。","pinyin":"wo3 bu4 hui4 xie3 zi4","translation":"I cannot write characters.","segments":["我","不","會","寫","字","。"]}}
+{"id":"tbcl1-0012","v":"v2","example":{"text":"我們一起去吃晚餐。","pinyin":"wo3 men5 yi4 qi3 qu4 chi1 wan3 can1","translation":"We go eat dinner together.","segments":["我們","一起","去","吃","晚餐","。"]}}
+{"id":"tbcl1-0013","v":"v2","example":{"text":"他喜歡喝咖啡。","pinyin":"ta1 xi3 huan1 he1 ka1 fei1","translation":"He likes drinking coffee.","segments":["他","喜歡","喝","咖啡","。"]}}
+{"id":"tbcl1-0014","v":"v2","example":{"text":"你喜歡吃什麼菜？","pinyin":"ni3 xi3 huan1 chi1 shen2 me5 cai4","translation":"What kind of vegetables do you like to eat?","segments":["你","喜歡","吃","什麼","菜","？"]}}
+{"id":"tbcl1-0015","v":"v2","example":{"text":"他也姓葉。","pinyin":"ta1 ye3 xing4 ye4","translation":"He also has the surname Ye.","segments":["他","也","姓","葉","。"]}}
+{"id":"tbcl1-0016","v":"v2","example":{"text":"那間房子很大。","pinyin":"na4 jian1 fang2 zi5 hen3 da4","translation":"That house is very big.","segments":["那","間","房子","很","大","。"]}}
+{"id":"tbcl1-0017","v":"v2","example":{"text":"那裡有公園。","pinyin":"na4 li3 you3 gong1 yuan2","translation":"There is a park there.","segments":["那裡","有","公園","。"]}}
+{"id":"tbcl1-0018","v":"v2","example":{"text":"他們都喜歡吃麵。","pinyin":"ta1 men5 dou1 xi3 huan1 chi1 mian4","translation":"They all like eating noodles.","segments":["他們","都","喜歡","吃","麵","。"]}}
+{"id":"tbcl1-0019","v":"v2","example":{"text":"他常常說中文。","pinyin":"ta1 chang2 chang2 shuo1 zhong1 wen2","translation":"He often speaks Chinese.","segments":["他","常常","說","中文","。"]}}
+{"id":"tbcl1-0020","v":"v2","example":{"text":"我要買新鞋子。","pinyin":"wo3 yao4 mai3 xin1 xie2 zi5","translation":"I want to buy new shoes.","segments":["我","要","買","新","鞋子","。"]}}
+{"id":"tbcl1-0021","v":"v2","example":{"text":"我會說中文。","pinyin":"wo3 hui4 shuo1 zhong1 wen2","translation":"I can speak Chinese.","segments":["我","會","說","中文","。"]}}
+{"id":"tbcl1-0022","v":"v2","example":{"text":"我喜歡和人交朋友。","pinyin":"wo3 xi3 huan1 han4 ren2 jiao1 peng2 you3","translation":"I like making friends with people.","segments":["我","喜歡","和","人","交","朋友","。"]}}
+{"id":"tbcl1-0023","v":"v2","example":{"text":"這個包子很甜。","pinyin":"zhe4 ge5 bao1 zi5 hen3 tian2","translation":"This bun is very sweet.","segments":["這","個","包子","很","甜","。"]}}
+{"id":"tbcl1-0024","v":"v2","example":{"text":"你對這個問題有想法嗎","pinyin":"ni3 dui4 zhe4 ge5 wen4 ti2 you3 xiang3 fa3 ma5","translation":"Do you have thoughts on this question?","segments":["你","對","這","個","問題","有","想","法","嗎"]}}
+{"id":"tbcl1-0025","v":"v2","example":{"text":"我來這裡。","pinyin":"wo3 lai2 zhe4 li3","translation":"I come here.","segments":["我","來","這裡","。"]}}
+{"id":"tbcl1-0026","v":"v2","example":{"text":"我住在樓上。","pinyin":"wo3 zhu4 zai4 lou2 shang4","translation":"I live upstairs.","segments":["我","住","在","樓","上","。"]}}
+{"id":"tbcl1-0027","v":"v2","example":{"text":"今天天氣很好。","pinyin":"jin1 tian1 tian1 qi4 hen3 hao3","translation":"The weather is good today.","segments":["今天","天氣","很","好","。"]}}
+{"id":"tbcl1-0028","v":"v2","example":{"text":"我姓和，是臺灣人。","pinyin":"wo3 xing4 han4 shi4 tai2 wan1 ren2","translation":"My surname is He, and I am a Taiwanese person.","segments":["我","姓","和","，","是","臺灣人","。"]}}
+{"id":"tbcl1-0029","v":"v2","example":{"text":"她是我的妹妹。","pinyin":"ta1 shi4 wo3 de5 mei4 mei5","translation":"She is my younger sister.","segments":["她","是","我","的","妹妹","。"]}}
+{"id":"tbcl1-0030","v":"v2","example":{"text":"它是一輛新車子。","pinyin":"ta1 shi4 yi1 liang4 xin1 che1 zi5","translation":"It is a new car.","segments":["它","是","一","輛","新","車子","。"]}}
+{"id":"tbcl1-0031","v":"v2","example":{"text":"我可以去買水果。","pinyin":"wo3 ke3 yi3 qu4 mai3 shui3 guo3","translation":"I can go buy fruit.","segments":["我","可以","去","買","水果","。"]}}
+{"id":"tbcl1-0032","v":"v2","example":{"text":"我還在做功課。","pinyin":"wo3 hai2 zai4 zuo4 gong1 ke4","translation":"I am still doing my homework.","segments":["我","還","在","做","功課","。"]}}
+{"id":"tbcl1-0033","v":"v2","example":{"text":"我去公園。","pinyin":"wo3 qu4 gong1 yuan2","translation":"I go to the park.","segments":["我","去","公園","。"]}}
+{"id":"tbcl1-0034","v":"v2","example":{"text":"因為下雨，所以不出門。","pinyin":"yin1 wei4 xia4 yu3 suo3 yi3 bu4 chu1 men2","translation":"Because it is raining, so I do not go out.","segments":["因為","下雨","，","所以","不","出","門","。"]}}
+{"id":"tbcl1-0035","v":"v2","example":{"text":"他們是外國人。","pinyin":"ta1 men5 shi4 wai4 guo2 ren2","translation":"They are foreigners.","segments":["他們","是","外國","人","。"]}}
+{"id":"tbcl1-0036","v":"v2","example":{"text":"因為下雨，所以我們在家。","pinyin":"yin1 wei4 xia4 yu3 suo3 yi3 wo3 men5 zai4 jia1","translation":"Because it rained, we stayed at home.","segments":["因為","下雨","，","所以","我們","在","家","。"]}}
+{"id":"tbcl1-0037","v":"v2","example":{"text":"我沒有錢買書。","pinyin":"wo3 mei2 you3 qian2 mai3 shu1","translation":"I don't have money to buy books.","segments":["我","沒有","錢","買","書","。"]}}
+{"id":"tbcl1-0038","v":"v2","example":{"text":"我昨天到公園。","pinyin":"wo3 zuo2 tian1 dao4 gong1 yuan2","translation":"I went to the park yesterday.","segments":["我","昨天","到","公園","。"]}}
+{"id":"tbcl1-0039","v":"v2","example":{"text":"我每天早上做早餐。","pinyin":"wo3 mei3 tian1 zao3 shang4 zuo4 zao3 can1","translation":"I make breakfast every morning.","segments":["我","每","天","早上","做","早餐","。"]}}
+{"id":"tbcl1-0040","v":"v2","example":{"text":"我自己買了一本書。","pinyin":"wo3 zi4 ji3 mai3 le5 yi1 ben3 shu1","translation":"I bought a book myself.","segments":["我","自己","買","了","一","本","書","。"]}}
+{"id":"tbcl1-0041","v":"v2","example":{"text":"我是中國人。","pinyin":"wo3 shi4 zhong1 guo2 ren2","translation":"I am Chinese.","segments":["我","是","中","國","人","。"]}}
+{"id":"tbcl1-0042","v":"v2","example":{"text":"我走路跟朋友一起。","pinyin":"wo3 zou3 lu4 gen1 peng2 you3 yi4 qi3","translation":"I walk with a friend.","segments":["我","走路","跟","朋友","一起","。"]}}
+{"id":"tbcl1-0043","v":"v2","example":{"text":"我大姊姊比我高。","pinyin":"wo3 da4 jie3 jie5 bi3 wo3 gao1","translation":"My older sister is taller than me.","segments":["我","大","姊姊","比","我","高","。"]}}
+{"id":"tbcl1-0044","v":"v2","example":{"text":"年先生是我的老師。","pinyin":"nian2 xian1 sheng1 shi4 wo3 de5 lao3 shi1","translation":"Mr. Nian is my teacher.","segments":["年","先生","是","我","的","老師","。"]}}
+{"id":"tbcl1-0045","v":"v2","example":{"text":"我喜歡看書。","pinyin":"wo3 xi3 huan1 kan4 shu1","translation":"I like to read books.","segments":["我","喜歡","看","書","。"]}}
+{"id":"tbcl1-0046","v":"v2","example":{"text":"我昨天去公園的時候，看見很多小孩在玩耍。","pinyin":"wo3 zuo2 tian1 qu4 gong1 yuan2 de5 shi2 hou4 kan4 jian4 hen3 duo1 xiao3 hai2 zai4 wan2 shua3","translation":"Yesterday when I went to the park, I saw many children playing.","segments":["我","昨天","去","公園","的","時候","，","看見","很","多","小孩","在","玩","耍","。"]}}
+{"id":"tbcl1-0047","v":"v2","example":{"text":"請問什麼意思？","pinyin":"qing3 wen4 shen2 me5 yi4 si5","translation":"What does it mean?","segments":["請問","什麼","意思","？"]}}
+{"id":"tbcl1-0048","v":"v2","example":{"text":"書在桌子的裡面。","pinyin":"shu1 zai4 zhuo1 zi5 de5 li3 mian4","translation":"The book is inside the desk.","segments":["書","在","桌子","的","裡面","。"]}}
+{"id":"tbcl1-0049","v":"v2","rejected":["missing word","pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
+{"id":"tbcl1-0050","v":"v2","example":{"text":"我最喜歡吃魚。","pinyin":"wo3 zui4 xi3 huan1 chi1 yu2","translation":"I like fish the most.","segments":["我","最","喜歡","吃","魚","。"]}}
+{"id":"tbcl1-0051","v":"v2","example":{"text":"我想去買牛奶。","pinyin":"wo3 xiang3 qu4 mai3 niu2 nai3","translation":"I want to go buy milk.","segments":["我","想","去","買","牛奶","。"]}}
+{"id":"tbcl1-0052","v":"v2","example":{"text":"我有兩本書。","pinyin":"wo3 you3 liang3 ben3 shu1","translation":"I have two books.","segments":["我","有","兩","本","書","。"]}}
+{"id":"tbcl1-0053","v":"v2","rejected":["length 3","length 3","length 3"]}
+{"id":"tbcl1-0054","v":"v2","rejected":["unknown words: 完 散 步","unknown words: 完 散 步","pinyin syllable count"]}
+{"id":"tbcl1-0055","v":"v2","example":{"text":"我用筷子吃飯。","pinyin":"wo3 yong4 kuai4 zi5 chi1 fan4","translation":"I use chopsticks to eat.","segments":["我","用","筷子","吃飯","。"]}}
+{"id":"tbcl1-0056","v":"v2","example":{"text":"媽媽又買了很多水果。","pinyin":"ma1 ma5 you4 mai3 le5 hen3 duo1 shui3 guo3","translation":"Mom bought a lot of fruit again.","segments":["媽媽","又","買","了","很","多","水果","。"]}}

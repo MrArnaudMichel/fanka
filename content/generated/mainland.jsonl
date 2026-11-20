@@ -55,13 +55,13 @@
 {"id":"hsk1-0055","v":"v1","example":{"text":"我只会中文。","pinyin":"wo3 zhi3 hui4 zhong1 wen2","translation":"I only know Chinese.","segments":["我","只","会","中文","。"]}}
 {"id":"hsk1-0056","v":"v1","example":{"text":"我喜欢小苹果。","pinyin":"wo3 xi3 huan5 xiao3 ping2 guo3","translation":"I like little apples.","segments":["我","喜欢","小","苹果","。"]}}
 {"id":"hsk1-0057","v":"v1","example":{"text":"我知道你在这里。","pinyin":"wo3 zhi1 dao4 ni3 zai4 zhe4 li3","translation":"I know you are here.","segments":["我","知道","你","在","这里","。"]}}
-{"id":"hsk1-0058","v":"v1","example":{"text":"我小时候喜欢看电影。","pinyin":"wo3 xiao3 shi2 hou5 xi3 huan5 kan1 dian4 ying3","translation":"I liked watching movies when I was young.","segments":["我","小时","候","喜欢","看","电影","。"]}}
+{"id":"hsk1-0058","v":"v1","example":{"text":"我小时候喜欢看电影。","pinyin":"wo3 xiao3 shi2 hou4 xi3 huan5 kan1 dian4 ying3","translation":"I liked watching movies when I was young.","segments":["我","小时","候","喜欢","看","电影","。"]}}
 {"id":"hsk1-0059","v":"v1","example":{"text":"你有什么问题吗？","pinyin":"ni3 you3 shen2 me5 wen4 ti2 ma2","translation":"Do you have any questions?","segments":["你","有","什么","问题","吗","？"]}}
 {"id":"hsk1-0060","v":"v1","example":{"text":"我每天早上八点去公司工作。","pinyin":"wo3 mei3 tian1 zao3 shang5 ba1 dian3 qu4 gong1 si1 gong1 zuo4","translation":"I go to work at the company every morning at eight o'clock.","segments":["我","每","天","早上","八","点","去","公司","工作","。"]}}
-{"id":"hsk1-0061","v":"v1","example":{"text":"这是个好事情。","pinyin":"zhe4 shi4 ge3 hao3 shi4 qing5","translation":"This is a good thing.","segments":["这","是","个","好","事","情","。"]}}
+{"id":"hsk1-0061","v":"v1","example":{"text":"这是个好事情。","pinyin":"zhe4 shi4 ge3 hao3 shi4 qing2","translation":"This is a good thing.","segments":["这","是","个","好","事","情","。"]}}
 {"id":"hsk1-0062","v":"v1","example":{"text":"它是我的狗。","pinyin":"ta1 shi4 wo3 de5 gou3","translation":"It is my dog.","segments":["它","是","我","的","狗","。"]}}
 {"id":"hsk1-0063","v":"v1","example":{"text":"后 先生 是 我的 老师。","pinyin":"hou4 xian1 sheng5 shi4 wo3 de5 lao3 shi1","translation":"Mr. Hou is my teacher.","segments":["后"," ","先生"," ","是"," ","我","的"," ","老师","。"]}}
-{"id":"hsk1-0064","v":"v1","example":{"text":"我喜欢买家具。","pinyin":"wo3 xi3 huan5 mai3 jia1 ju5","translation":"I like buying furniture.","segments":["我","喜欢","买","家","具","。"]}}
+{"id":"hsk1-0064","v":"v1","example":{"text":"我喜欢买家具。","pinyin":"wo3 xi3 huan5 mai3 jia1 ju4","translation":"I like buying furniture.","segments":["我","喜欢","买","家","具","。"]}}
 {"id":"hsk1-0065","v":"v1","example":{"text":"你们今天高兴吗","pinyin":"ni3 men5 jin1 tian1 gao1 xing4 ma2","translation":"Are you all happy today?","segments":["你们","今天","高兴","吗"]}}
 {"id":"hsk1-0066","v":"v1","example":{"text":"我的家在前面。","pinyin":"wo3 de5 jia1 zai4 qian2 mian4","translation":"My home is in front.","segments":["我","的","家","在","前","面","。"]}}
 {"id":"hsk1-0067","v":"v1","example":{"text":"明天时间要早点起床。","pinyin":"ming2 tian1 shi2 jian1 yao1 zao3 dian3 qi3 chuang2","translation":"Tomorrow you need to get up early on time.","segments":["明天","时间","要","早","点","起床","。"]}}
@@ -213,7 +213,7 @@
 {"id":"hsk1-0213","v":"v1","example":{"text":"我有千个朋友。","pinyin":"wo3 you3 qian1 ge3 peng2 you5","translation":"I have a thousand friends.","segments":["我","有","千","个","朋友","。"]}}
 {"id":"hsk1-0214","v":"v1","rejected":["pinyin syllable count","unknown words: 李 明","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0215","v":"v1","example":{"text":"这部电影很好看。","pinyin":"zhe4 bu4 dian4 ying3 hen3 hao3 kan4","translation":"That movie is very good.","segments":["这","部","电影","很","好看","。"]}}
-{"id":"hsk1-0216","v":"v1","example":{"text":"我想喝杯茶。","pinyin":"wo3 xiang3 he1 bei5 cha2","translation":"I want to drink a cup of tea.","segments":["我","想","喝","杯","茶","。"]}}
+{"id":"hsk1-0216","v":"v1","example":{"text":"我想喝杯茶。","pinyin":"wo3 xiang3 he1 bei1 cha2","translation":"I want to drink a cup of tea.","segments":["我","想","喝","杯","茶","。"]}}
 {"id":"hsk1-0217","v":"v1","example":{"text":"今天下雨了。","pinyin":"jin1 tian1 xia4 yu3 le5","translation":"It is raining today.","segments":["今天","下雨","了","。"]}}
 {"id":"hsk1-0218","v":"v1","example":{"text":"今天是星期一。","pinyin":"jin1 tian1 shi4 xing1 qi1 yi1","translation":"Today is Monday.","segments":["今天","是","星期","一","。"]}}
 {"id":"hsk1-0219","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}

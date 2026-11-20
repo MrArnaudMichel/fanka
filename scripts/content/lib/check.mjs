@@ -111,22 +111,39 @@ export function syllabify(raw, expected) {
   return null;
 }
 
+const bare = (/** @type {string} */ syl) => syl.replace(/[1-5]$/, '');
+
 /**
- * Pinyin for an example, taken from the word list where possible: each Han
- * segment that is a known word uses that word's first (citation) reading;
- * other segments use the model's numbered syllables, aligned by Han-character
- * index. Non-Han segments add nothing.
+ * Pinyin for an example, taken from the word list where possible.
+ *
+ * CITATION tones are stored (dictionary practice): no tone sandhi is applied,
+ * so 不要 stays "bu4 yao4" and 一本 stays "yi1 ben3"; the learner UI can apply
+ * sandhi at display time if wanted. Erhua keeps the word list's convention of
+ * a standalone "r5" syllable for the character 儿, so the pinyin always has one
+ * syllable per Han character.
+ *
+ * For each Han segment that is a known word, the reading is the one matching
+ * the model's syllables (exact, then ignoring tone), else the first reading.
+ * An unknown single character is looked up in `charReadings` (CC-CEDICT):
+ * the entry matching the model syllable, else the model syllable. Any other
+ * unknown segment uses the model's syllables. Non-Han segments add nothing.
  * @param {string[]} segments
- * @param {(w: string) => string | undefined} readingOf numbered, space-separated
+ * @param {(w: string) => string | string[] | undefined} readingOf numbered, space-separated reading(s)
  * @param {string[]} modelSyllables numbered, one per Han character
+ * @param {(ch: string) => string[] | undefined} [charReadings] numbered single syllables
  * @returns {string}
  */
-export function examplePinyin(segments, readingOf, modelSyllables) {
-  return derive(segments, readingOf, modelSyllables).pinyin;
+export function examplePinyin(segments, readingOf, modelSyllables, charReadings) {
+  return derive(segments, readingOf, modelSyllables, charReadings).pinyin;
 }
 
 /** @returns {{ pinyin: string, tonelessFallback: boolean }} */
-function derive(/** @type {string[]} */ segments, /** @type {(w: string) => string | undefined} */ readingOf, /** @type {string[]} */ modelSyllables) {
+function derive(
+  /** @type {string[]} */ segments,
+  /** @type {(w: string) => string | string[] | undefined} */ readingOf,
+  /** @type {string[]} */ modelSyllables,
+  /** @type {((ch: string) => string[] | undefined) | undefined} */ charReadings,
+) {
   /** @type {string[]} */
   const out = [];
   let index = 0;
@@ -134,15 +151,28 @@ function derive(/** @type {string[]} */ segments, /** @type {(w: string) => stri
   for (const seg of segments) {
     if (!isHan(seg)) continue;
     const n = [...seg].length;
-    const reading = readingOf(seg)?.split(/\s+/).filter(Boolean);
-    if (reading && reading.length === n) {
-      out.push(...reading);
-    } else {
-      const part = modelSyllables.slice(index, index + n);
-      out.push(...part);
-      if (n > 1 && part.length > 0 && part.every((x) => x.endsWith('5'))) tonelessFallback = true;
-    }
+    const model = modelSyllables.slice(index, index + n);
     index += n;
+    const found = readingOf(seg);
+    const readings = (Array.isArray(found) ? found : found ? [found] : [])
+      .map((r) => r.split(/\s+/).filter(Boolean))
+      .filter((r) => r.length === n);
+    if (readings.length > 0) {
+      const exact = readings.find((r) => r.every((x, i) => x === model[i]));
+      const loose = readings.find((r) => r.every((x, i) => model[i] !== undefined && bare(x) === bare(model[i])));
+      out.push(...(exact ?? loose ?? readings[0]));
+      continue;
+    }
+    if (n === 1 && charReadings) {
+      const options = charReadings(seg) ?? [];
+      const hit = options.find((x) => x === model[0]) ?? options.find((x) => model[0] !== undefined && bare(x) === bare(model[0]));
+      if (hit) {
+        out.push(hit);
+        continue;
+      }
+    }
+    out.push(...model);
+    if (n > 1 && model.length > 0 && model.every((x) => x.endsWith('5'))) tonelessFallback = true;
   }
   return { pinyin: out.join(' '), tonelessFallback };
 }
@@ -152,10 +182,11 @@ function derive(/** @type {string[]} */ segments, /** @type {(w: string) => stri
  * @param {{ hanzi: string, variants?: string[] }} word
  * @param {ReadonlySet<string>} allowed
  * @param {'mainland' | 'taiwan'} bundle
- * @param {(w: string) => string | undefined} [readingOf]
- * @returns {{ ok: true, segments: string[], pinyin: string } | { ok: false, reasons: string[] }}
+ * @param {(w: string) => string | string[] | undefined} [readingOf]
+ * @param {(ch: string) => string[] | undefined} [charReadings]
+ * @returns {{ ok: true, segments: string[], pinyin: string, modelPinyin: string } | { ok: false, reasons: string[] }}
  */
-export function checkExample(ex, word, allowed, bundle, readingOf = () => undefined) {
+export function checkExample(ex, word, allowed, bundle, readingOf = () => undefined, charReadings = undefined) {
   /** @type {string[]} */
   const reasons = [];
   const text = typeof ex.text === 'string' ? ex.text.trim() : '';
@@ -183,7 +214,7 @@ export function checkExample(ex, word, allowed, bundle, readingOf = () => undefi
 
   let derived = '';
   if (pinyin !== null) {
-    const d = derive(segments, readingOf, pinyin.split(' '));
+    const d = derive(segments, readingOf, pinyin.split(' '), charReadings);
     derived = d.pinyin;
     if (d.tonelessFallback) reasons.push('toneless pinyin');
   }
@@ -191,5 +222,5 @@ export function checkExample(ex, word, allowed, bundle, readingOf = () => undefi
   if (typeof ex.translation !== 'string' || !ex.translation.trim()) reasons.push('no translation');
 
   if (reasons.length > 0) return { ok: false, reasons };
-  return { ok: true, segments, pinyin: derived };
+  return { ok: true, segments, pinyin: derived, modelPinyin: /** @type {string} */ (pinyin) };
 }

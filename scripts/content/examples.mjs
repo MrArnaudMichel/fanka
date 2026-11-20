@@ -7,7 +7,8 @@ import path from 'node:path';
 import { parsePinyin } from './lib/core.mjs';
 import { checkExample, cleanHanzi } from './lib/check.mjs';
 import { createOllama } from './lib/ollama.mjs';
-import { openCache } from './lib/cache.mjs';
+import { openCache, TRANSPORT } from './lib/cache.mjs';
+import { parseCedict } from './lib/cedict.mjs';
 
 export const PROMPT_VERSION = 'v2';
 const SAMPLE_SIZE = 400;
@@ -52,19 +53,42 @@ export function allowedByLevel(/** @type {any[]} */ words) {
   return map;
 }
 
-/** First reading's numbered pinyin of each headword form (first word wins). */
+/**
+ * Numbered readings of each headword form: the first word's first reading
+ * leads, then its other readings, then those of homograph words.
+ */
 export function readingLookup(/** @type {any[]} */ words) {
-  /** @type {Map<string, string>} */
+  /** @type {Map<string, string[]>} */
   const map = new Map();
   for (const w of words) {
-    const pinyin = w.readings?.[0]?.pinyin;
-    if (!pinyin) continue;
+    const list = (w.readings ?? []).map((/** @type {any} */ r) => r.pinyin).filter(Boolean);
+    if (list.length === 0) continue;
     for (const f of [w.hanzi, ...(w.variants ?? [])]) {
       const c = cleanHanzi(f);
-      if (c && !map.has(c)) map.set(c, pinyin);
+      if (!c) continue;
+      const have = map.get(c) ?? [];
+      for (const p of list) if (!have.includes(p)) have.push(p);
+      map.set(c, have);
     }
   }
   return (/** @type {string} */ w) => map.get(w);
+}
+
+/** Single-character CC-CEDICT readings, numbered, for the bundle's script. */
+export function charReadingLookup(/** @type {Map<string, any[]>} */ cedict, /** @type {'mainland'|'taiwan'} */ bundle) {
+  return (/** @type {string} */ ch) => {
+    const out = [];
+    for (const e of cedict.get(ch) ?? []) {
+      const own = bundle === 'mainland' ? e.simplified : e.traditional;
+      if (own !== ch || e.pinyin.split(/\s+/).length !== 1) continue;
+      if (!out.includes(e.pinyin)) out.push(e.pinyin);
+    }
+    return out;
+  };
+}
+
+export function loadCedict(/** @type {string} */ root) {
+  return parseCedict(readFileSync(path.join(root, '.cache/content/cedict.txt'), 'utf8'));
 }
 
 /** Up to SAMPLE_SIZE allowed words, the word's own level first. */
@@ -101,13 +125,21 @@ function meaningPrompt(/** @type {any} */ word, /** @type {string} */ bundle) {
 
 /**
  * @param {any[]} words
- * @param {{ bundle: 'mainland'|'taiwan', client: { chat(p: string): Promise<string> }, cache: ReturnType<typeof openCache>, promptVersion: string, attempts: number, limit?: number, levels?: number[], onProgress?: (done: number, total: number) => void }} opts
+ * @param {{ bundle: 'mainland'|'taiwan', client: { chat(p: string): Promise<string> }, cache: ReturnType<typeof openCache>, promptVersion: string, attempts: number, limit?: number, levels?: number[], charReadings?: (ch: string) => string[] | undefined, maxTransportFailures?: number, onProgress?: (done: number, total: number) => void }} opts
  */
 export async function generate(words, opts) {
-  const { bundle, client, cache, promptVersion, attempts, limit, levels, onProgress } = opts;
+  const { bundle, client, cache, promptVersion, attempts, limit, levels, onProgress, charReadings, maxTransportFailures = 5 } = opts;
+  let consecutive = 0;
+  /** Counts a transport failure; too many in a row aborts the run. */
+  const transportFailed = (/** @type {unknown} */ e) => {
+    consecutive += 1;
+    if (consecutive >= maxTransportFailures) {
+      throw new Error(`Stopped: ${consecutive} transport failures in a row (${e instanceof Error ? e.message : String(e)}). Is Ollama running? Run again to resume.`);
+    }
+  };
   const byLevel = allowedByLevel(words);
   const readingOf = readingLookup(words);
-  let todo = words.filter((w) => !cache.has(w.id, promptVersion) && !cache.hasExample(w.id) && (!levels || levels.includes(w.level)));
+  let todo = words.filter((w) => !cache.isDone(w.id, promptVersion) && !cache.hasExample(w.id) && (!levels || levels.includes(w.level)));
   if (limit !== undefined) todo = todo.slice(0, limit);
   let done = 0;
   for (const word of todo) {
@@ -116,7 +148,9 @@ export async function generate(words, opts) {
     let meanings = word.readings[0]?.meanings ?? [];
     if (word.needsMeaning) {
       try {
-        const reply = parseJson(await client.chat(meaningPrompt(word, bundle)));
+        const text = await client.chat(meaningPrompt(word, bundle));
+        consecutive = 0;
+        const reply = parseJson(text);
         const m = Array.isArray(reply?.meanings)
           ? reply.meanings.filter((/** @type {any} */ x) => typeof x === 'string' && x.trim()).map((/** @type {string} */ x) => x.trim()).slice(0, 3)
           : [];
@@ -124,35 +158,45 @@ export async function generate(words, opts) {
           rec.meaning = m;
           meanings = m;
         }
-      } catch {
-        // leave the meaning out
+      } catch (e) {
+        // Not a verdict on the word: leave it for a later run.
+        transportFailed(e);
+        continue;
       }
     }
     const allowed = byLevel.get(word.level) ?? new Set();
     /** @type {string[]} */
     const rejected = [];
+    let transport = false;
     for (let attempt = 0; attempt < attempts; attempt += 1) {
       try {
-        const reply = parseJson(await client.chat(examplePrompt(word, words, bundle, meanings.slice(0, 3))));
+        const text = await client.chat(examplePrompt(word, words, bundle, meanings.slice(0, 3)));
+        consecutive = 0;
+        const reply = parseJson(text);
         if (!reply) {
           rejected.push('invalid JSON');
           continue;
         }
-        const result = checkExample(reply, word, allowed, bundle, readingOf);
+        const result = checkExample(reply, word, allowed, bundle, readingOf, charReadings);
         if (result.ok) {
           rec.example = {
             text: reply.text.trim(),
             pinyin: result.pinyin,
             translation: reply.translation.trim(),
             segments: result.segments,
+            modelPinyin: result.modelPinyin,
           };
           break;
         }
         rejected.push(...result.reasons);
       } catch (e) {
-        rejected.push(`error: ${e instanceof Error ? e.message : String(e)}`);
+        transport = true;
+        rejected.push(`${TRANSPORT} ${e instanceof Error ? e.message : String(e)}`);
+        transportFailed(e);
       }
     }
+    // A transport failure is not a verdict: write nothing so a resume retries.
+    if (!rec.example && transport) continue;
     if (!rec.example) rec.rejected = rejected;
     cache.append(rec);
     done += 1;
@@ -177,9 +221,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
   const levels = arg('levels')?.split(',').map(Number);
   const limit = arg('limit') ? Number(arg('limit')) : undefined;
   const started = Date.now();
+  try {
   await generate(words, {
     bundle,
     client: createOllama(),
+    charReadings: charReadingLookup(loadCedict(root), bundle),
     cache,
     promptVersion: PROMPT_VERSION,
     attempts: 3,
@@ -191,5 +237,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
       const eta = Math.round(((total - done) * rate) / 60);
       console.log(`${done}/${total}  ${rate.toFixed(1)} s/word  ETA ${eta} min`);
     },
-  });
+  });  } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e));
+    process.exit(1);
+  }
 }
