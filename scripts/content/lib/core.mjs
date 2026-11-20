@@ -11,7 +11,7 @@ const result = await build({
   stdin: {
     contents: `
       export { fromZhuyin } from './core/chinese/zhuyin';
-      export { toNumbered } from './core/chinese/pinyin';
+      export { toNumbered, parsePinyin } from './core/chinese/pinyin';
       export { wrongScriptCharactersIn } from './core/chinese/script';
     `,
     resolveDir: root,
@@ -33,3 +33,5 @@ export const fromZhuyin = mod.fromZhuyin;
 export const toNumbered = mod.toNumbered;
 /** @type {(text: string, bundle: 'mainland' | 'taiwan') => string[]} */
 export const wrongScriptCharactersIn = mod.wrongScriptCharactersIn;
+/** @type {(input: string) => Array<{ text: string, tone: 1 | 2 | 3 | 4 | 5 }>} */
+export const parsePinyin = mod.parsePinyin;
