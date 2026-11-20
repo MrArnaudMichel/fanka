@@ -93,6 +93,8 @@ export async function loadSettings(): Promise<Settings> {
   // `showZhuyin` became `reading`: on shows both, off shows pinyin only.
   const legacyZhuyin = (stored as { showZhuyin?: unknown }).showZhuyin;
   if (!('reading' in stored) && typeof legacyZhuyin === 'boolean') merged.reading = legacyZhuyin ? 'both' : 'pinyin';
+  // A record that predates both settings was written when zhuyin was not shown.
+  if (row !== undefined && !('reading' in stored) && !('showZhuyin' in stored)) merged.reading = 'pinyin';
   if (!READINGS.includes(merged.reading)) merged.reading = DEFAULT_SETTINGS.reading;
   if (merged.bundle !== null && !BUNDLES.includes(merged.bundle)) merged.bundle = null;
   if (![1, 2, 3].includes(merged.dailyLessons)) merged.dailyLessons = DEFAULT_SETTINGS.dailyLessons;

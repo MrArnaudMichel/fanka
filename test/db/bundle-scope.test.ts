@@ -62,6 +62,27 @@ describe('bundle scope', () => {
     expect(s.reviews.length).toBe(1);
   });
 
+  it('leaves out the other bundle even for soft-deleted decks', async () => {
+    await decks.put({ ...aDeck('tw', 'taiwan'), deletedAt: NOW + 1, updatedAt: NOW + 1 });
+    setActiveBundle('mainland');
+    const s = await stats.snapshot();
+    expect(s.decks.map((d) => d.id)).toEqual(['cn']);
+    expect(s.cards.map((c) => c.id)).toEqual(['ccn']);
+    expect(s.attempts.map((a) => a.deckId)).toEqual(['cn']);
+    expect(s.items.map((i) => i.cardId)).toEqual(['ccn']);
+    expect(s.reviews.length).toBe(1);
+  });
+
+  it('returns every row, orphans included, while no bundle is active', async () => {
+    await db.cards.delete('ctw');
+    const s = await stats.snapshot();
+    expect(s.decks.length).toBe(2);
+    expect(s.cards.map((c) => c.id)).toEqual(['ccn']);
+    expect(s.items.length).toBe(2);
+    expect(s.reviews.length).toBe(2);
+    expect(s.attempts.length).toBe(2);
+  });
+
   it('drops a study selection from the other bundle', async () => {
     await saveStudyDeckIds(['tw', 'cn']);
     setActiveBundle('taiwan');

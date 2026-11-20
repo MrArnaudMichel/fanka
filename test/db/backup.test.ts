@@ -71,6 +71,19 @@ describe('backup I/O', () => {
   });
 });
 
+describe('backup settings from before onboarding', () => {
+  it('keeps the device onboarded and in its bundle', async () => {
+    await db.settings.put({ key: 'settings', value: { ...DEFAULT_SETTINGS, onboardedAt: 5, bundle: 'taiwan' } });
+    const { onboardedAt: _o, bundle: _b, ...old } = DEFAULT_SETTINGS;
+    const parsed = parseBackup(JSON.stringify(buildBackup({ decks: [], cards: [], items: [], reviews: [], attempts: [] }, old as never, 100)));
+    if (!parsed.ok) throw new Error(parsed.error);
+    await applyBackup(parsed.backup, 200);
+    const s = await loadSettings();
+    expect(s.onboardedAt).toBe(5);
+    expect(s.bundle).toBe('taiwan');
+  });
+});
+
 describe('backup without bundles', () => {
   it('restores a backup made before bundles with Taiwan decks', async () => {
     const old = { ...buildBackup({ decks: [deck('d1', 1)], cards: [], items: [], reviews: [], attempts: [] }, DEFAULT_SETTINGS, 100) };
@@ -78,5 +91,12 @@ describe('backup without bundles', () => {
     if (!parsed.ok) throw new Error(parsed.error);
     await applyBackup(parsed.backup, 200);
     expect((await db.decks.get('d1'))?.bundle).toBe('taiwan');
+  });
+
+  it('turns an invalid bundle into taiwan', () => {
+    const odd = { ...buildBackup({ decks: [{ id: 'd1', name: 'd1', updatedAt: 1, deletedAt: null, bundle: 'foo' } as never], cards: [], items: [], reviews: [], attempts: [] }, DEFAULT_SETTINGS, 100) };
+    const parsed = parseBackup(JSON.stringify(odd));
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.backup.decks[0]!.bundle).toBe('taiwan');
   });
 });

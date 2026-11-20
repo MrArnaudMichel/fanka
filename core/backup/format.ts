@@ -63,8 +63,8 @@ export function parseBackup(text: string): ParsedBackup {
     return { ok: false, error: DAMAGED };
   }
   const backup = candidate as unknown as Backup;
-  // A backup made before bundles has decks without one; they are Taiwan decks.
-  backup.decks = backup.decks.map((deck) => ({ ...deck, bundle: deck.bundle ?? 'taiwan' }));
+  // A backup made before bundles has decks without one; they are Taiwan decks, as is any invalid value.
+  backup.decks = backup.decks.map((deck) => ({ ...deck, bundle: deck.bundle === 'mainland' ? 'mainland' : 'taiwan' }));
   return { ok: true, backup };
 }
 

@@ -27,6 +27,20 @@ describe('settings', () => {
     expect(loaded.desiredRetention).toBe(DEFAULT_SETTINGS.desiredRetention);
   });
 
+  it('reads an existing record with no reading setting as pinyin only', async () => {
+    await db.settings.put({ key: 'settings', value: { newPerDay: 7 } });
+    expect((await loadSettings()).reading).toBe('pinyin');
+  });
+
+  it('gives a fresh install both readings', async () => {
+    expect((await loadSettings()).reading).toBe('both');
+  });
+
+  it('treats a null bundle as Taiwan for the reading helpers', () => {
+    expect(showsZhuyin({ bundle: null, reading: 'both' })).toBe(true);
+    expect(showsPinyin({ bundle: null, reading: 'zhuyin' })).toBe(false);
+  });
+
   it('defaults to FSRS at 90% retention', () => {
     expect(DEFAULT_SETTINGS.algorithm).toBe('FSRS');
     expect(DEFAULT_SETTINGS.desiredRetention).toBe(0.9);

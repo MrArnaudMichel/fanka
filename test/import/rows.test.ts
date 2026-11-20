@@ -31,6 +31,16 @@ describe('validateImportRows', () => {
   });
 });
 
+describe('validateImportRows bundle', () => {
+  it('judges the script by the bundle given', () => {
+    const rows = [draft({ hanzi: '学习', pinyin: 'xue2 xi2' })];
+    expect(validateImportRows(rows, new Set(), 'mainland')[0]!.ok).toBe(true);
+    const [tw] = validateImportRows(rows, new Set(), 'taiwan');
+    expect(tw!.ok).toBe(false);
+    expect(JSON.stringify(tw)).toContain('Simplified characters');
+  });
+});
+
 describe('updatedCardFromDraft', () => {
   const card = {
     id: 'c1', deckId: 'd1', hanzi: '朋友', pinyin: [], zhuyin: 'ㄆㄥˊ', translation: 'old', pos: 'noun',

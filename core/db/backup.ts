@@ -42,7 +42,13 @@ export async function applyBackup(backup: Backup, now: number): Promise<RestoreR
       ...queued('review', plan.reviews.map((r) => r.id), now),
       ...queued('attempt', plan.attempts.map((r) => r.id), now),
     ]);
-    await db.settings.put({ key: 'settings', value: backup.settings });
+    // A backup from before onboarding has neither field; keep this device's.
+    const current = (await db.settings.get('settings'))?.value as { onboardedAt?: unknown; bundle?: unknown } | undefined;
+    const settings =
+      typeof (backup.settings as { onboardedAt?: unknown }).onboardedAt === 'number'
+        ? backup.settings
+        : { ...backup.settings, onboardedAt: current?.onboardedAt ?? null, bundle: current?.bundle ?? null };
+    await db.settings.put({ key: 'settings', value: settings });
     return {
       decks: plan.decks.length,
       cards: plan.cards.length,

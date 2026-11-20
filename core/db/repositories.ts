@@ -1,4 +1,4 @@
-import { deckInScope } from './bundle-scope';
+import { activeBundle, deckInScope } from './bundle-scope';
 import { buildAttempt } from './attempts';
 import { db } from './db';
 import { type Attempt, type AttemptDetail, type AttemptSource, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
@@ -692,16 +692,19 @@ export const stats = {
       db.cards.toArray(),
       db.decks.toArray(),
     ]);
-    // Only live decks of the other bundle are left out; deleted decks stay,
-    // as before, for the statistics code to treat as it already does.
-    const hidden = new Set(deckRows.filter((d) => d.deletedAt === null && !deckInScope(d)).map((d) => d.id));
+    const bundle = activeBundle();
+    if (bundle === null) return { attempts: attemptRows, reviews: reviewRows, items: itemRows, cards: cardRows, decks: deckRows };
+    // Every deck of the other bundle is left out, deleted or not: a deleted
+    // deck keeps its cards, and their characters are in the other script.
+    // Negative sets, so a row whose parent is missing passes through.
+    const hidden = new Set(deckRows.filter((d) => d.bundle !== bundle).map((d) => d.id));
     const cards = cardRows.filter((c) => !hidden.has(c.deckId));
-    const cardIds = new Set(cards.map((c) => c.id));
-    const items = itemRows.filter((i) => cardIds.has(i.cardId));
-    const itemIds = new Set(items.map((i) => i.id));
+    const droppedCards = new Set(cardRows.filter((c) => hidden.has(c.deckId)).map((c) => c.id));
+    const items = itemRows.filter((i) => !droppedCards.has(i.cardId));
+    const droppedItems = new Set(itemRows.filter((i) => droppedCards.has(i.cardId)).map((i) => i.id));
     return {
       attempts: attemptRows.filter((a) => !hidden.has(a.deckId)),
-      reviews: reviewRows.filter((r) => itemIds.has(r.itemId)),
+      reviews: reviewRows.filter((r) => !droppedItems.has(r.itemId)),
       items,
       cards,
       decks: deckRows.filter((d) => !hidden.has(d.id)),
