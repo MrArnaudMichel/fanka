@@ -71,7 +71,7 @@ export function activitySummary(attempts: readonly Attempt[], window: StatsWindo
   const byMode = { review: 0, writing: 0 };
   for (const a of windowed) {
     const i = findBucket(buckets, a.at);
-    if (i !== -1) time[i]![a.source === 'practice' ? 'practiceMs' : 'scheduledMs'] += capped(a);
+    if (i !== -1) time[i]![a.source !== 'scheduled' ? 'practiceMs' : 'scheduledMs'] += capped(a);
     byHour[new Date(a.at).getHours()]! += 1;
     byMode[a.mode] += 1;
   }

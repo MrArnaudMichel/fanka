@@ -123,7 +123,7 @@ class FakeTransport implements SyncTransport {
       ...reviews.map((r) => r.reviewedAt),
       ...attempts.map((a) => a.at),
     );
-    return { decks, cards, items, reviews, attempts, at };
+    return { decks, cards, items, reviews, attempts, lessonProgress: [], at };
   }
 
   async push(changes: LocalChanges): Promise<{ at: number }> {
@@ -156,7 +156,7 @@ describe('runSync', () => {
 
     const result = await runSync(transport);
 
-    expect(result.pushed).toEqual({ decks: 1, cards: 0, items: 0, reviews: 0, attempts: 0 });
+    expect(result.pushed).toEqual({ decks: 1, cards: 0, items: 0, reviews: 0, attempts: 0, lessonProgress: 0 });
     expect(transport.decks.get('d1')).toMatchObject({ name: 'HSK 1' });
     expect(await db.outbox.count()).toBe(0);
   });
@@ -252,7 +252,7 @@ describe('runSync', () => {
     transport.pushCalls = [];
     const result = await runSync(transport);
 
-    expect(result.pushed).toEqual({ decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 });
+    expect(result.pushed).toEqual({ decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0, lessonProgress: 0 });
     expect(transport.pushCalls).toHaveLength(0);
     expect(await db.decks.toArray()).toEqual(stateAfterFirst);
     expect(await db.cards.toArray()).toEqual(cardsAfterFirst);

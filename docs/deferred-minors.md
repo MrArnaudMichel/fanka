@@ -170,3 +170,5 @@ findings are never parked here.
 | `test/db/backup.test.ts` | A duplicate import line; `migration-v5` closes a possibly unopened db | Test hygiene | Bundles and onboarding final review |
 | `app/composables/useSpeech.ts` | `supported` is computed once | It does not depend on the bundle in effect | Bundles and onboarding final review |
 | `core/db/repositories.ts` write paths | Card move and create check `deletedAt`, not `deckInScope`; direct `/decks/<id>` and `/cards/<id>` of the other bundle still open | The UI cannot target a hidden deck | Bundles and onboarding final review |
+
+- Lesson-source attempts show no "practice" tag in the card detail panel and Statistics journal, and the journal's source filter has no Lesson option (`app/components/CardDetailPanel.vue`, `app/components/stats/StatsJournal.vue`).

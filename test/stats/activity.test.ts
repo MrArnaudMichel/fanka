@@ -34,6 +34,11 @@ describe('activitySummary', () => {
     expect(s.time.at(-1)).toEqual({ key: '2026-09-29', scheduledMs: 1000, practiceMs: 2000 });
   });
 
+  it('counts lesson time with practice', () => {
+    const s = activitySummary([on(29, { durationMs: 1000 }), on(29, { durationMs: 2000, source: 'lesson' })], '7d', NOW);
+    expect(s.time.at(-1)).toEqual({ key: '2026-09-29', scheduledMs: 1000, practiceMs: 2000 });
+  });
+
   it('counts answers by hour and by mode', () => {
     const s = activitySummary([anAttempt('x', { at: local(9, 29, 8, 30), mode: 'review' }), anAttempt('y', { at: local(9, 28, 8, 5) })], '7d', NOW);
     expect(s.byHour[8]).toBe(2);

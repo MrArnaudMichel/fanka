@@ -2,7 +2,7 @@ import type { Table } from 'dexie';
 
 import { attemptFromReview } from '~core/db/attempts';
 import { db } from '~core/db/db';
-import type { Attempt, Card, Deck, Item, OutboxEntry, Review } from '~core/db/schema';
+import type { Attempt, Card, Deck, Item, LessonProgress, OutboxEntry, Review } from '~core/db/schema';
 import type { EntityCounts, LocalChanges, RemoteChanges, SyncResult, SyncTransport } from './types';
 
 const LAST_PULLED_AT_KEY = 'lastPulledAt';
@@ -64,11 +64,12 @@ async function mergeRow<T extends { id: string; updatedAt: number }>(table: Tabl
  * under the same id, and that push is a same-id upsert on the server.
  */
 async function applyRemote(remote: RemoteChanges): Promise<EntityCounts> {
-  const counts: EntityCounts = { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 };
-  await db.transaction('rw', [db.decks, db.cards, db.items, db.reviews, db.attempts, db.syncState], async () => {
+  const counts: EntityCounts = { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0, lessonProgress: 0 };
+  await db.transaction('rw', [db.decks, db.cards, db.items, db.reviews, db.attempts, db.lessonProgress, db.syncState], async () => {
     for (const row of remote.decks) if (await mergeRow(db.decks, row)) counts.decks += 1;
     for (const row of remote.cards) if (await mergeRow(db.cards, row)) counts.cards += 1;
     for (const row of remote.items) if (await mergeRow(db.items, row)) counts.items += 1;
+    for (const row of remote.lessonProgress) if (await mergeRow(db.lessonProgress, row)) counts.lessonProgress += 1;
     for (const row of remote.attempts) {
       if (!(await db.attempts.get(row.id))) {
         await db.attempts.put(row);
@@ -102,15 +103,17 @@ interface OutboxGroups {
   itemIds: Set<string>;
   reviewIds: Set<string>;
   attemptIds: Set<string>;
+  lessonProgressIds: Set<string>;
 }
 
 function groupOutbox(entries: OutboxEntry[]): OutboxGroups {
-  const groups: OutboxGroups = { deckIds: new Set(), cardIds: new Set(), itemIds: new Set(), reviewIds: new Set(), attemptIds: new Set() };
+  const groups: OutboxGroups = { deckIds: new Set(), cardIds: new Set(), itemIds: new Set(), reviewIds: new Set(), attemptIds: new Set(), lessonProgressIds: new Set() };
   for (const entry of entries) {
     if (entry.entity === 'deck') groups.deckIds.add(entry.entityId);
     else if (entry.entity === 'card') groups.cardIds.add(entry.entityId);
     else if (entry.entity === 'item') groups.itemIds.add(entry.entityId);
     else if (entry.entity === 'review') groups.reviewIds.add(entry.entityId);
+    else if (entry.entity === 'lessonProgress') groups.lessonProgressIds.add(entry.entityId);
     else groups.attemptIds.add(entry.entityId);
   }
   return groups;
@@ -133,12 +136,13 @@ function groupOutbox(entries: OutboxEntry[]): OutboxGroups {
  * push.
  */
 async function buildPayload(groups: OutboxGroups): Promise<LocalChanges> {
-  const [decks, cards, items, reviews, attempts] = await Promise.all([
+  const [decks, cards, items, reviews, attempts, lessonProgress] = await Promise.all([
     db.decks.bulkGet([...groups.deckIds]),
     db.cards.bulkGet([...groups.cardIds]),
     db.items.bulkGet([...groups.itemIds]),
     db.reviews.bulkGet([...groups.reviewIds]),
     db.attempts.bulkGet([...groups.attemptIds]),
+    db.lessonProgress.bulkGet([...groups.lessonProgressIds]),
   ]);
   return {
     decks: decks.filter((row): row is Deck => Boolean(row)),
@@ -146,10 +150,11 @@ async function buildPayload(groups: OutboxGroups): Promise<LocalChanges> {
     items: items.filter((row): row is Item => Boolean(row)),
     reviews: reviews.filter((row): row is Review => Boolean(row)),
     attempts: attempts.filter((row): row is Attempt => Boolean(row)),
+    lessonProgress: lessonProgress.filter((row): row is LessonProgress => Boolean(row)),
   };
 }
 
-const EMPTY_COUNTS: EntityCounts = { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 };
+const EMPTY_COUNTS: EntityCounts = { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0, lessonProgress: 0 };
 
 /**
  * Pulls remote changes since the last cursor, merges them in, then pushes
@@ -202,6 +207,7 @@ async function runSyncOnce(transport: SyncTransport): Promise<SyncResult> {
       items: payload.items.length,
       reviews: payload.reviews.length,
       attempts: payload.attempts.length,
+      lessonProgress: payload.lessonProgress.length,
     },
     pulled,
   };

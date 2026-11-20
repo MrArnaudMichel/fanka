@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type BackupData, backupFileName, buildBackup, mergePlan, parseBackup } from '~core/backup/format';
 import { DEFAULT_SETTINGS } from '~core/db/settings';
 
-const empty = (): BackupData => ({ decks: [], cards: [], items: [], reviews: [], attempts: [] });
+const empty = (): BackupData => ({ decks: [], cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] });
 const deck = (id: string, updatedAt: number) => ({ id, updatedAt, deletedAt: null, bundle: 'taiwan' }) as never;
 const review = (id: string) => ({ id, itemId: 'i', reviewedAt: 1 }) as never;
 

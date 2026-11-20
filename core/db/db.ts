@@ -2,7 +2,7 @@ import Dexie, { type Table } from 'dexie';
 
 import { attemptFromReview } from './attempts';
 import type { Target } from '~core/import/mapping';
-import type { Attempt, Card, Deck, Item, OutboxEntry, Review } from './schema';
+import type { Attempt, Card, Deck, Item, LessonProgress, OutboxEntry, Review } from './schema';
 
 export interface SettingsRow {
   key: string;
@@ -44,6 +44,7 @@ export class FankaDatabase extends Dexie {
   outbox!: Table<OutboxEntry, string>;
   syncState!: Table<SyncStateRow, string>;
   importMappings!: Table<ImportMappingRow, string>;
+  lessonProgress!: Table<LessonProgress, string>;
 
   constructor() {
     super('fanka');
@@ -101,6 +102,8 @@ export class FankaDatabase extends Dexie {
             deck.bundle ??= 'taiwan';
           });
       });
+    // Additive: finished lessons and writing sessions.
+    this.version(6).stores({ lessonProgress: 'id, bundle, completedAt' });
   }
 }
 

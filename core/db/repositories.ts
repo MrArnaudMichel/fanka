@@ -1,7 +1,7 @@
 import { activeBundle, deckInScope } from './bundle-scope';
 import { buildAttempt } from './attempts';
 import { db } from './db';
-import { type Attempt, type AttemptDetail, type AttemptSource, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
+import { type Attempt, type AttemptDetail, type AttemptSource, type Card, type Deck, type Direction, type Item, type LessonProgress, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
 import type { Bundle } from '~core/chinese/script';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { compareNames, lessonOf } from '~core/lessons';
@@ -661,6 +661,38 @@ export interface LoggedAttempt {
   durationMs: number;
   detail: AttemptDetail;
 }
+
+export const lessonProgress = {
+  /** Ids of the lessons and writing sessions finished, or marked known, in `bundle`. */
+  async done(bundle: Bundle): Promise<Set<string>> {
+    return new Set((await db.lessonProgress.where('bundle').equals(bundle).primaryKeys()) as string[]);
+  },
+
+  /** Records a finished lesson or writing session; finishing one again replaces its row. */
+  async put(row: LessonProgress): Promise<void> {
+    await db.transaction('rw', db.lessonProgress, db.outbox, async () => {
+      await db.lessonProgress.put(row);
+      await db.outbox.put(outboxEntry('lessonProgress', row.id, 'put', row.updatedAt));
+    });
+  },
+
+  /** Marks lessons known (onboarding); an id already finished keeps its real row. A `-writing` id is a writing session. */
+  async markKnown(bundle: Bundle, ids: string[], now: number): Promise<void> {
+    await db.transaction('rw', db.lessonProgress, db.outbox, async () => {
+      const existing = new Set((await db.lessonProgress.bulkGet(ids)).filter(Boolean).map((r) => r!.id));
+      for (const id of ids) {
+        if (existing.has(id)) continue;
+        const kind = id.endsWith('-writing') ? 'writing' : 'lesson';
+        await db.lessonProgress.put({ id, bundle, kind, completedAt: now, right: 0, total: 0, known: true, updatedAt: now });
+        await db.outbox.put(outboxEntry('lessonProgress', id, 'put', now));
+      }
+    });
+  },
+
+  /** How many lessons and writing sessions were really done (not marked known) in `bundle` since `since`. */
+  countSince: (bundle: Bundle, since: number): Promise<number> =>
+    db.lessonProgress.where('completedAt').aboveOrEqual(since).filter((r) => r.bundle === bundle && !r.known).count(),
+};
 
 export const attempts = {
   /** A practice answer: logged for the journal and statistics, never scheduled, never undone. */

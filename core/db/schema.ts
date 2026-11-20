@@ -79,8 +79,8 @@ export type StudyMode = 'review' | 'writing';
 
 export const DIRECTION_MODE: Record<Direction, StudyMode> = { recognition: 'review', production: 'writing' };
 
-/** A scheduled answer moved an item; a practice answer did not. */
-export type AttemptSource = 'scheduled' | 'practice';
+/** A scheduled answer moved an item; a practice answer did not; a lesson answer is buffered and logged when the lesson finishes. */
+export type AttemptSource = 'scheduled' | 'practice' | 'lesson';
 
 /** The checker's verdict on one drawn character. */
 export interface WritingResult {
@@ -123,9 +123,23 @@ export interface Attempt extends AttemptDetail {
   durationMs: number;
 }
 
+/** A finished lesson or unit writing session (or one marked known at onboarding). */
+export interface LessonProgress {
+  /** The lesson id (`hsk1-u01-l1`) or the unit's writing session id (`hsk1-u01-writing`). */
+  id: string;
+  bundle: Bundle;
+  kind: 'lesson' | 'writing';
+  completedAt: number;
+  right: number;
+  total: number;
+  /** Marked by the onboarding level choice rather than done; it does not count towards the daily goal. */
+  known: boolean;
+  updatedAt: number;
+}
+
 export interface OutboxEntry {
   id: string;
-  entity: 'deck' | 'card' | 'item' | 'review' | 'attempt';
+  entity: 'deck' | 'card' | 'item' | 'review' | 'attempt' | 'lessonProgress';
   entityId: string;
   op: 'put' | 'delete';
   at: number;

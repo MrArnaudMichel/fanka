@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Deck } from '~core/db/schema';
-import { createSupabaseTransport, deckFromRow, deckToRow } from '~core/sync/supabase';
+import { createSupabaseTransport, deckFromRow, deckToRow, lessonProgressFromRow, lessonProgressToRow } from '~core/sync/supabase';
 
 /**
  * A minimal stand-in for a real Supabase table's query chain: `select`,
@@ -49,7 +49,7 @@ const aDeckRow = (id: string, updatedAt: number) => ({
 describe('createSupabaseTransport pull paging', () => {
   it('pages past the 1000-row default in one table and stitches every row', async () => {
     const rows = Array.from({ length: 1500 }, (_, i) => aDeckRow(`d${i}`, i + 1));
-    const { client, rangeCalls } = fakeClient({ decks: rows, cards: [], items: [], reviews: [], attempts: [] });
+    const { client, rangeCalls } = fakeClient({ decks: rows, cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] });
     const transport = createSupabaseTransport(client, 'u1');
 
     const result = await transport.pull(0);
@@ -61,7 +61,7 @@ describe('createSupabaseTransport pull paging', () => {
 
   it('stops after one page when the table has fewer than PAGE rows', async () => {
     const rows = [aDeckRow('d1', 5), aDeckRow('d2', 9)];
-    const { client, rangeCalls } = fakeClient({ decks: rows, cards: [], items: [], reviews: [], attempts: [] });
+    const { client, rangeCalls } = fakeClient({ decks: rows, cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] });
     const transport = createSupabaseTransport(client, 'u1');
 
     const result = await transport.pull(0);
@@ -72,7 +72,7 @@ describe('createSupabaseTransport pull paging', () => {
 
   it('asks one more, empty page when a table lands exactly on a page boundary', async () => {
     const rows = Array.from({ length: 1000 }, (_, i) => aDeckRow(`d${i}`, i + 1));
-    const { client, rangeCalls } = fakeClient({ decks: rows, cards: [], items: [], reviews: [], attempts: [] });
+    const { client, rangeCalls } = fakeClient({ decks: rows, cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] });
     const transport = createSupabaseTransport(client, 'u1');
 
     const result = await transport.pull(0);
@@ -94,5 +94,26 @@ describe('deck bundle mapping', () => {
   it('writes the deck bundle', () => {
     const deck = deckFromRow(aDeckRow('d1', 1) as never);
     expect(deckToRow({ ...deck, bundle: 'mainland' } satisfies Deck, 'u').bundle).toBe('mainland');
+  });
+});
+
+describe('lesson progress mapping', () => {
+  const progress = { id: 'hsk1-u01-l1', bundle: 'mainland', kind: 'lesson', completedAt: 5, right: 4, total: 5, known: false, updatedAt: 6 } as const;
+
+  it('writes snake_case columns', () => {
+    expect(lessonProgressToRow(progress, 'u1')).toEqual({
+      id: 'hsk1-u01-l1', user_id: 'u1', bundle: 'mainland', kind: 'lesson', completed_at: 5, right_count: 4, total: 5, known: false, updated_at: 6,
+    });
+  });
+
+  it('reads them back', () => {
+    expect(lessonProgressFromRow(lessonProgressToRow(progress, 'u1'))).toEqual(progress);
+  });
+
+  it('pulls lesson_progress rows and moves the cursor past them', async () => {
+    const { client } = fakeClient({ lesson_progress: [{ ...lessonProgressToRow(progress, 'u1') }] });
+    const result = await createSupabaseTransport(client, 'u1').pull(0);
+    expect(result.lessonProgress).toEqual([progress]);
+    expect(result.at).toBe(6);
   });
 });

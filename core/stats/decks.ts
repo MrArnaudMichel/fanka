@@ -72,7 +72,7 @@ export function deckComparison(data: FilteredSnapshot, window: StatsWindow, now:
 
   const practisedCards = new Map<string, Set<string>>();
   for (const a of data.attempts) {
-    if (a.source !== 'practice' || !inWindow(a.at, window, now)) continue;
+    if (a.source === 'scheduled' || !inWindow(a.at, window, now)) continue;
     const row = rows.get(a.deckId);
     if (!row) continue;
     row.practice.total += 1;

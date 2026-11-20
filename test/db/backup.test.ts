@@ -22,7 +22,7 @@ describe('backup I/O', () => {
   it('applies only newer rows, queues each for sync and replaces settings', async () => {
     await db.decks.put(deck('d1', 10));
     const backup = buildBackup(
-      { decks: [deck('d1', 5), deck('d2', 3)], cards: [], items: [], reviews: [], attempts: [] },
+      { decks: [deck('d1', 5), deck('d2', 3)], cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] },
       { ...DEFAULT_SETTINGS, newPerDay: 33 },
       100,
     );
@@ -42,12 +42,29 @@ describe('backup I/O', () => {
         items: [{ id: 'i1', cardId: 'c1', updatedAt: 1 } as never],
         reviews: [{ id: 'r1', itemId: 'i1', reviewedAt: 1 } as never],
         attempts: [{ id: 'a1', at: 1, itemId: 'i1', cardId: 'c1', deckId: 'd1', mode: 'review', source: 'session' } as never],
+        lessonProgress: [{ id: 'hsk1-u01-l1', updatedAt: 1 } as never],
       },
       DEFAULT_SETTINGS,
       100,
     );
     await applyBackup(backup, 200);
-    expect((await db.outbox.toArray()).map((o) => `${o.entity}:${o.entityId}`).sort()).toEqual(['attempt:a1', 'card:c1', 'deck:d1', 'item:i1', 'review:r1']);
+    expect((await db.outbox.toArray()).map((o) => `${o.entity}:${o.entityId}`).sort()).toEqual(['attempt:a1', 'card:c1', 'deck:d1', 'item:i1', 'lessonProgress:hsk1-u01-l1', 'review:r1']);
+  });
+
+  it('round-trips lesson progress through a file and reads an old file without it', async () => {
+    const row = { id: 'hsk1-u01-l1', bundle: 'mainland', kind: 'lesson', completedAt: 5, right: 4, total: 5, known: false, updatedAt: 5 } as const;
+    await db.lessonProgress.put(row);
+    const text = JSON.stringify(buildBackup(await readBackupData(), DEFAULT_SETTINGS, 100));
+    await resetDevice();
+    const parsed = parseBackup(text);
+    if (!parsed.ok) throw new Error(parsed.error);
+    await applyBackup(parsed.backup, 200);
+    expect(await db.lessonProgress.get(row.id)).toEqual(row);
+
+    const old = JSON.parse(text);
+    delete old.lessonProgress;
+    const oldParsed = parseBackup(JSON.stringify(old));
+    expect(oldParsed.ok && oldParsed.backup.lessonProgress).toEqual([]);
   });
 
   it('resets the device but keeps the seed marker so nothing reseeds', async () => {
@@ -75,7 +92,7 @@ describe('backup settings from before onboarding', () => {
   it('keeps the device onboarded and in its bundle', async () => {
     await db.settings.put({ key: 'settings', value: { ...DEFAULT_SETTINGS, onboardedAt: 5, bundle: 'taiwan' } });
     const { onboardedAt: _o, bundle: _b, ...old } = DEFAULT_SETTINGS;
-    const parsed = parseBackup(JSON.stringify(buildBackup({ decks: [], cards: [], items: [], reviews: [], attempts: [] }, old as never, 100)));
+    const parsed = parseBackup(JSON.stringify(buildBackup({ decks: [], cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] }, old as never, 100)));
     if (!parsed.ok) throw new Error(parsed.error);
     await applyBackup(parsed.backup, 200);
     const s = await loadSettings();
@@ -86,7 +103,7 @@ describe('backup settings from before onboarding', () => {
 
 describe('backup without bundles', () => {
   it('restores a backup made before bundles with Taiwan decks', async () => {
-    const old = { ...buildBackup({ decks: [deck('d1', 1)], cards: [], items: [], reviews: [], attempts: [] }, DEFAULT_SETTINGS, 100) };
+    const old = { ...buildBackup({ decks: [deck('d1', 1)], cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] }, DEFAULT_SETTINGS, 100) };
     const parsed = parseBackup(JSON.stringify(old));
     if (!parsed.ok) throw new Error(parsed.error);
     await applyBackup(parsed.backup, 200);
@@ -94,7 +111,7 @@ describe('backup without bundles', () => {
   });
 
   it('turns an invalid bundle into taiwan', () => {
-    const odd = { ...buildBackup({ decks: [{ id: 'd1', name: 'd1', updatedAt: 1, deletedAt: null, bundle: 'foo' } as never], cards: [], items: [], reviews: [], attempts: [] }, DEFAULT_SETTINGS, 100) };
+    const odd = { ...buildBackup({ decks: [{ id: 'd1', name: 'd1', updatedAt: 1, deletedAt: null, bundle: 'foo' } as never], cards: [], items: [], reviews: [], attempts: [], lessonProgress: [] }, DEFAULT_SETTINGS, 100) };
     const parsed = parseBackup(JSON.stringify(odd));
     if (!parsed.ok) throw new Error(parsed.error);
     expect(parsed.backup.decks[0]!.bundle).toBe('taiwan');

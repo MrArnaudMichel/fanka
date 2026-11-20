@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Bundle } from '~core/chinese/script';
-import type { Attempt, Card, Deck, Direction, Item, PartOfSpeech, Review } from '~core/db/schema';
+import type { Attempt, Card, Deck, Direction, Item, LessonProgress, PartOfSpeech, Review } from '~core/db/schema';
 import type { ItemState } from '~core/srs';
 import type { LocalChanges, RemoteChanges, SyncTransport } from './types';
 
@@ -248,6 +248,32 @@ function attemptToRow(a: Attempt, userId: string): AttemptRow {
   };
 }
 
+interface LessonProgressRow {
+  id: string;
+  user_id: string;
+  bundle: Bundle;
+  kind: LessonProgress['kind'];
+  completed_at: number;
+  right_count: number;
+  total: number;
+  known: boolean;
+  updated_at: number;
+}
+
+export function lessonProgressFromRow(row: LessonProgressRow): LessonProgress {
+  return {
+    id: row.id, bundle: row.bundle, kind: row.kind, completedAt: row.completed_at,
+    right: row.right_count, total: row.total, known: row.known, updatedAt: row.updated_at,
+  };
+}
+
+export function lessonProgressToRow(p: LessonProgress, userId: string): LessonProgressRow {
+  return {
+    id: p.id, user_id: userId, bundle: p.bundle, kind: p.kind, completed_at: p.completedAt,
+    right_count: p.right, total: p.total, known: p.known, updated_at: p.updatedAt,
+  };
+}
+
 const PAGE_SIZE = 1000;
 
 /**
@@ -294,12 +320,13 @@ function maxAt(since: number, values: number[]): number {
 export function createSupabaseTransport(client: SupabaseClient, userId: string): SyncTransport {
   return {
     async pull(since: number): Promise<RemoteChanges> {
-      const [deckRows, cardRows, itemRows, reviewRows, attemptRows] = await Promise.all([
+      const [deckRows, cardRows, itemRows, reviewRows, attemptRows, lessonProgressRows] = await Promise.all([
         pageAll<DeckRow>((from, to) => client.from('decks').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id').range(from, to)),
         pageAll<CardRow>((from, to) => client.from('cards').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id').range(from, to)),
         pageAll<ItemRow>((from, to) => client.from('items').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id').range(from, to)),
         pageAll<ReviewRow>((from, to) => client.from('reviews').select('*').eq('user_id', userId).gt('reviewed_at', since).order('reviewed_at').order('id').range(from, to)),
         pageAll<AttemptRow>((from, to) => client.from('attempts').select('*').eq('user_id', userId).gt('at', since).order('at').order('id').range(from, to)),
+        pageAll<LessonProgressRow>((from, to) => client.from('lesson_progress').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id').range(from, to)),
       ]);
 
       const decks = deckRows.map(deckFromRow);
@@ -307,6 +334,7 @@ export function createSupabaseTransport(client: SupabaseClient, userId: string):
       const items = itemRows.map(itemFromRow);
       const reviews = reviewRows.map(reviewFromRow);
       const attempts = attemptRows.map(attemptFromRow);
+      const lessonProgress = lessonProgressRows.map(lessonProgressFromRow);
 
       const at = maxAt(since, [
         ...decks.map((d) => d.updatedAt),
@@ -314,9 +342,10 @@ export function createSupabaseTransport(client: SupabaseClient, userId: string):
         ...items.map((i) => i.updatedAt),
         ...reviews.map((r) => r.reviewedAt),
         ...attempts.map((a) => a.at),
+        ...lessonProgress.map((p) => p.updatedAt),
       ]);
 
-      return { decks, cards, items, reviews, attempts, at };
+      return { decks, cards, items, reviews, attempts, lessonProgress, at };
     },
 
     async push(changes: LocalChanges): Promise<{ at: number }> {
@@ -343,6 +372,15 @@ export function createSupabaseTransport(client: SupabaseClient, userId: string):
           .from('items')
           .upsert(
             changes.items.map((i) => itemToRow(i, userId)),
+            { onConflict: 'user_id,id' },
+          );
+        if (error) throw error;
+      }
+      if (changes.lessonProgress.length > 0) {
+        const { error } = await client
+          .from('lesson_progress')
+          .upsert(
+            changes.lessonProgress.map((p) => lessonProgressToRow(p, userId)),
             { onConflict: 'user_id,id' },
           );
         if (error) throw error;

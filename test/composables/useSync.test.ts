@@ -22,8 +22,8 @@ const { calls, runSync } = vi.hoisted(() => {
           resolve: () => {
             done();
             resolve({
-              pushed: { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 },
-              pulled: { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0 },
+              pushed: { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0, lessonProgress: 0 },
+              pulled: { decks: 0, cards: 0, items: 0, reviews: 0, attempts: 0, lessonProgress: 0 },
             });
           },
           reject: (err: Error) => {

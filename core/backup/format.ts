@@ -3,7 +3,7 @@
  * file I/O — `core/db/backup.ts` reads and writes the database, and
  * `useBackup` gets the file in and out of the device.
  */
-import type { Attempt, Card, Deck, Item, Review } from '~core/db/schema';
+import type { Attempt, Card, Deck, Item, LessonProgress, Review } from '~core/db/schema';
 import type { Settings } from '~core/db/settings';
 
 export interface BackupData {
@@ -12,6 +12,7 @@ export interface BackupData {
   items: Item[];
   reviews: Review[];
   attempts: Attempt[];
+  lessonProgress: LessonProgress[];
 }
 
 export interface Backup extends BackupData {
@@ -24,6 +25,8 @@ export interface Backup extends BackupData {
 export type ParsedBackup = { ok: true; backup: Backup } | { ok: false; error: string };
 
 const TABLES = ['decks', 'cards', 'items', 'reviews', 'attempts'] as const;
+/** Tables a backup may lack because it predates them; read as empty. */
+const OPTIONAL_TABLES = ['lessonProgress'] as const;
 const NOT_A_BACKUP = 'This file is not a Fanka backup.';
 const DAMAGED = 'This backup is damaged.';
 
@@ -55,14 +58,14 @@ export function parseBackup(text: string): ParsedBackup {
   if (candidate.version !== 1 || typeof candidate.exportedAt !== 'number' || !Number.isFinite(candidate.exportedAt)) {
     return { ok: false, error: DAMAGED };
   }
-  const tablesOk = TABLES.every(
-    (table) => Array.isArray(candidate[table]) && (candidate[table] as unknown[]).every((row) => typeof (row as { id?: unknown })?.id === 'string'),
-  );
+  const rowsOk = (table: string) => Array.isArray(candidate[table]) && (candidate[table] as unknown[]).every((row) => typeof (row as { id?: unknown })?.id === 'string');
+  const tablesOk = TABLES.every(rowsOk) && OPTIONAL_TABLES.every((table) => candidate[table] === undefined || rowsOk(table));
   const settingsOk = typeof candidate.settings === 'object' && candidate.settings !== null && !Array.isArray(candidate.settings);
   if (!tablesOk || !settingsOk) {
     return { ok: false, error: DAMAGED };
   }
   const backup = candidate as unknown as Backup;
+  backup.lessonProgress ??= [];
   // A backup made before bundles has decks without one; they are Taiwan decks, as is any invalid value.
   backup.decks = backup.decks.map((deck) => ({ ...deck, bundle: deck.bundle === 'mainland' ? 'mainland' : 'taiwan' }));
   return { ok: true, backup };
@@ -93,5 +96,6 @@ export function mergePlan(local: BackupData, backup: BackupData): BackupData {
     items: newer(local.items, backup.items),
     reviews: absent(local.reviews, backup.reviews),
     attempts: absent(local.attempts, backup.attempts),
+    lessonProgress: newer(local.lessonProgress, backup.lessonProgress),
   };
 }

@@ -32,7 +32,7 @@ describe('forgetSyncedAccount', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     const forgotten = forgetSyncedAccount();
-    resolvePull({ decks: [], cards: [], items: [], reviews: [], attempts: [], at: 999 });
+    resolvePull({ decks: [], cards: [], items: [], reviews: [], attempts: [], lessonProgress: [], at: 999 });
     await Promise.all([sync, forgotten]);
 
     expect(await db.syncState.get('lastPulledAt')).toBeUndefined();

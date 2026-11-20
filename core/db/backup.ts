@@ -8,18 +8,20 @@ export interface RestoreResult {
   items: number;
   reviews: number;
   attempts: number;
+  lessonProgress: number;
 }
 
 /** Every row, soft-deleted ones too, so a restore cannot bring a deleted card back. */
 export async function readBackupData(): Promise<BackupData> {
-  const [decks, cards, items, reviews, attempts] = await Promise.all([
+  const [decks, cards, items, reviews, attempts, lessonProgress] = await Promise.all([
     db.decks.toArray(),
     db.cards.toArray(),
     db.items.toArray(),
     db.reviews.toArray(),
     db.attempts.toArray(),
+    db.lessonProgress.toArray(),
   ]);
-  return { decks, cards, items, reviews, attempts };
+  return { decks, cards, items, reviews, attempts, lessonProgress };
 }
 
 function queued(entity: OutboxEntry['entity'], ids: string[], at: number): OutboxEntry[] {
@@ -28,19 +30,21 @@ function queued(entity: OutboxEntry['entity'], ids: string[], at: number): Outbo
 
 /** Merges `backup` in one transaction; every row written is queued for sync. Settings are replaced. */
 export async function applyBackup(backup: Backup, now: number): Promise<RestoreResult> {
-  return db.transaction('rw', [db.decks, db.cards, db.items, db.reviews, db.attempts, db.outbox, db.settings], async () => {
+  return db.transaction('rw', [db.decks, db.cards, db.items, db.reviews, db.attempts, db.lessonProgress, db.outbox, db.settings], async () => {
     const plan = mergePlan(await readBackupData(), backup);
     await db.decks.bulkPut(plan.decks);
     await db.cards.bulkPut(plan.cards);
     await db.items.bulkPut(plan.items);
     await db.reviews.bulkPut(plan.reviews);
     await db.attempts.bulkPut(plan.attempts);
+    await db.lessonProgress.bulkPut(plan.lessonProgress);
     await db.outbox.bulkPut([
       ...queued('deck', plan.decks.map((r) => r.id), now),
       ...queued('card', plan.cards.map((r) => r.id), now),
       ...queued('item', plan.items.map((r) => r.id), now),
       ...queued('review', plan.reviews.map((r) => r.id), now),
       ...queued('attempt', plan.attempts.map((r) => r.id), now),
+      ...queued('lessonProgress', plan.lessonProgress.map((r) => r.id), now),
     ]);
     // A backup from before onboarding has neither field; keep this device's.
     const current = (await db.settings.get('settings'))?.value as { onboardedAt?: unknown; bundle?: unknown } | undefined;
@@ -55,6 +59,7 @@ export async function applyBackup(backup: Backup, now: number): Promise<RestoreR
       items: plan.items.length,
       reviews: plan.reviews.length,
       attempts: plan.attempts.length,
+      lessonProgress: plan.lessonProgress.length,
     };
   });
 }
@@ -65,7 +70,7 @@ export async function applyBackup(backup: Backup, now: number): Promise<RestoreR
  * the seed marker, so the starter deck is not added again.
  */
 export async function resetDevice(): Promise<void> {
-  const tables = [db.decks, db.cards, db.items, db.reviews, db.attempts, db.outbox, db.syncState, db.settings, db.importMappings];
+  const tables = [db.decks, db.cards, db.items, db.reviews, db.attempts, db.lessonProgress, db.outbox, db.syncState, db.settings, db.importMappings];
   await db.transaction('rw', tables, async () => {
     const seed = await db.settings.get('seedVersion');
     await Promise.all(tables.map((table) => table.clear()));
