@@ -65,7 +65,15 @@ function cardFor(word: Word, deckId: string, levelName: string, now: number): Ca
 
 async function ensureDeck(bundle: Bundle, level: LevelRef, now: number): Promise<string> {
   const id = curriculumDeckId(bundle, level.level);
-  if (await db.decks.get(id)) return id;
+  const existing = await db.decks.get(id);
+  if (existing) {
+    // A deleted deck would hide the reviews this lesson creates.
+    if (existing.deletedAt !== null) {
+      await db.decks.put({ ...existing, deletedAt: null, updatedAt: now });
+      await db.outbox.put(outboxEntry('deck', id, 'put', now));
+    }
+    return id;
+  }
   const deck: Deck = {
     id,
     name: level.name,
@@ -81,6 +89,15 @@ async function ensureDeck(bundle: Bundle, level: LevelRef, now: number): Promise
   await db.decks.put(deck);
   await db.outbox.put(outboxEntry('deck', id, 'put', now));
   return id;
+}
+
+/** The word's card: created when missing, restored when it was deleted. */
+async function ensureCard(word: Word, deckId: string, levelName: string, now: number): Promise<void> {
+  const existing = await db.cards.get(word.id);
+  if (existing?.deletedAt === null) return;
+  const card = existing ? { ...existing, deletedAt: null, updatedAt: now } : cardFor(word, deckId, levelName, now);
+  await db.cards.put(card);
+  await db.outbox.put(outboxEntry('card', word.id, 'put', now));
 }
 
 /** The item for `wordId` in `dir`, seeded when it is new; an existing one is kept as it is. */
@@ -160,17 +177,14 @@ export async function completeLesson(input: {
     const deckId = await ensureDeck(bundle, level, now);
     const itemsByWord = new Map<string, Item>();
     for (const word of words) {
-      if (!(await db.cards.get(word.id))) {
-        await db.cards.put(cardFor(word, deckId, level.name, now));
-        await db.outbox.put(outboxEntry('card', word.id, 'put', now));
-      }
+      await ensureCard(word, deckId, level.name, now);
       itemsByWord.set(word.id, await ensureItem(word.id, 'recognition', allRight(results, word.id), now, scheduler, settings));
     }
-    for (const result of results) {
-      const item = itemsByWord.get(result.wordId);
-      if (item) await logAttempt(item, deckId, result.exercise === 'writing' ? 'writing' : 'review', result);
+    const kept = results.filter((result) => itemsByWord.has(result.wordId));
+    for (const result of kept) {
+      await logAttempt(itemsByWord.get(result.wordId)!, deckId, result.exercise === 'writing' ? 'writing' : 'review', result);
     }
-    await putProgress(lesson.id, bundle, 'lesson', results, now);
+    await putProgress(lesson.id, bundle, 'lesson', kept, now);
   });
 }
 
@@ -191,17 +205,16 @@ export async function completeWriting(input: {
 }): Promise<void> {
   const { bundle, level, unit, words, results, now, scheduler, settings, hasStrokes } = input;
   const writable = new Set(writingCharacters(words, hasStrokes).map((w) => w.wordId));
-  await db.transaction('rw', [db.cards, db.items, db.attempts, db.lessonProgress, db.outbox], async () => {
+  await db.transaction('rw', [db.decks, db.cards, db.items, db.attempts, db.lessonProgress, db.outbox], async () => {
+    const deckId = await ensureDeck(bundle, level, now);
     const itemsByWord = new Map<string, Item>();
     for (const word of words) {
       if (!writable.has(word.id) || !(await db.cards.get(word.id))) continue;
+      await ensureCard(word, deckId, level.name, now);
       itemsByWord.set(word.id, await ensureItem(word.id, 'production', allRight(results, word.id), now, scheduler, settings));
     }
-    const deckId = curriculumDeckId(bundle, level.level);
-    for (const result of results) {
-      const item = itemsByWord.get(result.wordId);
-      if (item) await logAttempt(item, deckId, 'writing', result);
-    }
-    await putProgress(writingId(unit.id), bundle, 'writing', results, now);
+    const kept = results.filter((result) => itemsByWord.has(result.wordId));
+    for (const result of kept) await logAttempt(itemsByWord.get(result.wordId)!, deckId, 'writing', result);
+    await putProgress(writingId(unit.id), bundle, 'writing', kept, now);
   });
 }

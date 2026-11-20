@@ -94,6 +94,36 @@ async function mine() {
   return card;
 }
 
+describe('deleted decks and cards', () => {
+  it('restores a soft-deleted deck and card on completing a lesson', async () => {
+    await completeLesson({ ...base, results: [r('hsk1-0001', true), r('hsk1-0002', true)] });
+    await db.decks.update('curriculum:hsk1', { deletedAt: 5 });
+    await db.cards.update('hsk1-0001', { deletedAt: 5 });
+    await db.outbox.clear();
+    await completeLesson({ ...base, now: NOW + 1000, results: [r('hsk1-0001', true), r('hsk1-0002', true)] });
+    expect(await db.decks.get('curriculum:hsk1')).toMatchObject({ deletedAt: null, updatedAt: NOW + 1000 });
+    expect(await db.cards.get('hsk1-0001')).toMatchObject({ deletedAt: null, updatedAt: NOW + 1000 });
+    const keys = (await db.outbox.toArray()).map((o) => `${o.entity}:${o.entityId}`);
+    expect(keys).toContain('deck:curriculum:hsk1');
+    expect(keys).toContain('card:hsk1-0001');
+  });
+
+  it('restores them on completing a writing session too', async () => {
+    await completeLesson({ ...base, results: [r('hsk1-0001', true)] });
+    await db.decks.update('curriculum:hsk1', { deletedAt: 5 });
+    await db.cards.update('hsk1-0001', { deletedAt: 5 });
+    await completeWriting({ bundle: 'mainland', level, unit, words, now: NOW + 1000, scheduler, settings, results: [{ wordId: 'hsk1-0001', right: true, at: NOW, durationMs: 1 }], hasStrokes: () => true });
+    expect((await db.decks.get('curriculum:hsk1'))!.deletedAt).toBeNull();
+    expect((await db.cards.get('hsk1-0001'))!.deletedAt).toBeNull();
+  });
+
+  it('scores only the results of words that were kept', async () => {
+    await completeLesson({ ...base, results: [r('hsk1-0001', true), r('stranger', false)] });
+    expect(await db.lessonProgress.get(lesson.id)).toMatchObject({ right: 1, total: 1 });
+    expect(await db.attempts.count()).toBe(1);
+  });
+});
+
 describe('completeWriting', () => {
   const writing = { bundle: 'mainland' as const, level, unit, words, now: NOW, scheduler, settings };
   const wr = (wordId: string, right: boolean) => ({ wordId, right, at: NOW, durationMs: 800 });

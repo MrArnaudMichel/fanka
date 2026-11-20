@@ -43,6 +43,7 @@ export function useLesson(id: string) {
   const missing = ref(false);
   let startedAt = Date.now();
   let shownAt = Date.now();
+  let finishing: Promise<void> | null = null;
 
   const current = computed(() => exercises.value[position.value] ?? null);
   const done = computed(() => exercises.value.length > 0 && position.value >= exercises.value.length);
@@ -110,7 +111,13 @@ export function useLesson(id: string) {
   }
 
   /** Writes the cards, reviews and progress in one go, then refreshes the due counts. */
-  async function finish(): Promise<void> {
+  function finish(): Promise<void> {
+    // Set before the first await, so a second tap shares the write in flight.
+    finishing ??= write();
+    return finishing;
+  }
+
+  async function write(): Promise<void> {
     const t = target.value;
     if (!t || finished.value) return;
     const now = Date.now();
