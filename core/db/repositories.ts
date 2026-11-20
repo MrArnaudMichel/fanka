@@ -13,7 +13,7 @@ function uid(): string {
   return crypto.randomUUID();
 }
 
-function outboxEntry(entity: OutboxEntry['entity'], entityId: string, op: OutboxEntry['op'], at: number): OutboxEntry {
+export function outboxEntry(entity: OutboxEntry['entity'], entityId: string, op: OutboxEntry['op'], at: number): OutboxEntry {
   return { id: uid(), entity, entityId, op, at };
 }
 
