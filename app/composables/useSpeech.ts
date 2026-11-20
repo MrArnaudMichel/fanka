@@ -1,5 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import type { Bundle } from '~core/chinese/script';
+import { activeBundle } from '~core/db/bundle-scope';
 
 /** The few things the composable needs from a speech engine, so tests can fake it. */
 export interface SpeechEngine {
@@ -69,10 +71,15 @@ function defaultEngine(): SpeechEngine {
   return Capacitor.isNativePlatform() ? nativeEngine : webEngine;
 }
 
-/** zh-TW first, then any other Chinese voice. Tags are returned as the engine spelled them. */
-export function pickChineseLanguage(languages: string[]): string | null {
+/**
+ * The bundle's voice first (zh-CN for Mainland, zh-TW for Taiwan and before
+ * onboarding), then any other Chinese voice. Tags are returned as the engine spelled them.
+ */
+export function pickChineseLanguage(languages: string[], bundle: Bundle | null): string | null {
   const zh = languages.filter((l) => /^zh([-_]|$)/i.test(l));
-  return zh.find((l) => /^zh[-_]TW$/i.test(l)) ?? zh[0] ?? null;
+  const region = bundle === 'mainland' ? 'CN' : 'TW';
+  const wanted = new RegExp(`^zh[-_]${region}$`, 'i');
+  return zh.find((l) => wanted.test(l)) ?? zh[0] ?? null;
 }
 
 /**
@@ -83,13 +90,13 @@ export function useSpeech(engine?: SpeechEngine) {
   const tts = engine ?? defaultEngine();
   const supported = ref(false);
   const speaking = ref(false);
-  let lang: string | null = null;
+  let languages: string[] = [];
   let turn = 0;
 
   const ready: Promise<void> = (import.meta.client || engine
-    ? tts.languages().then((languages) => {
-        lang = pickChineseLanguage(languages);
-        supported.value = lang !== null;
+    ? tts.languages().then((available) => {
+        languages = available;
+        supported.value = pickChineseLanguage(languages, activeBundle()) !== null;
       })
     : Promise.resolve()
   ).catch((err: unknown) => {
@@ -98,6 +105,7 @@ export function useSpeech(engine?: SpeechEngine) {
 
   async function speak(text: string, { slow = false }: { slow?: boolean } = {}): Promise<void> {
     await ready;
+    const lang = pickChineseLanguage(languages, activeBundle());
     if (!lang || !text) return;
     const mine = ++turn;
     try {

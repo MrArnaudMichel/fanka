@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { type SpeechEngine, useSpeech } from '~/composables/useSpeech';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { setActiveBundle } from '~core/db/bundle-scope';
+import { pickChineseLanguage, type SpeechEngine, useSpeech } from '~/composables/useSpeech';
 
 function fakeEngine(languages: string[], overrides: Partial<SpeechEngine> = {}) {
   const calls: string[] = [];
@@ -16,7 +17,33 @@ function fakeEngine(languages: string[], overrides: Partial<SpeechEngine> = {}) 
   return { engine, calls };
 }
 
+describe('pickChineseLanguage', () => {
+  it('prefers zh-CN for Mainland and zh-TW for Taiwan', () => {
+    const all = ['en-US', 'zh-TW', 'zh_CN', 'zh-HK'];
+    expect(pickChineseLanguage(all, 'mainland')).toBe('zh_CN');
+    expect(pickChineseLanguage(all, 'taiwan')).toBe('zh-TW');
+    expect(pickChineseLanguage(all, null)).toBe('zh-TW');
+  });
+
+  it('falls back to any Chinese voice', () => {
+    expect(pickChineseLanguage(['zh-TW'], 'mainland')).toBe('zh-TW');
+    expect(pickChineseLanguage(['en-US'], 'taiwan')).toBeNull();
+  });
+});
+
 describe('useSpeech', () => {
+  afterEach(() => setActiveBundle(null));
+
+  it('follows a bundle switch without a reload', async () => {
+    const { engine, calls } = fakeEngine(['zh-CN', 'zh-TW']);
+    const s = useSpeech(engine);
+    setActiveBundle('mainland');
+    await s.speak('你好');
+    setActiveBundle('taiwan');
+    await s.speak('你好');
+    expect(calls).toEqual(['cancel', 'speak:你好:zh-CN:0.9', 'cancel', 'speak:你好:zh-TW:0.9']);
+  });
+
   it('prefers zh-TW over zh-CN', async () => {
     const { engine, calls } = fakeEngine(['en-US', 'zh-CN', 'zh-TW']);
     const s = useSpeech(engine);
