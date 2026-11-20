@@ -1,0 +1,14 @@
+{
+  "hsk": {
+    "url": "https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/7ac65bf1a6387d35f1ade478906172a19311c7f9/complete.json",
+    "sha256": "c869a0ce353279c9333d9b42c31fc3549785e8b40673dab57ee42bc99cd14131"
+  },
+  "tbcl": {
+    "url": "https://coct.naer.edu.tw/file/files/14452%E8%A9%9E%E8%AA%9E%E8%A1%A8202504.xlsx",
+    "sha256": "0cf6666bd1ed9af62b452bc5306bdc4d4520aead9c31b404e2065e8e075dfbad"
+  },
+  "cedict": {
+    "url": "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz",
+    "sha256": "26ee61c4259c9c52bff630d2f7a9920511c3c519b876c7f18391766e1b703540"
+  }
+}
