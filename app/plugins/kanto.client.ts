@@ -27,7 +27,6 @@ import {
   List,
   LogOut,
   Mail,
-  Mic,
   Move,
   Palette,
   Pause,
@@ -97,9 +96,7 @@ export default defineNuxtPlugin(async () => {
   // Cloud, EyeOff, Server, Type, Mail, Copy, CircleCheck and FileText are the
   // legal pages' sections and contact actions (Smartphone is also the dev
   // /install nav entry). Calendar, TrendingUp and TrendingDown are the
-  // statistics Overview's tiles and insights. Mic is the Speaking nav entry;
-  // Eye and EyeOff show and hide its model answers, and
-  // Square stops its playback. Shapes is the Radicals nav entry.
+  // statistics Overview's tiles and insights. Shapes is the Radicals nav entry.
   registerIcons({
     ArrowLeft,
     Bell,
@@ -128,7 +125,6 @@ export default defineNuxtPlugin(async () => {
     List,
     LogOut,
     Mail,
-    Mic,
     Move,
     Palette,
     Pause,
