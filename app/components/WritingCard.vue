@@ -26,6 +26,7 @@ defineEmits<{ speak: [text: string] }>();
           :colored="settings.toneColors"
           size="22px"
         />
+        <span v-else-if="showsZhuyin(settings) && (!settings.hidePinyinUntilRevealed || revealed)" class="zhuyin">{{ card.zhuyin }}</span>
       </div>
 
       <slot />

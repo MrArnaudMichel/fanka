@@ -140,6 +140,10 @@ the local equivalent.
 Google Play gets a signed Android App Bundle. Play App Signing holds the app
 signing key; you keep only the upload key, which Google can reset if lost.
 
+Before shipping a build with deck bundles, run `supabase db push` so
+migration 0004 adds `decks.bundle`. Until it is applied, deck sync fails on
+every signed-in device (the outbox keeps the rows).
+
 ### Once: the upload key
 
 1. `npm run android:keystore` prints the `keytool` command. Run it and choose

@@ -14,8 +14,7 @@ export interface DeckInput {
 export type DeckPatch = Partial<DeckInput>;
 
 /**
- * The bundle a new deck is made in. The one place to change when Settings
- * carries the learner's bundle; until then everything is Taiwan.
+ * The bundle a new deck is made in: the active one, Taiwan before onboarding.
  */
 export function currentBundle(): Bundle {
   return activeBundle() ?? 'taiwan';

@@ -132,6 +132,8 @@ test('switching what you learn hides the other bundle\'s decks, and back', async
   await page.goto('/settings/study');
   await page.getByRole('button', { name: /Mainland Chinese/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-bundle', 'mainland');
+  await page.goto('/radicals');
+  await expect(page).toHaveURL(/\/$/);
   await page.goto('/decks');
   await expect(page.getByRole('heading', { name: 'Decks', level: 1 })).toBeVisible();
   await expect(page.getByText('HSK 1 — traditional')).toHaveCount(0);

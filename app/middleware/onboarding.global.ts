@@ -16,4 +16,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const { settings } = useSettings();
   if (needsOnboarding(settings.value, to.path)) return navigateTo('/welcome', { replace: true });
   if (to.path === '/welcome' && settings.value.onboardedAt !== null) return navigateTo('/', { replace: true });
+  // Radicals are Traditional-only for now; the nav hides them, this covers a typed URL.
+  if (to.path === '/radicals' && settings.value.bundle === 'mainland') return navigateTo('/', { replace: true });
 });

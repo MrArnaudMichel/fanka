@@ -4,6 +4,7 @@ import { toZhuyin } from '~core/chinese/zhuyin';
 import { cards, decks as deckRepository, items } from '~core/db/repositories';
 import type { Card, Deck, Direction, PartOfSpeech } from '~core/db/schema';
 import { type CardDraft, type Issue, validateCard } from '~core/import/validate';
+import { currentBundle } from '~/composables/useDecks';
 import { refreshDueCounts } from '~/composables/useDueCounts';
 
 function uid(): string {
@@ -144,7 +145,7 @@ export function useCardEditor(id?: string) {
   });
 
   /** The script the card must be written in: the target deck's bundle. */
-  const bundle = computed<Bundle>(() => deckList.value.find((d) => d.id === draft.deckId)?.bundle ?? 'taiwan');
+  const bundle = computed<Bundle>(() => deckList.value.find((d) => d.id === draft.deckId)?.bundle ?? currentBundle());
 
   const issues = computed<Issue[]>(() => validateCard(toCardDraft(draft), existingHanzi.value, bundle.value).issues);
 

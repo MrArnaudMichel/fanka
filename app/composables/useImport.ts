@@ -10,6 +10,7 @@ import { findImportMapping, saveImportMapping } from '~core/db/import-mappings';
 import { cards, decks as deckRepository } from '~core/db/repositories';
 import { type Card, type Deck, type Direction, type Item, type OutboxEntry, itemId } from '~core/db/schema';
 import { newSrsState } from '~core/srs';
+import { currentBundle } from '~/composables/useDecks';
 import { refreshDueCounts } from '~/composables/useDueCounts';
 
 export type SourceMode = 'file' | 'paste';
@@ -276,7 +277,7 @@ export function useImport() {
     }
     drafts = applyMapping(rows.value, mapping.value);
     deckHanzi = new Set((await cards.forDeck(targetDeckId.value)).map((c) => c.hanzi));
-    bundle = decks.value.find((d) => d.id === targetDeckId.value)?.bundle ?? 'taiwan';
+    bundle = decks.value.find((d) => d.id === targetDeckId.value)?.bundle ?? currentBundle();
     results.value = validateImportRows(drafts, deckHanzi, bundle);
   }
 

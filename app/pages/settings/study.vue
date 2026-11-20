@@ -2,6 +2,7 @@
 import { toaster } from 'kanto-ds';
 import type { KtOption } from 'kanto-ds';
 import type { Bundle } from '~core/chinese/script';
+import { refreshDueCounts } from '~/composables/useDueCounts';
 import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useLeaveGuard } from '~/composables/useLeaveGuard';
 import { useSettings } from '~/composables/useSettings';
@@ -29,6 +30,7 @@ async function onBundle(bundle: Bundle): Promise<void> {
   if (bundle === settings.value.bundle) return;
   try {
     await update({ bundle });
+    await refreshDueCounts();
   } catch (err) {
     console.error('study settings: failed to switch bundle', err);
     toaster.error("Couldn't switch", { description: 'Try again.' });

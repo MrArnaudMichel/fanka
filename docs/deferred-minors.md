@@ -154,3 +154,19 @@ findings are never parked here.
 | `scripts/build-store-graphics.mjs` | Text uses the system `sans-serif`, so a rebuild elsewhere looks different | The PNGs are committed | Play CI/CD final review |
 | `.github/workflows/*.yml` | `checkout`, `setup-node`, `setup-java`, `upload-artifact` at v4 run on Node 20, which GitHub is retiring | Deprecation warnings only, for now | Play CI/CD final review |
 | `docs/play-store.md` | Screenshot guidance says "at least 1080 px"; Play's hard limit is 320–3840 px, max 2:1 | Advice is stricter than the rule, not wrong | Play CI/CD final review |
+| Cross-tab | A second open tab keeps the previous bundle until reload; settings do not sync between tabs | No data loss: a stale tab cannot revert the bundle. Rare on a phone | Bundles and onboarding final review |
+| `app/composables/useReviewSession.ts` (restore) | Switching bundle with a half-finished session clears it: it is filtered to empty under the other bundle, then `clearSession` | Reviews already recorded are kept; only the cursor is lost | Bundles and onboarding final review |
+| `app/composables/useStudyDecks.ts` (`clear`) | "Study all" clears the other bundle's selection too | Selection only | Bundles and onboarding final review |
+| `app/components/ReviewCard.vue` | The example's pinyin is always shown, whatever `reading` says | Phase 3 rebuilds the example display | Bundles and onboarding final review |
+| `core/import/validate.ts` | `examplePinyin`, `zhuyin` and `translation` are not script-guarded | Not hanzi fields | Bundles and onboarding final review |
+| `app/composables/useOnboarding.ts` (`enableReminder`) | The reminder is saved before `finish`, so an abandoned onboarding keeps a reminder | Documented; the reminder only reopens the onboarding | Bundles and onboarding final review |
+| `app/pages/welcome.vue` | `min-height: 100vh` and `max-width: 72ch` are literal sizes | Kanto has no content-width token; mirrors the legal layout | Bundles and onboarding final review |
+| `app/pages/welcome.vue` | The preselection arrives asynchronously, and `Number(...) as 1 \| 2 \| 3` is an unchecked cast | Cosmetic; the options constrain the value | Bundles and onboarding final review |
+| `app/plugins/back-button.client.ts` | Android Back on `/welcome` calls `router.back()` with no history, so it does not step back through the onboarding | Native-only; on-screen Back exists | Bundles and onboarding final review |
+| `core/db/onboarding.ts` | `OPEN_PATHS` is an exact match: `/privacy/` with a trailing slash redirects | Play links have no trailing slash | Bundles and onboarding final review |
+| `app/pages/settings/display.vue` | The Reading control sits inside a `kt-label-input` and also has its own `label`; not checked whether it renders twice | Accessible-name only; check visually once | Bundles and onboarding final review |
+| e2e | No coverage for the reminder step, the page preselecting Taiwan on an existing install, `useNavigation` hiding Radicals, or `applyTheme` removing `data-bundle` | Unit logic is covered; the reminder needs a device check | Bundles and onboarding final review |
+| `scripts/build-simplified-set.mjs` | Filename and header still say "simplified-set"; the local `simplified` in `validate.ts` is misnamed; `generatedAt` churn | Naming only | Bundles and onboarding final review |
+| `test/db/backup.test.ts` | A duplicate import line; `migration-v5` closes a possibly unopened db | Test hygiene | Bundles and onboarding final review |
+| `app/composables/useSpeech.ts` | `supported` is computed once | It does not depend on the bundle in effect | Bundles and onboarding final review |
+| `core/db/repositories.ts` write paths | Card move and create check `deletedAt`, not `deckInScope`; direct `/decks/<id>` and `/cards/<id>` of the other bundle still open | The UI cannot target a hidden deck | Bundles and onboarding final review |
