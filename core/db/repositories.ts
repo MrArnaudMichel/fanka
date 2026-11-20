@@ -1,3 +1,4 @@
+import { deckInScope } from './bundle-scope';
 import { buildAttempt } from './attempts';
 import { db } from './db';
 import { type Attempt, type AttemptDetail, type AttemptSource, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
@@ -29,7 +30,7 @@ function byId<T extends { id: string }>(rows: (T | undefined)[]): Map<string, T>
 function cardVisible(card: Card | undefined, decksById: Map<string, Deck>): boolean {
   if (!card || card.deletedAt !== null) return false;
   const deck = decksById.get(card.deckId);
-  return deck !== undefined && deck.deletedAt === null;
+  return deck !== undefined && deckInScope(deck);
 }
 
 /** Whether the card belongs to one of `deckIds`; no set means every deck. */
@@ -187,7 +188,7 @@ export const decks = {
 
   async listAll(): Promise<Deck[]> {
     const all = await db.decks.toArray();
-    return all.filter((d) => d.deletedAt === null).sort((a, b) => compareNames(a.name, b.name));
+    return all.filter(deckInScope).sort((a, b) => compareNames(a.name, b.name));
   },
 
   async create(input: { name: string; description: string; colorToken: DeckColor; tag: string; bundle: Bundle }, now: number): Promise<Deck> {
@@ -249,7 +250,7 @@ export const decks = {
   async summaries(now: number): Promise<DeckSummary[]> {
     const allDecks = await db.decks.toArray();
     const decksById = byId(allDecks);
-    const liveDecks = allDecks.filter((d) => d.deletedAt === null).sort((a, b) => compareNames(a.name, b.name));
+    const liveDecks = allDecks.filter(deckInScope).sort((a, b) => compareNames(a.name, b.name));
 
     const visibleCards = (await db.cards.toArray()).filter((c) => cardVisible(c, decksById));
     const cardsByDeck = new Map<string, Card[]>();
@@ -691,6 +692,19 @@ export const stats = {
       db.cards.toArray(),
       db.decks.toArray(),
     ]);
-    return { attempts: attemptRows, reviews: reviewRows, items: itemRows, cards: cardRows, decks: deckRows };
+    // Only live decks of the other bundle are left out; deleted decks stay,
+    // as before, for the statistics code to treat as it already does.
+    const hidden = new Set(deckRows.filter((d) => d.deletedAt === null && !deckInScope(d)).map((d) => d.id));
+    const cards = cardRows.filter((c) => !hidden.has(c.deckId));
+    const cardIds = new Set(cards.map((c) => c.id));
+    const items = itemRows.filter((i) => cardIds.has(i.cardId));
+    const itemIds = new Set(items.map((i) => i.id));
+    return {
+      attempts: attemptRows.filter((a) => !hidden.has(a.deckId)),
+      reviews: reviewRows.filter((r) => itemIds.has(r.itemId)),
+      items,
+      cards,
+      decks: deckRows.filter((d) => !hidden.has(d.id)),
+    };
   },
 };

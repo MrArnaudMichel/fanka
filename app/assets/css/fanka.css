@@ -1,9 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@400;500&family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@400;500&display=swap');
 
 :root {
   --fk-font-hanzi-serif: 'Noto Serif TC', 'Songti TC', serif;
   --fk-font-hanzi-sans: 'Noto Sans TC', 'PingFang TC', sans-serif;
   --fk-font-hanzi: var(--fk-font-hanzi-serif);
+}
+
+/* Mainland content is simplified: the SC families come first. */
+:root[data-bundle='mainland'] {
+  --fk-font-hanzi-serif: 'Noto Serif SC', 'Songti SC', serif;
+  --fk-font-hanzi-sans: 'Noto Sans SC', 'PingFang SC', sans-serif;
 }
 
 :root[data-hanzi-font='sans'] {

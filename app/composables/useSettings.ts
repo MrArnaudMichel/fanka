@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Style, StatusBar } from '@capacitor/status-bar';
+import { setActiveBundle } from '~core/db/bundle-scope';
 import { DEFAULT_SETTINGS, type Settings, loadSettings, saveSettings } from '~core/db/settings';
 
 const settings = ref<Settings>({ ...DEFAULT_SETTINGS });
@@ -92,6 +93,9 @@ function applyTheme(value: Settings): void {
   root.dataset.hanziFont = value.hanziFont;
   root.dataset.accent = value.accent;
   root.dataset.textSize = value.textSize;
+  if (value.bundle) root.dataset.bundle = value.bundle;
+  else delete root.dataset.bundle;
+  setActiveBundle(value.bundle);
   syncStatusBar(value);
 }
 

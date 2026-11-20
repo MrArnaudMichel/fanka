@@ -2,6 +2,7 @@ import type { Ref } from 'vue';
 import type { KtNavItem, KtNavSection } from 'kanto-ds';
 import type { SessionMode } from '~core/db/session';
 import type { ModeCounts } from '~/composables/useDueCounts';
+import { useSettings } from '~/composables/useSettings';
 
 /** The Settings sections, in menu order: nested under Settings in the sidebar, listed on /settings on a phone, and in the command palette. */
 export const SETTINGS_SECTIONS: KtNavItem[] = [
@@ -36,6 +37,7 @@ export function flatNavItems(sections: KtNavSection[]): KtNavItem[] {
  * dead link.
  */
 export function useNavigation(counts: Readonly<Ref<Readonly<Record<SessionMode, ModeCounts>>>>) {
+  const { settings } = useSettings();
   const badge = (n: number) => (n > 0 ? String(n) : undefined);
 
   const sections = computed<KtNavSection[]>(() => [
@@ -47,7 +49,7 @@ export function useNavigation(counts: Readonly<Ref<Readonly<Record<SessionMode, 
         { label: 'Writing', href: '/writing', icon: 'pen-line', badge: badge(counts.value.writing.total) },
         { label: 'Practice', href: '/practice', icon: 'infinity' },
         { label: 'Speaking', href: '/speaking', icon: 'mic' },
-        { label: 'Radicals', href: '/radicals', icon: 'shapes' },
+        ...(settings.value.bundle === 'mainland' ? [] : [{ label: 'Radicals', href: '/radicals', icon: 'shapes' }]),
       ],
     },
     {

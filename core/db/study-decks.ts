@@ -1,3 +1,4 @@
+import { deckInScope } from './bundle-scope';
 import { db } from './db';
 
 const KEY = 'studyDecks';
@@ -25,6 +26,6 @@ export async function saveStudyDeckIds(ids: string[]): Promise<void> {
 export async function studyDeckFilter(): Promise<ReadonlySet<string> | undefined> {
   const ids = await loadStudyDeckIds();
   if (ids.length === 0) return undefined;
-  const live = (await db.decks.bulkGet(ids)).filter((d) => d && d.deletedAt === null).map((d) => d!.id);
+  const live = (await db.decks.bulkGet(ids)).filter((d) => d && deckInScope(d)).map((d) => d!.id);
   return live.length > 0 ? new Set(live) : undefined;
 }
