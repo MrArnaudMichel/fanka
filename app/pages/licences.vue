@@ -2,7 +2,7 @@
 import type { KtTableColumn, KtTableRow } from 'kanto-ds';
 import { html } from 'lit';
 import arphicLicence from '../../public/strokes/ARPHICPL.TXT?raw';
-import { DATA_SOURCES, LIBRARIES } from '~/utils/licences';
+import { CONTENT_SOURCES, DATA_SOURCES, LIBRARIES } from '~/utils/licences';
 
 definePageMeta({ layout: 'legal' });
 useHead({ title: 'Open source licences · Fanka' });
@@ -37,6 +37,16 @@ function openProject(event: CustomEvent<{ row: KtTableRow }>): void {
     <kt-collapsible heading="Arphic Public License" plain>
       <pre class="licence-text">{{ arphicLicence }}</pre>
     </kt-collapsible>
+  </LegalSection>
+
+  <LegalSection icon="book-open" heading="Content">
+    <div class="sources">
+      <div v-for="c in CONTENT_SOURCES" :key="c.name" class="source">
+        <span class="source-name">{{ c.name }}</span>
+        <kt-badge variant="code" size="small">{{ c.licence }}</kt-badge>
+        <span class="source-url">{{ c.notice }} {{ c.url }}</span>
+      </div>
+    </div>
   </LegalSection>
 
   <LegalSection icon="layers" heading="Libraries">

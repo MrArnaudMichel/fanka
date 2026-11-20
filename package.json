@@ -21,6 +21,8 @@
     "build:stroke-data": "node scripts/build-stroke-data.mjs",
     "content:fetch": "node scripts/content/fetch.mjs",
     "content:words": "node scripts/content/words.mjs",
+    "content:assemble": "node scripts/content/assemble.mjs",
+    "content": "npm run content:words && npm run content:assemble",
     "content:examples": "node scripts/content/examples.mjs",
     "content:repin": "node scripts/content/repin.mjs",
     "android:sync": "npm run build:app && cap sync android",

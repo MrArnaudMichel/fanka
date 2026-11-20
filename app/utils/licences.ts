@@ -17,6 +17,41 @@ export const DATA_SOURCES: readonly LicenceEntry[] = [
   { package: 'opencc-data', name: 'OpenCC conversion tables', licence: 'Apache-2.0', url: 'https://github.com/BYVoid/OpenCC' },
 ];
 
+/** A word list or text Fanka ships as content. Not an npm package, so the integrity test ignores it. */
+export interface ContentSource {
+  name: string;
+  licence: string;
+  url: string;
+  notice: string;
+}
+
+export const CONTENT_SOURCES: readonly ContentSource[] = [
+  {
+    name: 'HSK vocabulary',
+    licence: 'MIT',
+    url: 'https://github.com/drkameleon/complete-hsk-vocabulary',
+    notice: 'Word lists for the Mainland course, from drkameleon/complete-hsk-vocabulary.',
+  },
+  {
+    name: 'CC-CEDICT',
+    licence: 'CC BY-SA 4.0',
+    url: 'https://cc-cedict.org',
+    notice: 'English meanings for the Taiwan course, from the CC-CEDICT dictionary. Shared under the same licence.',
+  },
+  {
+    name: '臺灣華語文能力基準 詞語表',
+    licence: 'CC BY',
+    url: 'https://coct.naer.edu.tw',
+    notice: 'Word lists for the Taiwan course, from the 國家教育研究院 (National Academy for Educational Research).',
+  },
+  {
+    name: 'Example sentences',
+    licence: 'Apache-2.0',
+    url: 'https://github.com/QwenLM/Qwen3',
+    notice: 'Generated with Qwen3.5 (Apache-2.0 model) and checked against the course vocabulary.',
+  },
+];
+
 export const LIBRARIES: readonly LicenceEntry[] = [
   { package: '@capacitor-community/text-to-speech', name: 'Capacitor Text to Speech', licence: 'MIT', url: 'https://github.com/capacitor-community/text-to-speech' },
   { package: '@capacitor/android', name: 'Capacitor Android', licence: 'MIT', url: 'https://capacitorjs.com' },
