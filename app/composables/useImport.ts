@@ -1,3 +1,4 @@
+import type { Bundle } from '~core/chinese/script';
 import { type Delimiter, detectDelimiter, parseDelimited } from '~core/import/parse';
 import { type Mapping, applyMapping, guessMapping, headerSignature } from '~core/import/mapping';
 import type { CardDraft } from '~core/import/validate';
@@ -10,6 +11,9 @@ import { cards, decks as deckRepository } from '~core/db/repositories';
 import { type Card, type Deck, type Direction, type Item, type OutboxEntry, itemId } from '~core/db/schema';
 import { newSrsState } from '~core/srs';
 import { refreshDueCounts } from '~/composables/useDueCounts';
+
+// Decks have no bundle yet; Task 2 replaces this with the deck's bundle.
+const BUNDLE: Bundle = 'taiwan';
 
 export type SourceMode = 'file' | 'paste';
 
@@ -274,14 +278,14 @@ export function useImport() {
     }
     drafts = applyMapping(rows.value, mapping.value);
     deckHanzi = new Set((await cards.forDeck(targetDeckId.value)).map((c) => c.hanzi));
-    results.value = validateImportRows(drafts, deckHanzi);
+    results.value = validateImportRows(drafts, deckHanzi, BUNDLE);
   }
 
   /** Step 3's side panel: replaces one row's draft and re-checks every row, so a fix that clashes with another row is caught. */
   function fixRow(index: number, draft: CardDraft): void {
     if (index < 0 || index >= drafts.length) return;
     drafts = drafts.map((d, i) => (i === index ? draft : d));
-    results.value = validateImportRows(drafts, deckHanzi);
+    results.value = validateImportRows(drafts, deckHanzi, BUNDLE);
   }
 
   /**

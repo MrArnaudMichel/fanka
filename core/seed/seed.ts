@@ -66,7 +66,7 @@ function validateSeeds(seeds: SeedDeck[]): void {
         exampleTranslation: entry.exampleTranslation,
         tags: entry.tags,
       };
-      const validated = validateCard(draft, existingHanzi);
+      const validated = validateCard(draft, existingHanzi, 'taiwan');
       if (!validated.ok) {
         const messages = validated.issues
           .filter((issue) => issue.severity === 'error')

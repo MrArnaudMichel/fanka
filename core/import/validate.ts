@@ -1,4 +1,4 @@
-import { simplifiedCharactersIn } from '~core/chinese/script';
+import { type Bundle, wrongScriptCharactersIn } from '~core/chinese/script';
 import { parsePinyin } from '~core/chinese/pinyin';
 
 export type Severity = 'error' | 'warning';
@@ -52,10 +52,11 @@ function countHanCharacters(text: string): number {
   return (text.match(/\p{Script=Han}/gu) ?? []).length;
 }
 
-function simplifiedIssue(field: CardField, text: string): Issue | null {
-  const found = simplifiedCharactersIn(text);
+function wrongScriptIssue(field: CardField, text: string, bundle: Bundle): Issue | null {
+  const found = wrongScriptCharactersIn(text, bundle);
   if (found.length === 0) return null;
-  return { field, severity: 'error', message: `Simplified characters: ${found.join(', ')}` };
+  const script = bundle === 'taiwan' ? 'Simplified' : 'Traditional';
+  return { field, severity: 'error', message: `${script} characters: ${found.join(', ')}` };
 }
 
 /**
@@ -65,7 +66,7 @@ function simplifiedIssue(field: CardField, text: string): Issue | null {
  * this deck" means for it (the rest of a seed file being loaded, or the
  * deck a learner is importing or editing into).
  */
-export function validateCard(draft: CardDraft, existingHanzi: ReadonlySet<string>): Validated {
+export function validateCard(draft: CardDraft, existingHanzi: ReadonlySet<string>, bundle: Bundle): Validated {
   const trimmedTags = draft.tags?.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
 
   const trimmed: CardDraft = {
@@ -84,7 +85,7 @@ export function validateCard(draft: CardDraft, existingHanzi: ReadonlySet<string
   if (trimmed.hanzi.length === 0) {
     issues.push({ field: 'hanzi', severity: 'error', message: 'Hanzi is required' });
   } else {
-    const simplified = simplifiedIssue('hanzi', trimmed.hanzi);
+    const simplified = wrongScriptIssue('hanzi', trimmed.hanzi, bundle);
     if (simplified) issues.push(simplified);
     if (existingHanzi.has(trimmed.hanzi)) {
       issues.push({ field: 'hanzi', severity: 'error', message: 'Already in this deck' });
@@ -110,7 +111,7 @@ export function validateCard(draft: CardDraft, existingHanzi: ReadonlySet<string
   }
 
   if (trimmed.example) {
-    const simplified = simplifiedIssue('example', trimmed.example);
+    const simplified = wrongScriptIssue('example', trimmed.example, bundle);
     if (simplified) issues.push(simplified);
   }
 

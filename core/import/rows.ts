@@ -4,6 +4,7 @@
  * hanzi twice in one file is an error, so two rows never fight over one
  * card. Pure: no Vue, Dexie or Capacitor.
  */
+import type { Bundle } from '~core/chinese/script';
 import { parsePinyin } from '~core/chinese/pinyin';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import type { Card } from '~core/db/schema';
@@ -20,10 +21,14 @@ export const REPEATED_MESSAGE = 'Repeated earlier in this file';
 
 const NONE: ReadonlySet<string> = new Set();
 
-export function validateImportRows(drafts: readonly CardDraft[], deckHanzi: ReadonlySet<string>): ImportRow[] {
+export function validateImportRows(
+  drafts: readonly CardDraft[],
+  deckHanzi: ReadonlySet<string>,
+  bundle: Bundle,
+): ImportRow[] {
   const seen = new Set<string>();
   return drafts.map((draft) => {
-    const validated = validateCard(draft, NONE);
+    const validated = validateCard(draft, NONE, bundle);
     const hanzi = validated.draft.hanzi;
     const issues = [...validated.issues];
     if (hanzi && seen.has(hanzi)) issues.push({ field: 'hanzi', severity: 'error', message: REPEATED_MESSAGE });

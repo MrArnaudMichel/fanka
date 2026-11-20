@@ -2,7 +2,7 @@
   "source": "https://github.com/BYVoid/OpenCC (data/STCharacters.txt, data/TSCharacters.txt), vendored via npm opencc-data",
   "version": "opencc-data@1.4.2",
   "licence": "Apache-2.0",
-  "generatedAt": "2026-10-21",
+  "generatedAt": "2026-11-20",
   "characters": [
     "㐷",
     "㐽",

@@ -19,7 +19,7 @@ function draft(overrides: Partial<CardDraft> = {}): CardDraft {
 
 describe('validateCard', () => {
   it('errors on empty hanzi', () => {
-    const result = validateCard(draft({ hanzi: '' }), NO_EXISTING);
+    const result = validateCard(draft({ hanzi: '' }), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(false);
     expect(result.issues).toContainEqual(
       expect.objectContaining({ field: 'hanzi', severity: 'error' }),
@@ -27,7 +27,7 @@ describe('validateCard', () => {
   });
 
   it('errors on a simplified character in hanzi, naming it', () => {
-    const result = validateCard(draft({ hanzi: '学习' }), NO_EXISTING);
+    const result = validateCard(draft({ hanzi: '学习' }), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(false);
     expect(result.issues).toContainEqual({
       field: 'hanzi',
@@ -37,7 +37,7 @@ describe('validateCard', () => {
   });
 
   it('errors on a simplified character in example, naming it', () => {
-    const result = validateCard(draft({ example: '我每天学习中文。' }), NO_EXISTING);
+    const result = validateCard(draft({ example: '我每天学习中文。' }), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(false);
     expect(result.issues).toContainEqual({
       field: 'example',
@@ -47,7 +47,7 @@ describe('validateCard', () => {
   });
 
   it('errors on empty translation', () => {
-    const result = validateCard(draft({ translation: '' }), NO_EXISTING);
+    const result = validateCard(draft({ translation: '' }), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(false);
     expect(result.issues).toContainEqual(
       expect.objectContaining({ field: 'translation', severity: 'error' }),
@@ -55,7 +55,7 @@ describe('validateCard', () => {
   });
 
   it('errors when pinyin does not parse — contains a disallowed character', () => {
-    const result = validateCard(draft({ pinyin: 'xué #1' }), NO_EXISTING);
+    const result = validateCard(draft({ pinyin: 'xué #1' }), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(false);
     expect(result.issues).toContainEqual(
       expect.objectContaining({ field: 'pinyin', severity: 'error' }),
@@ -63,7 +63,7 @@ describe('validateCard', () => {
   });
 
   it('errors when pinyin is empty after trimming', () => {
-    const result = validateCard(draft({ pinyin: '   ' }), NO_EXISTING);
+    const result = validateCard(draft({ pinyin: '   ' }), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(false);
     expect(result.issues).toContainEqual(
       expect.objectContaining({ field: 'pinyin', severity: 'error' }),
@@ -71,7 +71,7 @@ describe('validateCard', () => {
   });
 
   it('warns, but does not error, when syllable count does not match hanzi character count', () => {
-    const result = validateCard(draft({ pinyin: 'xue2' }), NO_EXISTING);
+    const result = validateCard(draft({ pinyin: 'xue2' }), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(true);
     expect(result.issues).toContainEqual(
       expect.objectContaining({ field: 'pinyin', severity: 'warning' }),
@@ -79,7 +79,7 @@ describe('validateCard', () => {
   });
 
   it('errors when hanzi is already in the deck, with the exact duplicate message', () => {
-    const result = validateCard(draft(), new Set(['學習']));
+    const result = validateCard(draft(), new Set(['學習']), 'taiwan');
     expect(result.ok).toBe(false);
     expect(result.issues).toContainEqual({
       field: 'hanzi',
@@ -89,12 +89,12 @@ describe('validateCard', () => {
   });
 
   it('raises no issue for a missing zhuyin — it is derived later', () => {
-    const result = validateCard(draft({ zhuyin: undefined }), NO_EXISTING);
+    const result = validateCard(draft({ zhuyin: undefined }), NO_EXISTING, 'taiwan');
     expect(result.issues.some((issue) => issue.field === 'zhuyin')).toBe(false);
   });
 
   it('is ok, with no issues, for a valid card', () => {
-    const result = validateCard(draft(), NO_EXISTING);
+    const result = validateCard(draft(), NO_EXISTING, 'taiwan');
     expect(result.ok).toBe(true);
     expect(result.issues).toEqual([]);
   });
@@ -111,6 +111,7 @@ describe('validateCard', () => {
         tags: ['  HSK1  ', '   ', 'core'],
       }),
       new Set(['學習']),
+      'taiwan',
     );
     expect(result.draft).toEqual({
       hanzi: '學習',
@@ -131,10 +132,22 @@ describe('validateCard', () => {
     });
   });
 
+  it('rejects traditional characters in a Mainland deck', () => {
+    const result = validateCard(draft({ hanzi: '學習' }), NO_EXISTING, 'mainland');
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ field: 'hanzi', severity: 'error', message: 'Traditional characters: 學, 習' }),
+    );
+  });
+
+  it('accepts simplified characters in a Mainland deck', () => {
+    const result = validateCard(draft({ hanzi: '学习', example: '我每天学习中文。' }), NO_EXISTING, 'mainland');
+    expect(result.issues.filter((issue) => issue.severity === 'error')).toEqual([]);
+  });
+
   it('does not mutate the input draft', () => {
     const input = draft({ hanzi: '  學習  ', tags: ['  HSK1  '] });
     const snapshot = JSON.parse(JSON.stringify(input));
-    validateCard(input, NO_EXISTING);
+    validateCard(input, NO_EXISTING, 'taiwan');
     expect(input).toEqual(snapshot);
   });
 });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Builds core/chinese/data/simplified-only.json from OpenCC's character
+ * Builds core/chinese/data/simplified-only.json and traditional-only.json from OpenCC's character
  * tables, vendored unmodified by the `opencc-data` devDependency
  * (https://github.com/BYVoid/OpenCC, Apache-2.0).
  *
@@ -66,3 +66,17 @@ const outPath = path.join(root, 'core', 'chinese', 'data', 'simplified-only.json
 writeFileSync(outPath, `${JSON.stringify(output, null, 2)}\n`);
 
 console.log(`Wrote ${flagged.length} simplified-only characters to ${path.relative(root, outPath)}`);
+
+// Traditional-only: a key in TSCharacters.txt (traditional -> simplified)
+// whose targets do not include itself, and not a key in STCharacters.txt.
+// The mirror of the rule above, for guarding a Mainland (simplified) bundle.
+const traditionalOnly = [];
+for (const [character, targets] of tsMap) {
+  if (!targets.includes(character) && !stMap.has(character)) traditionalOnly.push(character);
+}
+traditionalOnly.sort();
+
+const traditionalOutPath = path.join(root, 'core', 'chinese', 'data', 'traditional-only.json');
+writeFileSync(traditionalOutPath, `${JSON.stringify({ ...output, characters: traditionalOnly }, null, 2)}\n`);
+
+console.log(`Wrote ${traditionalOnly.length} traditional-only characters to ${path.relative(root, traditionalOutPath)}`);

@@ -44,7 +44,7 @@ describe('addRadicalDeck', () => {
     const seen = new Set<string>();
     for (const card of await db.cards.toArray()) {
       const pinyin = card.pinyin.map((s) => s.text).join(' ');
-      const result = validateCard({ hanzi: card.hanzi, pinyin, translation: card.translation, example: card.example }, seen);
+      const result = validateCard({ hanzi: card.hanzi, pinyin, translation: card.translation, example: card.example }, seen, 'taiwan');
       expect(result.ok, card.hanzi).toBe(true);
       seen.add(card.hanzi);
     }

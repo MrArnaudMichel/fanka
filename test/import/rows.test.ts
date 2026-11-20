@@ -7,26 +7,26 @@ const draft = (overrides: Partial<CardDraft> = {}): CardDraft => ({ hanzi: '朋�
 
 describe('validateImportRows', () => {
   it('marks a row already in the deck as a duplicate, not an error', () => {
-    const [row] = validateImportRows([draft()], new Set(['朋友']));
+    const [row] = validateImportRows([draft()], new Set(['朋友']), 'taiwan');
     expect(row).toMatchObject({ ok: true, duplicate: true });
     expect(row!.issues.some((i) => i.severity === 'error')).toBe(false);
   });
 
   it('makes the second of two identical hanzi in the file an error', () => {
-    const rows = validateImportRows([draft(), draft({ translation: 'pal' })], new Set(['朋友']));
+    const rows = validateImportRows([draft(), draft({ translation: 'pal' })], new Set(['朋友']), 'taiwan');
     expect(rows[0]).toMatchObject({ ok: true, duplicate: true });
     expect(rows[1]).toMatchObject({ ok: false, duplicate: false });
     expect(rows[1]!.issues).toContainEqual({ field: 'hanzi', severity: 'error', message: REPEATED_MESSAGE });
   });
 
   it('lets a later row through when the earlier one with that hanzi had an error', () => {
-    const rows = validateImportRows([draft({ translation: '' }), draft()], new Set());
+    const rows = validateImportRows([draft({ translation: '' }), draft()], new Set(), 'taiwan');
     expect(rows[0]!.ok).toBe(false);
     expect(rows[1]!.ok).toBe(true);
   });
 
   it('keeps every other validation, such as simplified characters', () => {
-    const [row] = validateImportRows([draft({ hanzi: '学习', pinyin: 'xue2 xi2' })], new Set());
+    const [row] = validateImportRows([draft({ hanzi: '学习', pinyin: 'xue2 xi2' })], new Set(), 'taiwan');
     expect(row!.ok).toBe(false);
   });
 });

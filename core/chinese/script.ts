@@ -1,4 +1,7 @@
 import simplifiedOnly from './data/simplified-only.json';
+import traditionalOnly from './data/traditional-only.json';
+
+export type Bundle = 'mainland' | 'taiwan';
 
 /**
  * A character that exists only in simplified form: it is a simplified
@@ -10,19 +13,35 @@ import simplifiedOnly from './data/simplified-only.json';
  */
 const SIMPLIFIED_ONLY = new Set<string>(simplifiedOnly.characters);
 
-/**
- * Returns the distinct characters of `text` that exist only in simplified
- * form, in order of first appearance. Used to guard content that must stay
- * traditional-only — the seed data and, later, anything a learner imports.
- */
-export function simplifiedCharactersIn(text: string): string[] {
+/** A character that exists only in traditional form (the mirror of SIMPLIFIED_ONLY). */
+const TRADITIONAL_ONLY = new Set<string>(traditionalOnly.characters);
+
+function distinctIn(text: string, set: ReadonlySet<string>): string[] {
   const seen = new Set<string>();
   const found: string[] = [];
   for (const character of text) {
-    if (SIMPLIFIED_ONLY.has(character) && !seen.has(character)) {
+    if (set.has(character) && !seen.has(character)) {
       seen.add(character);
       found.push(character);
     }
   }
   return found;
+}
+
+/**
+ * Returns the distinct characters of `text` that exist only in simplified
+ * form, in order of first appearance.
+ */
+export function simplifiedCharactersIn(text: string): string[] {
+  return distinctIn(text, SIMPLIFIED_ONLY);
+}
+
+/** Returns the distinct characters of `text` that exist only in traditional form, in order of first appearance. */
+export function traditionalCharactersIn(text: string): string[] {
+  return distinctIn(text, TRADITIONAL_ONLY);
+}
+
+/** The characters of `text` that belong to the other bundle's script: simplified for Taiwan, traditional for Mainland. */
+export function wrongScriptCharactersIn(text: string, bundle: Bundle): string[] {
+  return bundle === 'taiwan' ? simplifiedCharactersIn(text) : traditionalCharactersIn(text);
 }

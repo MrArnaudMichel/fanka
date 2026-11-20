@@ -1,9 +1,13 @@
+import type { Bundle } from '~core/chinese/script';
 import { type PinyinSyllable, parsePinyin } from '~core/chinese/pinyin';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { cards, decks as deckRepository, items } from '~core/db/repositories';
 import type { Card, Deck, Direction, PartOfSpeech } from '~core/db/schema';
 import { type CardDraft, type Issue, validateCard } from '~core/import/validate';
 import { refreshDueCounts } from '~/composables/useDueCounts';
+
+// Decks have no bundle yet; Task 2 replaces this with the deck's bundle.
+const BUNDLE: Bundle = 'taiwan';
 
 function uid(): string {
   return crypto.randomUUID();
@@ -142,7 +146,7 @@ export function useCardEditor(id?: string) {
     return { pinyin: syllables, zhuyin: toZhuyin(syllables) };
   });
 
-  const issues = computed<Issue[]>(() => validateCard(toCardDraft(draft), existingHanzi.value).issues);
+  const issues = computed<Issue[]>(() => validateCard(toCardDraft(draft), existingHanzi.value, BUNDLE).issues);
 
   /**
    * Rebuilt from the target deck's visible cards, excluding the card being
@@ -264,7 +268,7 @@ export function useCardEditor(id?: string) {
     saveAttempted.value = true;
     try {
       await refreshExistingHanzi();
-      const validated = validateCard(toCardDraft(draft), existingHanzi.value);
+      const validated = validateCard(toCardDraft(draft), existingHanzi.value, BUNDLE);
       if (!validated.ok) return false;
 
       // `null` leaves the items untouched: an edit that did not change a
