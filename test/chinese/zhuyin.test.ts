@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parsePinyin } from '~core/chinese/pinyin';
-import { toZhuyin } from '~core/chinese/zhuyin';
+import { parsePinyin, toDiacritic, toNumbered } from '~core/chinese/pinyin';
+import { ZHUYIN_SYLLABLES, fromZhuyin, toZhuyin } from '~core/chinese/zhuyin';
 
 describe('toZhuyin', () => {
   it('converts a two-syllable word', () => {
@@ -49,5 +49,30 @@ describe('toZhuyin', () => {
 
   it('returns an empty string for the syllabic nasal "hm", rather than just its initial, when it has no final', () => {
     expect(toZhuyin(parsePinyin('hm1'))).toBe('');
+  });
+});
+
+describe('fromZhuyin', () => {
+  it('reads zhuyin back as numbered pinyin', () => {
+    expect(toNumbered(fromZhuyin('ㄅㄚˋ ˙ㄅㄚ'))).toBe('ba4 ba5');
+    expect(toNumbered(fromZhuyin('ㄞˋ'))).toBe('ai4');
+    expect(toNumbered(fromZhuyin('ㄗㄨㄛˋ ㄗ'))).toBe('zuo4 zi1');
+    // toNumbered writes ü as v, so this is the existing convention for nü3.
+    expect(toNumbered(fromZhuyin('ㄋㄩˇ'))).toBe('nv3');
+    expect(fromZhuyin('ㄋㄩˇ')[0]!.text).toBe('nǚ');
+  });
+
+  it('round-trips every syllable toZhuyin knows', () => {
+    expect(ZHUYIN_SYLLABLES.size).toBeGreaterThan(300);
+    for (const pinyin of ZHUYIN_SYLLABLES.values()) {
+      for (const tone of [1, 2, 3, 4, 5] as const) {
+        const syllable = { text: toDiacritic(pinyin, tone), tone };
+        expect(fromZhuyin(toZhuyin([syllable]))).toEqual([syllable]);
+      }
+    }
+  });
+
+  it('names an unknown syllable', () => {
+    expect(() => fromZhuyin('ㄅㄅ')).toThrow(/ㄅㄅ/);
   });
 });
