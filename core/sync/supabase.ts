@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { Bundle } from '~core/chinese/script';
 import type { Attempt, Card, Deck, Direction, Item, PartOfSpeech, Review } from '~core/db/schema';
 import type { ItemState } from '~core/srs';
 import type { LocalChanges, RemoteChanges, SyncTransport } from './types';
@@ -25,19 +26,21 @@ interface DeckRow {
   description: string;
   color_token: string;
   tag: string;
+  bundle?: Bundle;
   translation_lang: string;
   created_at: number;
   updated_at: number;
   deleted_at: number | null;
 }
 
-function deckFromRow(row: DeckRow): Deck {
+export function deckFromRow(row: DeckRow): Deck {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
     colorToken: row.color_token,
     tag: row.tag,
+    bundle: row.bundle ?? 'taiwan',
     translationLang: row.translation_lang,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -45,7 +48,7 @@ function deckFromRow(row: DeckRow): Deck {
   };
 }
 
-function deckToRow(deck: Deck, userId: string): DeckRow {
+export function deckToRow(deck: Deck, userId: string): DeckRow {
   return {
     id: deck.id,
     user_id: userId,
@@ -53,6 +56,7 @@ function deckToRow(deck: Deck, userId: string): DeckRow {
     description: deck.description,
     color_token: deck.colorToken,
     tag: deck.tag,
+    bundle: deck.bundle,
     translation_lang: deck.translationLang,
     created_at: deck.createdAt,
     updated_at: deck.updatedAt,

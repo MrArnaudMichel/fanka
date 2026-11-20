@@ -94,6 +94,7 @@ export async function seedIfNeeded(now: number): Promise<{ seeded: boolean; deck
       description: seed.description,
       colorToken: seed.colorToken,
       tag: seed.tag,
+      bundle: 'taiwan',
       translationLang: 'en',
       createdAt: now,
       updatedAt: now,

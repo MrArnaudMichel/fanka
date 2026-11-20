@@ -206,7 +206,7 @@ describe('reviews', () => {
 
 describe('decks.create', () => {
   it('creates a deck with an outbox entry in the same transaction', async () => {
-    const deck = await decks.create({ name: 'HSK 2', description: 'second level', colorToken: DECK_COLORS[1], tag: 'HSK' }, NOW);
+    const deck = await decks.create({ name: 'HSK 2', description: 'second level', colorToken: DECK_COLORS[1], tag: 'HSK', bundle: 'taiwan' }, NOW);
     expect(deck).toMatchObject({ name: 'HSK 2', description: 'second level', colorToken: DECK_COLORS[1], tag: 'HSK' });
     expect(await decks.get(deck.id)).toMatchObject({ name: 'HSK 2' });
     const pending = await db.outbox.toArray();
@@ -215,7 +215,7 @@ describe('decks.create', () => {
 
   it('rejects a colorToken outside DECK_COLORS', async () => {
     await expect(
-      decks.create({ name: 'x', description: '', colorToken: 'red' as never, tag: '' }, NOW),
+      decks.create({ name: 'x', description: '', colorToken: 'red' as never, tag: '', bundle: 'taiwan' }, NOW),
     ).rejects.toThrow();
   });
 });

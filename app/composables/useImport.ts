@@ -12,9 +12,6 @@ import { type Card, type Deck, type Direction, type Item, type OutboxEntry, item
 import { newSrsState } from '~core/srs';
 import { refreshDueCounts } from '~/composables/useDueCounts';
 
-// Decks have no bundle yet; Task 2 replaces this with the deck's bundle.
-const BUNDLE: Bundle = 'taiwan';
-
 export type SourceMode = 'file' | 'paste';
 
 /**
@@ -173,6 +170,7 @@ export function useImport() {
   /** The drafts and deck hanzi the current results were built from, so one row can be fixed and everything re-checked. */
   let drafts: CardDraft[] = [];
   let deckHanzi: ReadonlySet<string> = new Set();
+  let bundle: Bundle = 'taiwan';
 
   /** Forgets the checked rows and what they were checked against, so a stale fix cannot bring them back. */
   function invalidate(): void {
@@ -278,14 +276,15 @@ export function useImport() {
     }
     drafts = applyMapping(rows.value, mapping.value);
     deckHanzi = new Set((await cards.forDeck(targetDeckId.value)).map((c) => c.hanzi));
-    results.value = validateImportRows(drafts, deckHanzi, BUNDLE);
+    bundle = decks.value.find((d) => d.id === targetDeckId.value)?.bundle ?? 'taiwan';
+    results.value = validateImportRows(drafts, deckHanzi, bundle);
   }
 
   /** Step 3's side panel: replaces one row's draft and re-checks every row, so a fix that clashes with another row is caught. */
   function fixRow(index: number, draft: CardDraft): void {
     if (index < 0 || index >= drafts.length) return;
     drafts = drafts.map((d, i) => (i === index ? draft : d));
-    results.value = validateImportRows(drafts, deckHanzi, BUNDLE);
+    results.value = validateImportRows(drafts, deckHanzi, bundle);
   }
 
   /**

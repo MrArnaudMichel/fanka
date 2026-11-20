@@ -3,7 +3,7 @@ import { type BackupData, backupFileName, buildBackup, mergePlan, parseBackup } 
 import { DEFAULT_SETTINGS } from '~core/db/settings';
 
 const empty = (): BackupData => ({ decks: [], cards: [], items: [], reviews: [], attempts: [] });
-const deck = (id: string, updatedAt: number) => ({ id, updatedAt, deletedAt: null }) as never;
+const deck = (id: string, updatedAt: number) => ({ id, updatedAt, deletedAt: null, bundle: 'taiwan' }) as never;
 const review = (id: string) => ({ id, itemId: 'i', reviewedAt: 1 }) as never;
 
 describe('buildBackup', () => {
@@ -70,5 +70,13 @@ describe('mergePlan', () => {
     const withAttempts = mergePlan({ ...empty(), attempts: [attempt('a1', 1)] }, { ...empty(), attempts: [attempt('a1', 99), attempt('a2', 2)] });
     // An attempt already here is never replaced, even by a later copy.
     expect(withAttempts.attempts.map((a) => a.id)).toEqual(['a2']);
+  });
+});
+
+describe('parseBackup bundles', () => {
+  it('gives a deck without a bundle the Taiwan one and keeps a Mainland one', () => {
+    const old = { ...buildBackup({ ...empty(), decks: [{ id: 'a', updatedAt: 1, deletedAt: null }, { id: 'b', updatedAt: 1, deletedAt: null, bundle: 'mainland' }] as never }, DEFAULT_SETTINGS, 1) };
+    const parsed = parseBackup(JSON.stringify(old));
+    expect(parsed.ok && parsed.backup.decks.map((d) => d.bundle)).toEqual(['taiwan', 'mainland']);
   });
 });

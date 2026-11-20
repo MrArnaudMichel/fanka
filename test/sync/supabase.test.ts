@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createSupabaseTransport } from '~core/sync/supabase';
+import type { Deck } from '~core/db/schema';
+import { createSupabaseTransport, deckFromRow, deckToRow } from '~core/sync/supabase';
 
 /**
  * A minimal stand-in for a real Supabase table's query chain: `select`,
@@ -78,5 +79,20 @@ describe('createSupabaseTransport pull paging', () => {
 
     expect(result.decks).toHaveLength(1000);
     expect(rangeCalls.decks).toEqual([{ from: 0, to: 999 }, { from: 1000, to: 1999 }]);
+  });
+});
+
+describe('deck bundle mapping', () => {
+  it('reads a deck row without bundle as Taiwan', () => {
+    expect(deckFromRow({ ...aDeckRow('d1', 1), bundle: undefined }).bundle).toBe('taiwan');
+  });
+
+  it('reads the bundle of a deck row', () => {
+    expect(deckFromRow({ ...aDeckRow('d1', 1), bundle: 'mainland' }).bundle).toBe('mainland');
+  });
+
+  it('writes the deck bundle', () => {
+    const deck = deckFromRow(aDeckRow('d1', 1) as never);
+    expect(deckToRow({ ...deck, bundle: 'mainland' } satisfies Deck, 'u').bundle).toBe('mainland');
   });
 });

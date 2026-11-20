@@ -62,7 +62,10 @@ export function parseBackup(text: string): ParsedBackup {
   if (!tablesOk || !settingsOk) {
     return { ok: false, error: DAMAGED };
   }
-  return { ok: true, backup: candidate as unknown as Backup };
+  const backup = candidate as unknown as Backup;
+  // A backup made before bundles has decks without one; they are Taiwan decks.
+  backup.decks = backup.decks.map((deck) => ({ ...deck, bundle: deck.bundle ?? 'taiwan' }));
+  return { ok: true, backup };
 }
 
 function newer<T extends { id: string; updatedAt: number }>(local: T[], incoming: T[]): T[] {

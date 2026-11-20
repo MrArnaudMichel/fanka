@@ -1,4 +1,5 @@
 import type { PinyinSyllable } from '~core/chinese/pinyin';
+import type { Bundle } from '~core/chinese/script';
 import type { WritingError } from '~core/chinese/strokes';
 import type { Grade, SrsState } from '~core/srs';
 
@@ -11,6 +12,8 @@ export interface Deck {
   description: string;
   colorToken: string;
   tag: string;
+  /** Which curriculum the deck belongs to; fixes the script its content is written in. */
+  bundle: Bundle;
   translationLang: string;
   createdAt: number;
   updatedAt: number;

@@ -20,6 +20,7 @@ export async function addRadicalDeck(now: number): Promise<{ added: number }> {
       description: 'The radicals that make up most characters, with the forms they take inside one.',
       colorToken: 'var(--chart-series-3)',
       tag: 'Radicals',
+      bundle: 'taiwan',
       translationLang: 'en',
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,

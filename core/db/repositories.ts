@@ -1,6 +1,7 @@
 import { buildAttempt } from './attempts';
 import { db } from './db';
 import { type Attempt, type AttemptDetail, type AttemptSource, type Card, type Deck, type Direction, type Item, type OutboxEntry, type Review, SELF_GRADED, itemId } from './schema';
+import type { Bundle } from '~core/chinese/script';
 import { toZhuyin } from '~core/chinese/zhuyin';
 import { compareNames, lessonOf } from '~core/lessons';
 import { type Grade, type ItemState, type SrsState, newSrsState } from '~core/srs';
@@ -189,7 +190,7 @@ export const decks = {
     return all.filter((d) => d.deletedAt === null).sort((a, b) => compareNames(a.name, b.name));
   },
 
-  async create(input: { name: string; description: string; colorToken: DeckColor; tag: string }, now: number): Promise<Deck> {
+  async create(input: { name: string; description: string; colorToken: DeckColor; tag: string; bundle: Bundle }, now: number): Promise<Deck> {
     assertDeckColor(input.colorToken);
     const deck: Deck = {
       id: uid(),
@@ -197,6 +198,7 @@ export const decks = {
       description: input.description,
       colorToken: input.colorToken,
       tag: input.tag,
+      bundle: input.bundle,
       // Not part of the brief's input; every existing deck (seed included)
       // is English, so this is the one sane default rather than a required
       // field nothing in this task's UI collects yet.

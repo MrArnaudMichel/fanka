@@ -89,6 +89,18 @@ export class FankaDatabase extends Dexie {
       });
     // Additive: remembered import mappings, local to this device.
     this.version(4).stores({ importMappings: 'signature' });
+    // Every deck belongs to a bundle; those made before bundles existed are Taiwan.
+    // No outbox entries: the server column defaults to 'taiwan'.
+    this.version(5)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table<Deck>('decks')
+          .toCollection()
+          .modify((deck) => {
+            deck.bundle ??= 'taiwan';
+          });
+      });
   }
 }
 

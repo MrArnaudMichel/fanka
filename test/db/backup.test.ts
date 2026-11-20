@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildBackup } from '~core/backup/format';
+import { parseBackup } from '~core/backup/format';
 import { applyBackup, readBackupData, resetDevice } from '~core/db/backup';
 import { db } from '~core/db/db';
 import { DEFAULT_SETTINGS, loadSettings } from '~core/db/settings';
@@ -67,5 +68,15 @@ describe('backup I/O', () => {
     await db.importMappings.put({ signature: 'front\u001fback', columns: ['hanzi', 'translation'], updatedAt: 1 });
     await resetDevice();
     expect(await db.importMappings.count()).toBe(0);
+  });
+});
+
+describe('backup without bundles', () => {
+  it('restores a backup made before bundles with Taiwan decks', async () => {
+    const old = { ...buildBackup({ decks: [deck('d1', 1)], cards: [], items: [], reviews: [], attempts: [] }, DEFAULT_SETTINGS, 100) };
+    const parsed = parseBackup(JSON.stringify(old));
+    if (!parsed.ok) throw new Error(parsed.error);
+    await applyBackup(parsed.backup, 200);
+    expect((await db.decks.get('d1'))?.bundle).toBe('taiwan');
   });
 });
