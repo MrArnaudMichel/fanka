@@ -1,0 +1,108 @@
+name: Release
+
+# A vX.Y.Z tag ships to Play's internal track. Run it by hand to send the
+# current commit to another track (alpha is the closed test).
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Play track
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+      status:
+        description: Release status
+        type: choice
+        options: [completed, draft]
+        default: completed
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: play
+    env:
+      NUXT_PUBLIC_SUPABASE_URL: ${{ secrets.NUXT_PUBLIC_SUPABASE_URL }}
+      NUXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY }}
+      FANKA_KEYSTORE_PASSWORD: ${{ secrets.FANKA_KEYSTORE_PASSWORD }}
+      FANKA_KEY_ALIAS: ${{ secrets.FANKA_KEY_ALIAS }}
+      FANKA_KEY_PASSWORD: ${{ secrets.FANKA_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check secrets
+        env:
+          FANKA_KEYSTORE_BASE64: ${{ secrets.FANKA_KEYSTORE_BASE64 }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          missing=0
+          for name in NUXT_PUBLIC_SUPABASE_URL NUXT_PUBLIC_SUPABASE_ANON_KEY \
+            FANKA_KEYSTORE_BASE64 FANKA_KEYSTORE_PASSWORD FANKA_KEY_ALIAS \
+            FANKA_KEY_PASSWORD PLAY_SERVICE_ACCOUNT_JSON; do
+            if [ -z "${!name}" ]; then echo "::error::Missing secret $name"; missing=1; fi
+          done
+          exit "$missing"
+
+      - name: Check the tag matches package.json
+        if: github.ref_type == 'tag'
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json ($expected)"
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore the upload key
+        env:
+          FANKA_KEYSTORE_BASE64: ${{ secrets.FANKA_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$FANKA_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$RUNNER_TEMP/upload.jks"
+          echo "FANKA_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build the signed bundle
+        run: npm run android:bundle
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: fr.arnaudmichel.fanka
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ inputs.track || 'internal' }}
+          status: ${{ inputs.status || 'completed' }}
+
+      - name: GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/bundle/release/app-release.aab
+          generate_release_notes: true
+
+      - name: Remove the upload key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks"
