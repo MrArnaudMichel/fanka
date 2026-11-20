@@ -2,13 +2,15 @@
 import { KT_ACCENTS, KT_TEXT_SIZES, toaster } from 'kanto-ds';
 import type { KtOption } from 'kanto-ds';
 import { useCompactLayout } from '~/composables/useCompactLayout';
+import { useSettings } from '~/composables/useSettings';
 import { useLeaveGuard } from '~/composables/useLeaveGuard';
 import { useSettingsForm } from '~/composables/useSettingsForm';
 
 const { compact } = useCompactLayout();
 const { draft, ready, saving, dirty, save } = useSettingsForm(
-  ['theme', 'accent', 'textSize', 'hanziFont', 'showZhuyin', 'toneColors', 'hidePinyinUntilRevealed', 'strokeFeedback', 'autoPlayAudio'] as const,
+  ['theme', 'accent', 'textSize', 'hanziFont', 'reading', 'toneColors', 'hidePinyinUntilRevealed', 'strokeFeedback', 'autoPlayAudio'] as const,
 );
+const { settings } = useSettings();
 const leaveGuard = useLeaveGuard(dirty);
 
 const themeOptions: KtOption[] = [
@@ -21,6 +23,12 @@ const textSizeOptions: KtOption[] = KT_TEXT_SIZES.map((t) => ({ id: t.id, label:
 const hanziFontOptions: KtOption[] = [
   { id: 'serif', label: 'Serif' },
   { id: 'sans', label: 'Sans' },
+];
+
+const READING_OPTIONS = [
+  { value: 'zhuyin', label: 'Zhuyin' },
+  { value: 'pinyin', label: 'Pinyin' },
+  { value: 'both', label: 'Both' },
 ];
 
 async function onSave(): Promise<void> {
@@ -48,10 +56,10 @@ async function onSave(): Promise<void> {
     </kt-form>
 
     <kt-form heading="Cards" :loading="!ready" loading-fields="5">
+      <kt-label-input v-if="settings.bundle !== 'mainland'" label="Reading">
+        <kt-segmented-control label="Reading" :options="READING_OPTIONS" :value="draft.reading" @kt-change="(e: CustomEvent) => (draft.reading = e.detail.value)" />
+      </kt-label-input>
       <!-- kt-toggle's `label` is only an accessible name; the visible label is its slot. -->
-      <kt-toggle size="small" :checked="draft.showZhuyin" @kt-change="(e: CustomEvent) => (draft.showZhuyin = e.detail.checked)">
-        Show zhuyin
-      </kt-toggle>
       <kt-toggle size="small" :checked="draft.toneColors" @kt-change="(e: CustomEvent) => (draft.toneColors = e.detail.checked)">
         Colour pinyin by tone
       </kt-toggle>

@@ -1,5 +1,5 @@
-import { type DeckColor, type DeckSummary, decks } from '~core/db/repositories';
 import type { Bundle } from '~core/chinese/script';
+import { type DeckColor, type DeckSummary, decks } from '~core/db/repositories';
 import type { Deck } from '~core/db/schema';
 import { loadSettings } from '~core/db/settings';
 import { refreshDueCounts } from '~/composables/useDueCounts';
@@ -18,7 +18,7 @@ export type DeckPatch = Partial<DeckInput>;
  * carries the learner's bundle; until then everything is Taiwan.
  */
 export async function currentBundle(): Promise<Bundle> {
-  return ((await loadSettings()) as { bundle?: Bundle }).bundle ?? 'taiwan';
+  return (await loadSettings()).bundle ?? 'taiwan';
 }
 
 /**

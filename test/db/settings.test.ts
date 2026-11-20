@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '~core/db/db';
-import { DEFAULT_SETTINGS, loadSettings, saveSettings } from '~core/db/settings';
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, showsPinyin, showsZhuyin } from '~core/db/settings';
 
 beforeEach(async () => {
   await db.delete();
@@ -72,5 +72,24 @@ describe('settings', () => {
     const loaded = await loadSettings();
     expect(loaded.accent).toBe('teal');
     expect(loaded.textSize).toBe('large');
+  });
+
+  it('maps the old showZhuyin onto reading once', async () => {
+    await db.settings.put({ key: 'settings', value: { showZhuyin: true } });
+    expect((await loadSettings()).reading).toBe('both');
+    await db.settings.put({ key: 'settings', value: { showZhuyin: false } });
+    expect((await loadSettings()).reading).toBe('pinyin');
+  });
+
+  it('drops an unknown bundle back to null', async () => {
+    await db.settings.put({ key: 'settings', value: { bundle: 'hongkong' } });
+    expect((await loadSettings()).bundle).toBeNull();
+  });
+
+  it('shows pinyin only for Mainland, whatever reading says', () => {
+    expect(showsZhuyin({ bundle: 'mainland', reading: 'zhuyin' })).toBe(false);
+    expect(showsPinyin({ bundle: 'mainland', reading: 'zhuyin' })).toBe(true);
+    expect(showsZhuyin({ bundle: 'taiwan', reading: 'both' })).toBe(true);
+    expect(showsPinyin({ bundle: 'taiwan', reading: 'zhuyin' })).toBe(false);
   });
 });

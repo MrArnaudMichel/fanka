@@ -1,5 +1,6 @@
 import { db } from './db';
 import type { Algorithm } from '~core/srs';
+import type { Bundle } from '~core/chinese/script';
 
 /** Kanto's accent presets (`data-accent`); violet is Kanto's own default. */
 export const ACCENTS = ['violet', 'blue', 'teal', 'green', 'orange', 'pink', 'slate'] as const;
@@ -8,12 +9,23 @@ export type Accent = (typeof ACCENTS)[number];
 export const TEXT_SIZES = ['small', 'default', 'large'] as const;
 export type TextSize = (typeof TEXT_SIZES)[number];
 
+export type Reading = 'zhuyin' | 'pinyin' | 'both';
+const BUNDLES: readonly string[] = ['mainland', 'taiwan'];
+const READINGS: readonly string[] = ['zhuyin', 'pinyin', 'both'];
+
 export interface Settings {
   algorithm: Algorithm;
   desiredRetention: number;
   newPerDay: number;
   maxInterval: number;
-  showZhuyin: boolean;
+  /** The curriculum the learner follows; null until onboarding picks one. */
+  bundle: Bundle | null;
+  /** When onboarding finished; null until it has. */
+  onboardedAt: number | null;
+  /** Lessons offered per day. */
+  dailyLessons: 1 | 2 | 3;
+  /** Which readings a Taiwan learner sees; Mainland always sees pinyin only. */
+  reading: Reading;
   toneColors: boolean;
   hidePinyinUntilRevealed: boolean;
   /** Writing checks each stroke as it is drawn, instead of the whole character on Check. */
@@ -41,7 +53,10 @@ export const DEFAULT_SETTINGS: Settings = {
   desiredRetention: 0.9,
   newPerDay: 15,
   maxInterval: 365,
-  showZhuyin: false,
+  bundle: null,
+  onboardedAt: null,
+  dailyLessons: 1,
+  reading: 'both',
   toneColors: true,
   hidePinyinUntilRevealed: false,
   strokeFeedback: true,
@@ -75,6 +90,13 @@ export async function loadSettings(): Promise<Settings> {
   // Before reminderTimes, a single reminderTime was stored; carry it over once.
   const legacyTime = (stored as { reminderTime?: unknown }).reminderTime;
   if (!('reminderTimes' in stored) && typeof legacyTime === 'string') merged.reminderTimes = [legacyTime];
+  // `showZhuyin` became `reading`: on shows both, off shows pinyin only.
+  const legacyZhuyin = (stored as { showZhuyin?: unknown }).showZhuyin;
+  if (!('reading' in stored) && typeof legacyZhuyin === 'boolean') merged.reading = legacyZhuyin ? 'both' : 'pinyin';
+  if (!READINGS.includes(merged.reading)) merged.reading = DEFAULT_SETTINGS.reading;
+  if (merged.bundle !== null && !BUNDLES.includes(merged.bundle)) merged.bundle = null;
+  if (![1, 2, 3].includes(merged.dailyLessons)) merged.dailyLessons = DEFAULT_SETTINGS.dailyLessons;
+  if (typeof merged.onboardedAt !== 'number') merged.onboardedAt = null;
   // These two become attributes Kanto matches by value; an unknown one (an
   // edited record, a backup from elsewhere) would leave the page unstyled.
   if (!(ACCENTS as readonly string[]).includes(merged.accent)) merged.accent = DEFAULT_SETTINGS.accent;
@@ -93,4 +115,13 @@ export async function saveSettings(patch: Partial<Settings>): Promise<Settings> 
   const merged = { ...(await loadSettings()), ...patch };
   await db.settings.put({ key: KEY, value: merged });
   return merged;
+}
+
+/** Mainland shows pinyin only; before a bundle is chosen everything is Taiwan. */
+export function showsZhuyin(s: Pick<Settings, 'bundle' | 'reading'>): boolean {
+  return s.bundle !== 'mainland' && s.reading !== 'pinyin';
+}
+
+export function showsPinyin(s: Pick<Settings, 'bundle' | 'reading'>): boolean {
+  return s.bundle === 'mainland' || s.reading !== 'zhuyin';
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DeepReadonly } from 'vue';
 import type { Card, Item } from '~core/db/schema';
+import { showsPinyin, showsZhuyin } from '~core/db/settings';
 import type { Settings } from '~core/db/settings';
 
 /**
@@ -22,7 +23,7 @@ defineEmits<{ speak: [text: string] }>();
 
       <div v-if="revealed" class="answer" role="status" aria-live="polite" aria-atomic="true">
         <div class="pinyin-row">
-          <PinyinText :syllables="card.pinyin" :colored="settings.toneColors" size="28px" />
+          <PinyinText v-if="showsPinyin(settings)" :syllables="card.pinyin" :colored="settings.toneColors" size="28px" />
           <kt-button
             variant="secondary-no-bg"
             size="small"
@@ -32,7 +33,7 @@ defineEmits<{ speak: [text: string] }>();
             @click="$emit('speak', card.hanzi)"
           />
         </div>
-        <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
+        <span v-if="showsZhuyin(settings)" class="zhuyin">{{ card.zhuyin }}</span>
         <p class="meaning">{{ card.translation }}</p>
         <div class="tags">
           <kt-badge v-for="tag in card.tags" :key="tag" variant="tag" tone="neutral" size="small" :label="tag" />

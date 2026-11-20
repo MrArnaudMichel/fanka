@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DeepReadonly } from 'vue';
 import type { Card } from '~core/db/schema';
+import { showsPinyin, showsZhuyin } from '~core/db/settings';
 import type { Settings } from '~core/db/settings';
 
 /**
@@ -20,7 +21,7 @@ defineEmits<{ speak: [text: string] }>();
         <p class="overline">Write the character{{ [...card.hanzi].length > 1 ? 's' : '' }}</p>
         <p class="meaning">{{ card.translation }}</p>
         <PinyinText
-          v-if="!settings.hidePinyinUntilRevealed || revealed"
+          v-if="showsPinyin(settings) && (!settings.hidePinyinUntilRevealed || revealed)"
           :syllables="card.pinyin"
           :colored="settings.toneColors"
           size="22px"
@@ -41,7 +42,7 @@ defineEmits<{ speak: [text: string] }>();
             @click="$emit('speak', card.hanzi)"
           />
         </div>
-        <span v-if="settings.showZhuyin" class="zhuyin">{{ card.zhuyin }}</span>
+        <span v-if="showsZhuyin(settings)" class="zhuyin">{{ card.zhuyin }}</span>
       </div>
       <!--
         `answer-extra` sits under the revealed answer — the stroke-order
