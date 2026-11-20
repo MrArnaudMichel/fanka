@@ -1,9 +1,9 @@
 {"id":"hsk1-0001","v":"v1","example":{"text":"这是我的书。","pinyin":"zhe4 shi4 wo3 de5 shu1","translation":"This is my book.","segments":["这","是","我","的","书","。"]}}
-{"id":"hsk1-0002","v":"v1","example":{"text":"我昨天去看了医生。","pinyin":"wo5 zuo5 tian5 qu5 kan5 le5 yi5 sheng5","translation":"I went to see a doctor yesterday.","segments":["我","昨天","去","看","了","医生","。"]}}
+{"id":"hsk1-0002","v":"v1","example":{"text":"我昨天去看了医生。","pinyin":"wo3 zuo2 tian1 qu4 kan1 le5 yi1 sheng1","translation":"I went to see a doctor yesterday.","segments":["我","昨天","去","看","了","医生","。"]}}
 {"id":"hsk1-0003","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","unknown words: 李 明"]}
-{"id":"hsk1-0004","v":"v1","example":{"text":"你是中国人吗？","pinyin":"ni3 shi4 zhong1 guo2 ren2 ma5","translation":"Are you Chinese?","segments":["你","是","中国","人","吗","？"]}}
+{"id":"hsk1-0004","v":"v1","example":{"text":"你是中国人吗？","pinyin":"ni3 shi4 zhong1 guo2 ren2 ma2","translation":"Are you Chinese?","segments":["你","是","中国","人","吗","？"]}}
 {"id":"hsk1-0005","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0006","v":"v1","example":{"text":"我在家里。","pinyin":"wo5 zai5 jia5 li5","translation":"I am at home.","segments":["我","在","家","里","。"]}}
+{"id":"hsk1-0006","v":"v1","example":{"text":"我在家里。","pinyin":"wo3 zai4 jia1 li3","translation":"I am at home.","segments":["我","在","家","里","。"]}}
 {"id":"hsk1-0007","v":"v1","example":{"text":"我不吃饭。","pinyin":"wo3 bu4 chi1 fan4","translation":"I do not eat.","segments":["我","不","吃","饭","。"]}}
 {"id":"hsk1-0008","v":"v1","example":{"text":"我有电脑。","pinyin":"wo3 you3 dian4 nao3","translation":"I have a computer.","segments":["我","有","电脑","。"]}}
 {"id":"hsk1-0009","v":"v1","example":{"text":"他昨天去超市买了水果。","pinyin":"ta1 zuo2 tian1 qu4 chao1 shi4 mai3 le5 shui3 guo3","translation":"He went to the supermarket and bought fruit yesterday.","segments":["他","昨天","去","超市","买","了","水果","。"]}}
@@ -11,91 +11,91 @@
 {"id":"hsk1-0011","v":"v1","rejected":["unknown words: 自 儿","pinyin syllable count","unknown words: 自 儿","unknown words: 自 儿"]}
 {"id":"hsk1-0012","v":"v1","example":{"text":"我和他一起吃饭。","pinyin":"wo3 he2 ta1 yi1 qi3 chi1 fan4","translation":"I eat with him.","segments":["我","和","他","一","起","吃","饭","。"]}}
 {"id":"hsk1-0013","v":"v1","rejected":["missing word","missing word","pinyin syllable count","missing word"]}
-{"id":"hsk1-0014","v":"v1","example":{"text":"我想说服你。","pinyin":"wo5 xiang5 shuo5 fu5 ni5","translation":"I want to persuade you.","segments":["我","想","说","服","你","。"]}}
+{"id":"hsk1-0014","v":"v1","example":{"text":"我想说服你。","pinyin":"wo3 xiang3 shui4 fu2 ni3","translation":"I want to persuade you.","segments":["我","想","说","服","你","。"]}}
 {"id":"hsk1-0015","v":"v1","example":{"text":"我们喜欢中文。","pinyin":"wo3 men5 xi3 huan5 zhong1 wen2","translation":"We like Chinese.","segments":["我们","喜欢","中文","。"]}}
-{"id":"hsk1-0016","v":"v1","example":{"text":"爸爸要我别看电视。","pinyin":"ba4 ba5 yao4 wo3 bie2 kan4 dian4 shi4","translation":"Dad told me not to watch TV.","segments":["爸爸","要","我","别","看","电视","。"]}}
-{"id":"hsk1-0017","v":"v1","example":{"text":"你好，今天天气很好。","pinyin":"ni5 hao5 jin5 tian5 tian5 qi5 hen5 hao5","translation":"Hello, the weather is very good today.","segments":["你","好","，","今天","天气","很","好","。"]}}
+{"id":"hsk1-0016","v":"v1","example":{"text":"爸爸要我别看电视。","pinyin":"ba4 ba5 yao1 wo3 bie2 kan1 dian4 shi4","translation":"Dad told me not to watch TV.","segments":["爸爸","要","我","别","看","电视","。"]}}
+{"id":"hsk1-0017","v":"v1","example":{"text":"你好，今天天气很好。","pinyin":"ni3 hao3 jin1 tian1 tian1 qi4 hen3 hao3","translation":"Hello, the weather is very good today.","segments":["你","好","，","今天","天气","很","好","。"]}}
 {"id":"hsk1-0018","v":"v1","example":{"text":"我有一本新书。","pinyin":"wo3 you3 yi1 ben3 xin1 shu1","translation":"I have a new book.","segments":["我","有","一","本","新","书","。"]}}
-{"id":"hsk1-0019","v":"v1","example":{"text":"我会说汉语。","pinyin":"wo5 hui5 shuo5 han5 yu5","translation":"I can speak Chinese.","segments":["我","会","说","汉语","。"]}}
+{"id":"hsk1-0019","v":"v1","example":{"text":"我会说汉语。","pinyin":"wo3 hui4 shui4 han4 yu3","translation":"I can speak Chinese.","segments":["我","会","说","汉语","。"]}}
 {"id":"hsk1-0020","v":"v1","rejected":["length 1","unknown words: 姓 氏","length 3"]}
 {"id":"hsk1-0021","v":"v1","rejected":["missing word","length 3","length 3","unknown words: 姓 杜","length 3","unknown words: 姓 杜"]}
-{"id":"hsk1-0022","v":"v1","example":{"text":"你说得对。","pinyin":"ni3 shuo1 de5 dui4","translation":"You are right.","segments":["你","说","得","对","。"]}}
+{"id":"hsk1-0022","v":"v1","example":{"text":"你说得对。","pinyin":"ni3 shui4 de2 dui4","translation":"You are right.","segments":["你","说","得","对","。"]}}
 {"id":"hsk1-0023","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0024","v":"v1","example":{"text":"哥哥今天上中文课。","pinyin":"ge1 ge5 jin1 tian1 shang4 zhong1 wen2 ke4","translation":"Brother is having a Chinese class today.","segments":["哥哥","今天","上","中文","课","。"]}}
+{"id":"hsk1-0024","v":"v1","example":{"text":"哥哥今天上中文课。","pinyin":"ge1 ge5 jin1 tian1 shang3 zhong1 wen2 ke4","translation":"Brother is having a Chinese class today.","segments":["哥哥","今天","上","中文","课","。"]}}
 {"id":"hsk1-0025","v":"v1","example":{"text":"请来喝茶。","pinyin":"qing3 lai2 he1 cha2","translation":"Please come and drink tea.","segments":["请","来","喝","茶","。"]}}
 {"id":"hsk1-0026","v":"v1","example":{"text":"这件衣服很好看。","pinyin":"zhe4 jian4 yi1 fu5 hen3 hao3 kan4","translation":"This piece of clothing looks very good.","segments":["这","件","衣服","很","好看","。"]}}
 {"id":"hsk1-0027","v":"v1","rejected":["length 3","length 1","no translation","pinyin syllable count"]}
 {"id":"hsk1-0028","v":"v1","example":{"text":"我去商店买牛奶。","pinyin":"wo3 qu4 shang1 dian4 mai3 niu2 nai3","translation":"I go to the store to buy milk.","segments":["我","去","商店","买","牛奶","。"]}}
-{"id":"hsk1-0029","v":"v1","example":{"text":"她喜欢喝牛奶。","pinyin":"ta1 xi3 huan1 he1 niu2 nai3","translation":"She likes drinking milk.","segments":["她","喜欢","喝","牛奶","。"]}}
-{"id":"hsk1-0030","v":"v1","example":{"text":"我想去商店。","pinyin":"wo5 xiang3 qu5 shang1 dian4","translation":"I want to go to the store.","segments":["我","想","去","商店","。"]}}
+{"id":"hsk1-0029","v":"v1","example":{"text":"她喜欢喝牛奶。","pinyin":"ta1 xi3 huan5 he1 niu2 nai3","translation":"She likes drinking milk.","segments":["她","喜欢","喝","牛奶","。"]}}
+{"id":"hsk1-0030","v":"v1","example":{"text":"我想去商店。","pinyin":"wo3 xiang3 qu4 shang1 dian4","translation":"I want to go to the store.","segments":["我","想","去","商店","。"]}}
 {"id":"hsk1-0031","v":"v1","example":{"text":"给妈妈做饭。","pinyin":"gei3 ma1 ma5 zuo4 fan4","translation":"Cook for mom.","segments":["给","妈妈","做饭","。"]}}
-{"id":"hsk1-0032","v":"v1","example":{"text":"我没有钱。","pinyin":"wo5 mei5 you5 qian5","translation":"I don't have money.","segments":["我","没有","钱","。"]}}
-{"id":"hsk1-0033","v":"v1","example":{"text":"能叫李能吗","pinyin":"neng2 jiao4 li3 neng2 ma5","translation":"Can you call it Li Neng?","segments":["能","叫","李","能","吗"]}}
-{"id":"hsk1-0034","v":"v1","example":{"text":"我的名字叫那。","pinyin":"wo3 de5 ming2 zi5 jiao4 na4","translation":"My name is Na.","segments":["我","的","名字","叫","那","。"]}}
+{"id":"hsk1-0032","v":"v1","example":{"text":"我没有钱。","pinyin":"wo3 mei2 you3 qian2","translation":"I don't have money.","segments":["我","没有","钱","。"]}}
+{"id":"hsk1-0033","v":"v1","example":{"text":"能叫李能吗","pinyin":"neng2 jiao4 li3 neng2 ma2","translation":"Can you call it Li Neng?","segments":["能","叫","李","能","吗"]}}
+{"id":"hsk1-0034","v":"v1","example":{"text":"我的名字叫那。","pinyin":"wo3 de5 ming2 zi5 jiao4 na1","translation":"My name is Na.","segments":["我","的","名字","叫","那","。"]}}
 {"id":"hsk1-0035","v":"v1","example":{"text":"他们今天去超市。","pinyin":"ta1 men5 jin1 tian1 qu4 chao1 shi4","translation":"They went to the supermarket today.","segments":["他们","今天","去","超市","。"]}}
-{"id":"hsk1-0036","v":"v1","example":{"text":"妈妈让我看弟弟。","pinyin":"ma1 ma5 rang4 wo3 kan4 di4 di5","translation":"Mom asked me to look after my younger brother.","segments":["妈妈","让","我","看","弟弟","。"]}}
-{"id":"hsk1-0037","v":"v1","example":{"text":"我喜欢做饺子。","pinyin":"wo5 xi5 huan5 zuo5 jiao5 zi5","translation":"I like making dumplings.","segments":["我","喜欢","做","饺子","。"]}}
-{"id":"hsk1-0038","v":"v1","example":{"text":"你叫什么名字？","pinyin":"ni3 jiao4 shen2 me5 ming2 zi4","translation":"What is your name?","segments":["你","叫","什么","名字","？"]}}
-{"id":"hsk1-0039","v":"v1","example":{"text":"这儿有个小酒吧。","pinyin":"zhe4 r5 you3 ge4 xiao3 yin3 ba1","translation":"There is a small bar here.","segments":["这儿","有","个","小","酒","吧","。"]}}
-{"id":"hsk1-0040","v":"v1","example":{"text":"我有点儿忙。","pinyin":"wo3 you3 dian3 er5 mang2","translation":"I am a little busy.","segments":["我","有点儿","忙","。"]}}
-{"id":"hsk1-0041","v":"v1","example":{"text":"我可以去超市买苹果。","pinyin":"wo5 ke5 yi5 qu5 chao5 shi5 mai5 ping5 guo5","translation":"I can go to the supermarket to buy apples.","segments":["我","可以","去","超市","买","苹果","。"]}}
+{"id":"hsk1-0036","v":"v1","example":{"text":"妈妈让我看弟弟。","pinyin":"ma1 ma5 rang4 wo3 kan1 di4 di5","translation":"Mom asked me to look after my younger brother.","segments":["妈妈","让","我","看","弟弟","。"]}}
+{"id":"hsk1-0037","v":"v1","example":{"text":"我喜欢做饺子。","pinyin":"wo3 xi3 huan5 zuo4 jiao3 zi5","translation":"I like making dumplings.","segments":["我","喜欢","做","饺子","。"]}}
+{"id":"hsk1-0038","v":"v1","example":{"text":"你叫什么名字？","pinyin":"ni3 jiao4 shen2 me5 ming2 zi5","translation":"What is your name?","segments":["你","叫","什么","名字","？"]}}
+{"id":"hsk1-0039","v":"v1","example":{"text":"这儿有个小酒吧。","pinyin":"zhe4 r5 you3 ge3 xiao3 jiu3 ba1","translation":"There is a small bar here.","segments":["这儿","有","个","小","酒","吧","。"]}}
+{"id":"hsk1-0040","v":"v1","example":{"text":"我有点儿忙。","pinyin":"wo3 you3 dian3 r5 mang2","translation":"I am a little busy.","segments":["我","有点儿","忙","。"]}}
+{"id":"hsk1-0041","v":"v1","example":{"text":"我可以去超市买苹果。","pinyin":"wo3 ke3 yi3 qu4 chao1 shi4 mai3 ping2 guo3","translation":"I can go to the supermarket to buy apples.","segments":["我","可以","去","超市","买","苹果","。"]}}
 {"id":"hsk1-0042","v":"v1","example":{"text":"大姐姐在超市买水果。","pinyin":"da4 jie3 jie5 zai4 chao1 shi4 mai3 shui3 guo3","translation":"The older sister is buying fruit at the supermarket.","segments":["大","姐姐","在","超市","买","水果","。"]}}
 {"id":"hsk1-0043","v":"v1","example":{"text":"下课后我回家。","pinyin":"xia4 ke4 hou4 wo3 hui2 jia1","translation":"After class I go home.","segments":["下课","后","我","回","家","。"]}}
-{"id":"hsk1-0044","v":"v1","example":{"text":"我在家里吃饭。","pinyin":"wo5 zai5 jia5 li5 chi5 fan5","translation":"I am eating at home.","segments":["我","在","家","里","吃","饭","。"]}}
+{"id":"hsk1-0044","v":"v1","example":{"text":"我在家里吃饭。","pinyin":"wo3 zai4 jia1 li3 chi1 fan4","translation":"I am eating at home.","segments":["我","在","家","里","吃","饭","。"]}}
 {"id":"hsk1-0045","v":"v1","example":{"text":"他真高兴。","pinyin":"ta1 zhen1 gao1 xing4","translation":"He is really happy.","segments":["他","真","高兴","。"]}}
 {"id":"hsk1-0046","v":"v1","example":{"text":"现在我在家里。","pinyin":"xian4 zai4 wo3 zai4 jia1 li3","translation":"I am at home now.","segments":["现在","我","在","家","里","。"]}}
 {"id":"hsk1-0047","v":"v1","example":{"text":"我的姓是年。","pinyin":"wo3 de5 xing4 shi4 nian2","translation":"My surname is Nian.","segments":["我","的","姓","是","年","。"]}}
 {"id":"hsk1-0048","v":"v1","example":{"text":"我有许多书。","pinyin":"wo3 you3 xu3 duo1 shu1","translation":"I have many books.","segments":["我","有","许","多","书","。"]}}
-{"id":"hsk1-0049","v":"v1","example":{"text":"我买了两个苹果。","pinyin":"wo5 mai5 le5 liang5 ge5 ping5 guo5","translation":"I bought two apples.","segments":["我","买","了","两","个","苹果","。"]}}
-{"id":"hsk1-0050","v":"v1","example":{"text":"你喜欢喝茶吗","pinyin":"ni3 xi3 huan1 he1 cha2 ma5","translation":"Do you like to drink tea?","segments":["你","喜欢","喝","茶","吗"]}}
+{"id":"hsk1-0049","v":"v1","example":{"text":"我买了两个苹果。","pinyin":"wo3 mai3 le5 liang3 ge3 ping2 guo3","translation":"I bought two apples.","segments":["我","买","了","两","个","苹果","。"]}}
+{"id":"hsk1-0050","v":"v1","example":{"text":"你喜欢喝茶吗","pinyin":"ni3 xi3 huan5 he1 cha2 ma2","translation":"Do you like to drink tea?","segments":["你","喜欢","喝","茶","吗"]}}
 {"id":"hsk1-0051","v":"v1","example":{"text":"今天天气很好。","pinyin":"jin1 tian1 tian1 qi4 hen3 hao3","translation":"The weather is good today.","segments":["今天","天气","很","好","。"]}}
 {"id":"hsk1-0052","v":"v1","example":{"text":"这衣服太贵了。","pinyin":"zhe4 yi1 fu5 tai4 gui4 le5","translation":"This clothes are too expensive.","segments":["这","衣服","太","贵","了","。"]}}
 {"id":"hsk1-0053","v":"v1","example":{"text":"我明天再给你打电话。","pinyin":"wo3 ming2 tian1 zai4 gei3 ni3 da3 dian4 hua4","translation":"I will call you again tomorrow.","segments":["我","明天","再","给","你","打电话","。"]}}
 {"id":"hsk1-0054","v":"v1","example":{"text":"书在哪儿呢？","pinyin":"shu1 zai4 na3 r5 ne5","translation":"Where is the book?","segments":["书","在","哪儿","呢","？"]}}
 {"id":"hsk1-0055","v":"v1","example":{"text":"我只会中文。","pinyin":"wo3 zhi3 hui4 zhong1 wen2","translation":"I only know Chinese.","segments":["我","只","会","中文","。"]}}
-{"id":"hsk1-0056","v":"v1","example":{"text":"我喜欢小苹果。","pinyin":"wo5 xi5 huan5 xiao5 ping5 guo5","translation":"I like little apples.","segments":["我","喜欢","小","苹果","。"]}}
-{"id":"hsk1-0057","v":"v1","example":{"text":"我知道你在这里。","pinyin":"wo5 zhi5 dao5 ni5 zai5 zhe5 li5","translation":"I know you are here.","segments":["我","知道","你","在","这里","。"]}}
-{"id":"hsk1-0058","v":"v1","example":{"text":"我小时候喜欢看电影。","pinyin":"wo3 xiao3 shi2 hou5 xi3 huan5 kan4 dian4 ying3","translation":"I liked watching movies when I was young.","segments":["我","小时","候","喜欢","看","电影","。"]}}
-{"id":"hsk1-0059","v":"v1","example":{"text":"你有什么问题吗？","pinyin":"ni3 you3 shen2 me5 wen4 ti2 ma5","translation":"Do you have any questions?","segments":["你","有","什么","问题","吗","？"]}}
+{"id":"hsk1-0056","v":"v1","example":{"text":"我喜欢小苹果。","pinyin":"wo3 xi3 huan5 xiao3 ping2 guo3","translation":"I like little apples.","segments":["我","喜欢","小","苹果","。"]}}
+{"id":"hsk1-0057","v":"v1","example":{"text":"我知道你在这里。","pinyin":"wo3 zhi1 dao4 ni3 zai4 zhe4 li3","translation":"I know you are here.","segments":["我","知道","你","在","这里","。"]}}
+{"id":"hsk1-0058","v":"v1","example":{"text":"我小时候喜欢看电影。","pinyin":"wo3 xiao3 shi2 hou5 xi3 huan5 kan1 dian4 ying3","translation":"I liked watching movies when I was young.","segments":["我","小时","候","喜欢","看","电影","。"]}}
+{"id":"hsk1-0059","v":"v1","example":{"text":"你有什么问题吗？","pinyin":"ni3 you3 shen2 me5 wen4 ti2 ma2","translation":"Do you have any questions?","segments":["你","有","什么","问题","吗","？"]}}
 {"id":"hsk1-0060","v":"v1","example":{"text":"我每天早上八点去公司工作。","pinyin":"wo3 mei3 tian1 zao3 shang5 ba1 dian3 qu4 gong1 si1 gong1 zuo4","translation":"I go to work at the company every morning at eight o'clock.","segments":["我","每","天","早上","八","点","去","公司","工作","。"]}}
-{"id":"hsk1-0061","v":"v1","example":{"text":"这是个好事情。","pinyin":"zhe4 shi4 ge4 hao3 shi4 qing5","translation":"This is a good thing.","segments":["这","是","个","好","事","情","。"]}}
+{"id":"hsk1-0061","v":"v1","example":{"text":"这是个好事情。","pinyin":"zhe4 shi4 ge3 hao3 shi4 qing5","translation":"This is a good thing.","segments":["这","是","个","好","事","情","。"]}}
 {"id":"hsk1-0062","v":"v1","example":{"text":"它是我的狗。","pinyin":"ta1 shi4 wo3 de5 gou3","translation":"It is my dog.","segments":["它","是","我","的","狗","。"]}}
 {"id":"hsk1-0063","v":"v1","example":{"text":"后 先生 是 我的 老师。","pinyin":"hou4 xian1 sheng5 shi4 wo3 de5 lao3 shi1","translation":"Mr. Hou is my teacher.","segments":["后"," ","先生"," ","是"," ","我","的"," ","老师","。"]}}
-{"id":"hsk1-0064","v":"v1","example":{"text":"我喜欢买家具。","pinyin":"wo5 xi5 huan5 mai5 jia5 ju5","translation":"I like buying furniture.","segments":["我","喜欢","买","家","具","。"]}}
-{"id":"hsk1-0065","v":"v1","example":{"text":"你们今天高兴吗","pinyin":"ni3 men5 jin1 tian1 gao1 xing4 ma5","translation":"Are you all happy today?","segments":["你们","今天","高兴","吗"]}}
+{"id":"hsk1-0064","v":"v1","example":{"text":"我喜欢买家具。","pinyin":"wo3 xi3 huan5 mai3 jia1 ju5","translation":"I like buying furniture.","segments":["我","喜欢","买","家","具","。"]}}
+{"id":"hsk1-0065","v":"v1","example":{"text":"你们今天高兴吗","pinyin":"ni3 men5 jin1 tian1 gao1 xing4 ma2","translation":"Are you all happy today?","segments":["你们","今天","高兴","吗"]}}
 {"id":"hsk1-0066","v":"v1","example":{"text":"我的家在前面。","pinyin":"wo3 de5 jia1 zai4 qian2 mian4","translation":"My home is in front.","segments":["我","的","家","在","前","面","。"]}}
-{"id":"hsk1-0067","v":"v1","example":{"text":"明天时间要早点起床。","pinyin":"ming2 tian1 shi2 jian1 yao4 zao3 dian3 qi3 chuang2","translation":"Tomorrow you need to get up early on time.","segments":["明天","时间","要","早","点","起床","。"]}}
+{"id":"hsk1-0067","v":"v1","example":{"text":"明天时间要早点起床。","pinyin":"ming2 tian1 shi2 jian1 yao1 zao3 dian3 qi3 chuang2","translation":"Tomorrow you need to get up early on time.","segments":["明天","时间","要","早","点","起床","。"]}}
 {"id":"hsk1-0068","v":"v1","example":{"text":"怎么买电影票？","pinyin":"zen3 me5 mai3 dian4 ying3 piao4","translation":"How do I buy movie tickets?","segments":["怎么","买","电影","票","？"]}}
-{"id":"hsk1-0069","v":"v1","example":{"text":"我爱吃苹果。","pinyin":"wo5 ai5 chi5 ping5 guo5","translation":"I love eating apples.","segments":["我","爱","吃","苹果","。"]}}
+{"id":"hsk1-0069","v":"v1","example":{"text":"我爱吃苹果。","pinyin":"wo3 ai4 chi1 ping2 guo3","translation":"I love eating apples.","segments":["我","爱","吃","苹果","。"]}}
 {"id":"hsk1-0070","v":"v1","example":{"text":"这些水果很好吃。","pinyin":"zhe4 xie1 shui3 guo3 hen3 hao3 chi1","translation":"These fruits are very delicious.","segments":["这些","水果","很","好吃","。"]}}
-{"id":"hsk1-0071","v":"v1","example":{"text":"我喜欢吃面条儿。","pinyin":"wo5 xi3 huan5 chi1 mian4 tiao5 er5","translation":"I like eating noodles.","segments":["我","喜欢","吃","面条儿","。"]}}
-{"id":"hsk1-0072","v":"v1","example":{"text":"我喜欢吃面条儿。","pinyin":"wo5 xi5 huan5 chi5 mian5 tao5 er5","translation":"I like to eat noodles.","segments":["我","喜欢","吃","面条儿","。"]}}
+{"id":"hsk1-0071","v":"v1","example":{"text":"我喜欢吃面条儿。","pinyin":"wo3 xi3 huan5 chi1 mian4 tiao2 r5","translation":"I like eating noodles.","segments":["我","喜欢","吃","面条儿","。"]}}
+{"id":"hsk1-0072","v":"v1","example":{"text":"我喜欢吃面条儿。","pinyin":"wo3 xi3 huan5 chi1 mian4 tiao2 r5","translation":"I like to eat noodles.","segments":["我","喜欢","吃","面条儿","。"]}}
 {"id":"hsk1-0073","v":"v1","rejected":["length 3","unknown words: 教 室","unknown words: 教 室"]}
-{"id":"hsk1-0074","v":"v1","example":{"text":"新老师非常漂亮。","pinyin":"xin5 lao5 shi5 fei5 chang5 piao5 liang5","translation":"The new teacher is very pretty.","segments":["新","老师","非常","漂亮","。"]}}
-{"id":"hsk1-0075","v":"v1","example":{"text":"我在找我的书。","pinyin":"wo5 zai5 zhao5 wo5 de5 shu5","translation":"I am looking for my book.","segments":["我","在","找","我","的","书","。"]}}
+{"id":"hsk1-0074","v":"v1","example":{"text":"新老师非常漂亮。","pinyin":"xin1 lao3 shi1 fei1 chang2 piao4 liang5","translation":"The new teacher is very pretty.","segments":["新","老师","非常","漂亮","。"]}}
+{"id":"hsk1-0075","v":"v1","example":{"text":"我在找我的书。","pinyin":"wo3 zai4 zhao3 wo3 de5 shu1","translation":"I am looking for my book.","segments":["我","在","找","我","的","书","。"]}}
 {"id":"hsk1-0076","v":"v1","example":{"text":"今天天气很好。","pinyin":"jin1 tian1 tian1 qi4 hen3 hao3","translation":"The weather is very good today.","segments":["今天","天气","很","好","。"]}}
 {"id":"hsk1-0077","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0078","v":"v1","example":{"text":"月亮真漂亮。","pinyin":"yue4 liang5 zhen1 piao4 liang5","translation":"The moon is very pretty.","segments":["月","亮","真","漂亮","。"]}}
+{"id":"hsk1-0078","v":"v1","example":{"text":"月亮真漂亮。","pinyin":"yue4 liang4 zhen1 piao4 liang5","translation":"The moon is very pretty.","segments":["月","亮","真","漂亮","。"]}}
 {"id":"hsk1-0079","v":"v1","rejected":["missing word","unknown words: 张 旁","missing word","unknown words: 把 张 推 过","unknown words: 把 放"]}
 {"id":"hsk1-0080","v":"v1","example":{"text":"我昨天看见他了。","pinyin":"wo3 zuo2 tian1 kan4 jian4 ta1 le5","translation":"I saw him yesterday.","segments":["我","昨天","看见","他","了","。"]}}
 {"id":"hsk1-0081","v":"v1","example":{"text":"车是我的姓。","pinyin":"che1 shi4 wo3 de5 xing4","translation":"Che is my surname.","segments":["车","是","我","的","姓","。"]}}
 {"id":"hsk1-0082","v":"v1","example":{"text":"我买了一些水果。","pinyin":"wo3 mai3 le5 yi1 xie1 shui3 guo3","translation":"I bought some fruit.","segments":["我","买","了","一些","水果","。"]}}
 {"id":"hsk1-0083","v":"v1","example":{"text":"大家早上好。","pinyin":"da4 jia1 zao3 shang5 hao3","translation":"Good morning everyone.","segments":["大家","早上","好","。"]}}
-{"id":"hsk1-0084","v":"v1","example":{"text":"听歌真好听。","pinyin":"ting5 ge5 zhen5 hao5 ting5","translation":"Listening to songs is really nice.","segments":["听","歌","真","好听","。"]}}
-{"id":"hsk1-0085","v":"v1","example":{"text":"我非常喜欢这部电影。","pinyin":"wo3 fei1 chang2 xi3 huan1 zhe4 bu4 dian4 ying3","translation":"I really like this movie.","segments":["我","非常","喜欢","这","部","电影","。"]}}
-{"id":"hsk1-0086","v":"v1","example":{"text":"爸爸开车去超市。","pinyin":"ba5 ba5 kai1 che1 qu4 chao1 shi4","translation":"Dad drives the car to the supermarket.","segments":["爸爸","开车","去","超市","。"]}}
+{"id":"hsk1-0084","v":"v1","example":{"text":"听歌真好听。","pinyin":"yin3 ge1 zhen1 hao3 ting1","translation":"Listening to songs is really nice.","segments":["听","歌","真","好听","。"]}}
+{"id":"hsk1-0085","v":"v1","example":{"text":"我非常喜欢这部电影。","pinyin":"wo3 fei1 chang2 xi3 huan5 zhe4 bu4 dian4 ying3","translation":"I really like this movie.","segments":["我","非常","喜欢","这","部","电影","。"]}}
+{"id":"hsk1-0086","v":"v1","example":{"text":"爸爸开车去超市。","pinyin":"ba4 ba5 kai1 che1 qu4 chao1 shi4","translation":"Dad drives the car to the supermarket.","segments":["爸爸","开车","去","超市","。"]}}
 {"id":"hsk1-0087","v":"v1","example":{"text":"妈妈叫我吃饭。","pinyin":"ma1 ma5 jiao4 wo3 chi1 fan4","translation":"Mom called me to eat.","segments":["妈妈","叫","我","吃","饭","。"]}}
 {"id":"hsk1-0088","v":"v1","example":{"text":"孩子喜欢玩。","pinyin":"hai2 zi5 xi3 huan5 wan2","translation":"The child likes to play.","segments":["孩子","喜欢","玩","。"]}}
-{"id":"hsk1-0089","v":"v1","example":{"text":"我住在这里。","pinyin":"wo5 zhu5 zai5 zhe5 li5","translation":"I live here.","segments":["我","住","在","这里","。"]}}
+{"id":"hsk1-0089","v":"v1","example":{"text":"我住在这里。","pinyin":"wo3 zhu4 zai4 zhe4 li3","translation":"I live here.","segments":["我","住","在","这里","。"]}}
 {"id":"hsk1-0090","v":"v1","example":{"text":"请给我一杯水。","pinyin":"qing3 gei3 wo3 yi1 bei1 shui3","translation":"Please give me a glass of water.","segments":["请","给","我","一","杯","水","。"]}}
 {"id":"hsk1-0091","v":"v1","example":{"text":"钱先生是我的老师。","pinyin":"qian2 xian1 sheng5 shi4 wo3 de5 lao3 shi1","translation":"Mr. Qian is my teacher.","segments":["钱","先生","是","我","的","老师","。"]}}
-{"id":"hsk1-0092","v":"v1","example":{"text":"我在公司工作。","pinyin":"wo5 zai5 gong5 si5 gong5 zuo5","translation":"I work at the company.","segments":["我","在","公司","工作","。"]}}
+{"id":"hsk1-0092","v":"v1","example":{"text":"我在公司工作。","pinyin":"wo3 zai4 gong1 si1 gong1 zuo4","translation":"I work at the company.","segments":["我","在","公司","工作","。"]}}
 {"id":"hsk1-0093","v":"v1","example":{"text":"不要在这里睡觉。","pinyin":"bu4 yao4 zai4 zhe4 li3 shui4 jiao4","translation":"Don't sleep here.","segments":["不要","在","这里","睡觉","。"]}}
 {"id":"hsk1-0094","v":"v1","example":{"text":"这本书的根是本。","pinyin":"zhe4 ben3 shu1 de5 gen1 shi4 ben3","translation":"The root of this book is the character 'ben'.","segments":["这","本","书","的","根","是","本","。"]}}
 {"id":"hsk1-0095","v":"v1","example":{"text":"我回家吃饭。","pinyin":"wo3 hui2 jia1 chi1 fan4","translation":"I go home to eat.","segments":["我","回","家","吃","饭","。"]}}
-{"id":"hsk1-0096","v":"v1","example":{"text":"我喜欢买便宜的东西。","pinyin":"wo5 xi5 huan5 mai5 pian5 yi5 de5 dong5 xi5","translation":"I like to buy cheap things.","segments":["我","喜欢","买","便宜","的","东西","。"]}}
+{"id":"hsk1-0096","v":"v1","example":{"text":"我喜欢买便宜的东西。","pinyin":"wo3 xi3 huan5 mai3 bian4 yi2 de5 dong1 xi1","translation":"I like to buy cheap things.","segments":["我","喜欢","买","便宜","的","东西","。"]}}
 {"id":"hsk1-0097","v":"v1","example":{"text":"我的名字叫三。","pinyin":"wo3 de5 ming2 zi5 jiao4 san1","translation":"My name is San.","segments":["我","的","名字","叫","三","。"]}}
-{"id":"hsk1-0098","v":"v1","example":{"text":"我想买一本书。","pinyin":"wo5 xiang5 mai5 yi5 ben5 shu5","translation":"I want to buy a book.","segments":["我","想","买","一","本","书","。"]}}
+{"id":"hsk1-0098","v":"v1","example":{"text":"我想买一本书。","pinyin":"wo3 xiang3 mai3 yi1 ben3 shu1","translation":"I want to buy a book.","segments":["我","想","买","一","本","书","。"]}}
 {"id":"hsk1-0099","v":"v1","example":{"text":"今天我去书店问老师问题。","pinyin":"jin1 tian1 wo3 qu4 shu1 dian4 wen4 lao3 shi1 wen4 ti2","translation":"Today I went to the bookstore to ask the teacher a question.","segments":["今天","我","去","书店","问","老师","问题","。"]}}
 {"id":"hsk1-0100","v":"v1","example":{"text":"我今年十岁。","pinyin":"wo3 jin1 nian2 shi2 sui4","translation":"I am ten years old this year.","segments":["我","今年","十","岁","。"]}}
 {"id":"hsk1-0101","v":"v1","rejected":["unknown words: 声 像 样","missing word","length 3"]}
@@ -104,191 +104,191 @@
 {"id":"hsk1-0104","v":"v1","example":{"text":"这件衣服很漂亮。","pinyin":"zhe4 jian4 yi1 fu5 hen3 piao4 liang5","translation":"This piece of clothing is very pretty.","segments":["这","件","衣服","很","漂亮","。"]}}
 {"id":"hsk1-0105","v":"v1","example":{"text":"那些是哥哥的书。","pinyin":"na4 xie1 shi4 ge1 ge5 de5 shu1","translation":"Those are my brother's books.","segments":["那些","是","哥哥","的","书","。"]}}
 {"id":"hsk1-0106","v":"v1","example":{"text":"水先生是医生。","pinyin":"shui3 xian1 sheng5 shi4 yi1 sheng1","translation":"Mr. Shui is a doctor.","segments":["水","先生","是","医生","。"]}}
-{"id":"hsk1-0107","v":"v1","example":{"text":"我喜欢写汉字。","pinyin":"wo5 xi5 huan5 xie5 han5 zi5","translation":"I like to write Chinese characters.","segments":["我","喜欢","写","汉字","。"]}}
+{"id":"hsk1-0107","v":"v1","example":{"text":"我喜欢写汉字。","pinyin":"wo3 xi3 huan5 xie3 han4 zi4","translation":"I like to write Chinese characters.","segments":["我","喜欢","写","汉字","。"]}}
 {"id":"hsk1-0108","v":"v1","example":{"text":"您今天穿什么衣服？","pinyin":"nin2 jin1 tian1 chuan1 shen2 me5 yi1 fu5","translation":"What are you wearing today?","segments":["您","今天","穿","什么","衣服","？"]}}
 {"id":"hsk1-0109","v":"v1","example":{"text":"请给我打电话。","pinyin":"qing3 gei3 wo3 da3 dian4 hua4","translation":"Please call me.","segments":["请","给","我","打电话","。"]}}
 {"id":"hsk1-0110","v":"v1","example":{"text":"我的女儿很可爱。","pinyin":"wo3 de5 nv3 er2 hen3 ke3 ai4","translation":"My daughter is very cute.","segments":["我","的","女儿","很","可","爱","。"]}}
 {"id":"hsk1-0111","v":"v1","example":{"text":"请把苹果分给弟弟。","pinyin":"qing3 ba3 ping2 guo3 fen1 gei3 di4 di5","translation":"Please divide the apples among your younger brother.","segments":["请","把","苹果","分","给","弟弟","。"]}}
-{"id":"hsk1-0112","v":"v1","example":{"text":"我早上七点起床，上小时课。","pinyin":"wo3 zao3 shang5 qi1 dian3 qi3 chuang2 shang4 xiao3 shi2 ke4","translation":"I get up at seven in the morning and take an hour-long class.","segments":["我","早上","七","点","起床","，","上","小时","课","。"]}}
+{"id":"hsk1-0112","v":"v1","example":{"text":"我早上七点起床，上小时课。","pinyin":"wo3 zao3 shang5 qi1 dian3 qi3 chuang2 shang3 xiao3 shi2 ke4","translation":"I get up at seven in the morning and take an hour-long class.","segments":["我","早上","七","点","起床","，","上","小时","课","。"]}}
 {"id":"hsk1-0113","v":"v1","example":{"text":"我有些喜欢这部电影。","pinyin":"wo3 you3 xie1 xi3 huan5 zhe4 bu4 dian4 ying3","translation":"I like this movie somewhat.","segments":["我","有些","喜欢","这","部","电影","。"]}}
-{"id":"hsk1-0114","v":"v1","example":{"text":"日本是个国家。","pinyin":"ri4 ben3 shi4 ge4 guo2 jia1","translation":"Japan is a country.","segments":["日","本","是","个","国","家","。"]}}
-{"id":"hsk1-0115","v":"v1","example":{"text":"我喜欢玩电脑。","pinyin":"wo5 xi5 huan5 wan5 dian5 nao5","translation":"I like playing on the computer.","segments":["我","喜欢","玩","电脑","。"]}}
+{"id":"hsk1-0114","v":"v1","example":{"text":"日本是个国家。","pinyin":"ri4 ben3 shi4 ge3 guo2 jia1","translation":"Japan is a country.","segments":["日","本","是","个","国","家","。"]}}
+{"id":"hsk1-0115","v":"v1","example":{"text":"我喜欢玩电脑。","pinyin":"wo3 xi3 huan5 wan2 dian4 nao3","translation":"I like playing on the computer.","segments":["我","喜欢","玩","电脑","。"]}}
 {"id":"hsk1-0116","v":"v1","example":{"text":"他正在读书。","pinyin":"ta1 zheng4 zai4 du2 shu1","translation":"He is reading.","segments":["他","正在","读书","。"]}}
-{"id":"hsk1-0117","v":"v1","example":{"text":"我想喝牛奶。","pinyin":"wo5 xiang5 he5 niu5 nai5","translation":"I want to drink milk.","segments":["我","想","喝","牛奶","。"]}}
-{"id":"hsk1-0118","v":"v1","example":{"text":"我喜欢穿这件衣服。","pinyin":"wo5 xi5 huan5 chuan5 zhe5 jian5 yi5 fu5","translation":"I like to wear this piece of clothing.","segments":["我","喜欢","穿","这","件","衣服","。"]}}
+{"id":"hsk1-0117","v":"v1","example":{"text":"我想喝牛奶。","pinyin":"wo3 xiang3 he1 niu2 nai3","translation":"I want to drink milk.","segments":["我","想","喝","牛奶","。"]}}
+{"id":"hsk1-0118","v":"v1","example":{"text":"我喜欢穿这件衣服。","pinyin":"wo3 xi3 huan5 chuan1 zhe4 jian4 yi1 fu5","translation":"I like to wear this piece of clothing.","segments":["我","喜欢","穿","这","件","衣服","。"]}}
 {"id":"hsk1-0119","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0120","v":"v1","example":{"text":"我的名字叫坐。","pinyin":"wo3 de5 ming2 zi4 jiao4 zuo4","translation":"My surname is Zuo.","segments":["我","的","名字","叫","坐","。"]}}
-{"id":"hsk1-0121","v":"v1","example":{"text":"早上好，你几点起床？","pinyin":"zao3 shang5 hao3 ni3 ji3 dian3 qi3 chuang2","translation":"Good morning, what time do you get up?","segments":["早上","好","，","你","几","点","起床","？"]}}
+{"id":"hsk1-0120","v":"v1","example":{"text":"我的名字叫坐。","pinyin":"wo3 de5 ming2 zi5 jiao4 zuo4","translation":"My surname is Zuo.","segments":["我","的","名字","叫","坐","。"]}}
+{"id":"hsk1-0121","v":"v1","example":{"text":"早上好，你几点起床？","pinyin":"zao3 shang5 hao3 ni3 ji1 dian3 qi3 chuang2","translation":"Good morning, what time do you get up?","segments":["早上","好","，","你","几","点","起床","？"]}}
 {"id":"hsk1-0122","v":"v1","example":{"text":"我们一起去吃饭。","pinyin":"wo3 men5 yi1 qi3 qu4 chi1 fan4","translation":"We go to eat together.","segments":["我们","一","起","去","吃","饭","。"]}}
 {"id":"hsk1-0123","v":"v1","example":{"text":"我认识我的老师。","pinyin":"wo3 ren4 shi5 wo3 de5 lao3 shi1","translation":"I know my teacher.","segments":["我","认识","我","的","老师","。"]}}
-{"id":"hsk1-0124","v":"v1","example":{"text":"我明天早上起床后去睡觉。","pinyin":"wo5 ming5 tian5 zao5 shang5 qi5 chuang5 hou5 qu5 shui5 jiao5","translation":"I will go to sleep after getting up tomorrow morning.","segments":["我","明天","早上","起床","后","去","睡觉","。"]}}
+{"id":"hsk1-0124","v":"v1","example":{"text":"我明天早上起床后去睡觉。","pinyin":"wo3 ming2 tian1 zao3 shang5 qi3 chuang2 hou4 qu4 shui4 jiao4","translation":"I will go to sleep after getting up tomorrow morning.","segments":["我","明天","早上","起床","后","去","睡觉","。"]}}
 {"id":"hsk1-0125","v":"v1","example":{"text":"我等了二十分钟。","pinyin":"wo3 deng3 le5 er4 shi2 fen1 zhong1","translation":"I waited for twenty minutes.","segments":["我","等","了","二","十","分钟","。"]}}
 {"id":"hsk1-0126","v":"v1","example":{"text":"明天我想吃包子。","pinyin":"ming2 tian1 wo3 xiang3 chi1 bao1 zi5","translation":"Tomorrow I want to eat baozi.","segments":["明天","我","想","吃","包子","。"]}}
 {"id":"hsk1-0127","v":"v1","example":{"text":"我有四本书。","pinyin":"wo3 you3 si4 ben3 shu1","translation":"I have four books.","segments":["我","有","四","本","书","。"]}}
 {"id":"hsk1-0128","v":"v1","example":{"text":"我买了一块面包。","pinyin":"wo3 mai3 le5 yi1 kuai4 mian4 bao1","translation":"I bought a piece of bread.","segments":["我","买","了","一","块","面包","。"]}}
-{"id":"hsk1-0129","v":"v1","example":{"text":"我在外边等你。","pinyin":"wo5 zai5 wai5 bian5 deng5 ni5","translation":"I am waiting for you outside.","segments":["我","在","外边","等","你","。"]}}
+{"id":"hsk1-0129","v":"v1","example":{"text":"我在外边等你。","pinyin":"wo3 zai4 wai4 bian5 deng3 ni3","translation":"I am waiting for you outside.","segments":["我","在","外边","等","你","。"]}}
 {"id":"hsk1-0130","v":"v1","example":{"text":"晚上我们吃饺子。","pinyin":"wan3 shang5 wo3 men5 chi1 jiao3 zi5","translation":"We eat dumplings in the evening.","segments":["晚上","我们","吃","饺子","。"]}}
 {"id":"hsk1-0131","v":"v1","rejected":["unknown words: 帮 助","unknown words: 帮 助","unknown words: 帮 助"]}
 {"id":"hsk1-0132","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0133","v":"v1","example":{"text":"你有多少钱？","pinyin":"ni3 you3 duo1 shao3 qian2","translation":"How much money do you have?","segments":["你","有","多少","钱","？"]}}
-{"id":"hsk1-0134","v":"v1","example":{"text":"妈妈爱我。","pinyin":"ma1 ma1 ai4 wo3","translation":"Mommy loves me.","segments":["妈妈","爱","我","。"]}}
+{"id":"hsk1-0134","v":"v1","example":{"text":"妈妈爱我。","pinyin":"ma1 ma5 ai4 wo3","translation":"Mommy loves me.","segments":["妈妈","爱","我","。"]}}
 {"id":"hsk1-0135","v":"v1","example":{"text":"我有少钱。","pinyin":"wo3 you3 shao3 qian2","translation":"I have little money.","segments":["我","有","少","钱","。"]}}
-{"id":"hsk1-0136","v":"v1","example":{"text":"我喜欢看这部电影。","pinyin":"wo5 xi5 huan5 kan5 zhe5 bu5 dian5 ying5","translation":"I like watching this movie.","segments":["我","喜欢","看","这","部","电影","。"]}}
-{"id":"hsk1-0137","v":"v1","example":{"text":"请问哪部电影好看？","pinyin":"qing5 wen5 na5 bu5 dian5 ying5 hao5 kan5","translation":"Excuse me, which movie is good to watch?","segments":["请问","哪","部","电影","好看","？"]}}
+{"id":"hsk1-0136","v":"v1","example":{"text":"我喜欢看这部电影。","pinyin":"wo3 xi3 huan5 kan1 zhe4 bu4 dian4 ying3","translation":"I like watching this movie.","segments":["我","喜欢","看","这","部","电影","。"]}}
+{"id":"hsk1-0137","v":"v1","example":{"text":"请问哪部电影好看？","pinyin":"qing3 wen4 na3 bu4 dian4 ying3 hao3 kan4","translation":"Excuse me, which movie is good to watch?","segments":["请问","哪","部","电影","好看","？"]}}
 {"id":"hsk1-0138","v":"v1","example":{"text":"昨天我去了电影院。","pinyin":"zuo2 tian1 wo3 qu4 le5 dian4 ying3 yuan4","translation":"Yesterday I went to the cinema.","segments":["昨天","我","去","了","电影院","。"]}}
 {"id":"hsk1-0139","v":"v1","example":{"text":"我们晚上吃晚饭。","pinyin":"wo3 men5 wan3 shang5 chi1 wan3 fan4","translation":"We eat dinner in the evening.","segments":["我们","晚上","吃","晚饭","。"]}}
-{"id":"hsk1-0140","v":"v1","example":{"text":"我读一本书。","pinyin":"wo3 du2 yi1 ben3 shu1","translation":"I read a book.","segments":["我","读","一","本","书","。"]}}
-{"id":"hsk1-0141","v":"v1","example":{"text":"我有五个苹果。","pinyin":"wo3 you3 wu3 ge4 ping2 guo3","translation":"I have five apples.","segments":["我","有","五","个","苹果","。"]}}
+{"id":"hsk1-0140","v":"v1","example":{"text":"我读一本书。","pinyin":"wo3 dou4 yi1 ben3 shu1","translation":"I read a book.","segments":["我","读","一","本","书","。"]}}
+{"id":"hsk1-0141","v":"v1","example":{"text":"我有五个苹果。","pinyin":"wo3 you3 wu3 ge3 ping2 guo3","translation":"I have five apples.","segments":["我","有","五","个","苹果","。"]}}
 {"id":"hsk1-0142","v":"v1","example":{"text":"这位先生是我的老师。","pinyin":"zhe4 wei4 xian1 sheng5 shi4 wo3 de5 lao3 shi1","translation":"This gentleman is my teacher.","segments":["这","位","先生","是","我","的","老师","。"]}}
-{"id":"hsk1-0143","v":"v1","example":{"text":"他是我的男朋友。","pinyin":"ta1 shi4 wo3 de5 nan2 peng2 you3","translation":"He is my boyfriend.","segments":["他","是","我","的","男朋友","。"]}}
+{"id":"hsk1-0143","v":"v1","example":{"text":"他是我的男朋友。","pinyin":"ta1 shi4 wo3 de5 nan2 peng2 you5","translation":"He is my boyfriend.","segments":["他","是","我","的","男朋友","。"]}}
 {"id":"hsk1-0144","v":"v1","example":{"text":"我卖苹果。","pinyin":"wo3 mai4 ping2 guo3","translation":"I sell apples.","segments":["我","卖","苹果","。"]}}
 {"id":"hsk1-0145","v":"v1","example":{"text":"我昨天去医院看病了。","pinyin":"wo3 zuo2 tian1 qu4 yi1 yuan4 kan4 bing4 le5","translation":"I went to the hospital to see a doctor yesterday.","segments":["我","昨天","去","医院","看病","了","。"]}}
 {"id":"hsk1-0146","v":"v1","example":{"text":"我买了一些苹果。","pinyin":"wo3 mai3 le5 yi1 xie1 ping2 guo3","translation":"I bought some apples.","segments":["我","买","了","一些","苹果","。"]}}
-{"id":"hsk1-0147","v":"v1","example":{"text":"我喜欢喂狗。","pinyin":"wo5 xi5 huan5 wei5 gou5","translation":"I like feeding the dog.","segments":["我","喜欢","喂","狗","。"]}}
+{"id":"hsk1-0147","v":"v1","example":{"text":"我喜欢喂狗。","pinyin":"wo3 xi3 huan5 wei2 gou3","translation":"I like feeding the dog.","segments":["我","喜欢","喂","狗","。"]}}
 {"id":"hsk1-0148","v":"v1","rejected":["length 3","missing word","missing word"]}
 {"id":"hsk1-0149","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0150","v":"v1","example":{"text":"我今年十二岁。","pinyin":"wo3 jin1 nian2 shi2 er4 sui4","translation":"I am twelve years old this year.","segments":["我","今年","十","二","岁","。"]}}
 {"id":"hsk1-0151","v":"v1","example":{"text":"我的儿子叫小明。","pinyin":"wo3 de5 er2 zi5 jiao4 xiao3 ming2","translation":"My son's name is Xiao Ming.","segments":["我","的","儿子","叫","小","明","。"]}}
-{"id":"hsk1-0152","v":"v1","example":{"text":"我喜欢唱歌。","pinyin":"wo5 xi5 huan5 chang5 ge5","translation":"I like to sing.","segments":["我","喜欢","唱","歌","。"]}}
+{"id":"hsk1-0152","v":"v1","example":{"text":"我喜欢唱歌。","pinyin":"wo3 xi3 huan5 chang4 ge1","translation":"I like to sing.","segments":["我","喜欢","唱","歌","。"]}}
 {"id":"hsk1-0153","v":"v1","example":{"text":"我有一杯水，只有一半。","pinyin":"wo3 you3 yi1 bei1 shui3 zhi3 you3 yi1 ban4","translation":"I have a glass of water, only half is left.","segments":["我","有","一","杯","水","，","只","有","一半","。"]}}
 {"id":"hsk1-0154","v":"v1","example":{"text":"中国很大。","pinyin":"zhong1 guo2 hen3 da4","translation":"China is very big.","segments":["中国","很","大","。"]}}
 {"id":"hsk1-0155","v":"v1","example":{"text":"这家店卖好吃的包子。","pinyin":"zhe4 jia1 dian4 mai4 hao3 chi1 de5 bao1 zi5","translation":"This shop sells delicious baozi.","segments":["这","家","店","卖","好吃","的","包子","。"]}}
 {"id":"hsk1-0156","v":"v1","rejected":["unknown words: 朝 历 史 朝 代","unknown words: 朝 厉 害","unknown words: 姓 氏 朝 代 名"]}
 {"id":"hsk1-0157","v":"v1","example":{"text":"你在哪里？","pinyin":"ni3 zai4 na3 li3","translation":"Where are you?","segments":["你","在","哪里","？"]}}
-{"id":"hsk1-0158","v":"v1","example":{"text":"那里有一只猫。","pinyin":"na4 li5 you3 yi1 zhi1 mao1","translation":"There is a cat there.","segments":["那里","有","一","只","猫","。"]}}
-{"id":"hsk1-0159","v":"v1","example":{"text":"我喜欢看电视。","pinyin":"wo5 xi5 huan5 kan5 dian4 shi5","translation":"I like watching TV.","segments":["我","喜欢","看","电视","。"]}}
+{"id":"hsk1-0158","v":"v1","example":{"text":"那里有一只猫。","pinyin":"na4 li5 you3 yi1 zhi3 mao1","translation":"There is a cat there.","segments":["那里","有","一","只","猫","。"]}}
+{"id":"hsk1-0159","v":"v1","example":{"text":"我喜欢看电视。","pinyin":"wo3 xi3 huan5 kan1 dian4 shi4","translation":"I like watching TV.","segments":["我","喜欢","看","电视","。"]}}
 {"id":"hsk1-0160","v":"v1","example":{"text":"下午我哥哥在超市。","pinyin":"xia4 wu3 wo3 ge1 ge5 zai4 chao1 shi4","translation":"My older brother is at the supermarket in the afternoon.","segments":["下午","我","哥哥","在","超市","。"]}}
 {"id":"hsk1-0161","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0162","v":"v1","example":{"text":"它们在这里。","pinyin":"ta1 men5 zai4 zhe4 li5","translation":"They are here.","segments":["它们","在","这里","。"]}}
-{"id":"hsk1-0163","v":"v1","example":{"text":"老师，今天上课吗？","pinyin":"lao3 shi1 jin1 tian1 shang4 ke4 ma5","translation":"Teacher, are we having class today?","segments":["老师","，","今天","上课","吗","？"]}}
-{"id":"hsk1-0164","v":"v1","example":{"text":"我有六个苹果。","pinyin":"wo3 you3 liu4 ge4 ping2 guo3","translation":"I have six apples.","segments":["我","有","六","个","苹果","。"]}}
+{"id":"hsk1-0162","v":"v1","example":{"text":"它们在这里。","pinyin":"ta1 men5 zai4 zhe4 li3","translation":"They are here.","segments":["它们","在","这里","。"]}}
+{"id":"hsk1-0163","v":"v1","example":{"text":"老师，今天上课吗？","pinyin":"lao3 shi1 jin1 tian1 shang4 ke4 ma2","translation":"Teacher, are we having class today?","segments":["老师","，","今天","上课","吗","？"]}}
+{"id":"hsk1-0164","v":"v1","example":{"text":"我有六个苹果。","pinyin":"wo3 you3 liu4 ge3 ping2 guo3","translation":"I have six apples.","segments":["我","有","六","个","苹果","。"]}}
 {"id":"hsk1-0165","v":"v1","example":{"text":"书在桌子左边。","pinyin":"shu1 zai4 zhuo1 zi5 zuo3 bian1","translation":"The book is on the left side of the desk.","segments":["书","在","桌子","左","边","。"]}}
-{"id":"hsk1-0166","v":"v1","example":{"text":"我喜欢唱这首歌。","pinyin":"wo5 xi5 huan5 chang5 zhe5 shou5 ge5","translation":"I like to sing this song.","segments":["我","喜欢","唱","这","首","歌","。"]}}
+{"id":"hsk1-0166","v":"v1","example":{"text":"我喜欢唱这首歌。","pinyin":"wo3 xi3 huan5 chang4 zhe4 shou3 ge1","translation":"I like to sing this song.","segments":["我","喜欢","唱","这","首","歌","。"]}}
 {"id":"hsk1-0167","v":"v1","rejected":["unknown words: 地 方","pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0168","v":"v1","example":{"text":"我生病了，要去医院看病。","pinyin":"wo3 sheng1 bing4 le5 yao4 qu4 yi1 yuan4 kan4 bing4","translation":"I am sick and need to go to the hospital for treatment.","segments":["我","生病","了","，","要","去","医院","看病","。"]}}
-{"id":"hsk1-0169","v":"v1","example":{"text":"我生病了，请医生看病。","pinyin":"wo3 sheng1 le5 bing4 qing3 yi1 sheng1 kan4 bing4","translation":"I am sick, please ask the doctor to see me.","segments":["我","生病","了","，","请","医生","看病","。"]}}
+{"id":"hsk1-0168","v":"v1","example":{"text":"我生病了，要去医院看病。","pinyin":"wo3 sheng1 bing4 le5 yao1 qu4 yi1 yuan4 kan4 bing4","translation":"I am sick and need to go to the hospital for treatment.","segments":["我","生病","了","，","要","去","医院","看病","。"]}}
+{"id":"hsk1-0169","v":"v1","example":{"text":"我生病了，请医生看病。","pinyin":"wo3 sheng1 bing4 le5 qing3 yi1 sheng1 kan4 bing4","translation":"I am sick, please ask the doctor to see me.","segments":["我","生病","了","，","请","医生","看病","。"]}}
 {"id":"hsk1-0170","v":"v1","example":{"text":"我的名字叫小明。","pinyin":"wo3 de5 ming2 zi5 jiao4 xiao3 ming2","translation":"My name is Xiao Ming.","segments":["我","的","名字","叫","小","明","。"]}}
 {"id":"hsk1-0171","v":"v1","example":{"text":"她们是女生。","pinyin":"ta1 men5 shi4 nv3 sheng1","translation":"They are girls.","segments":["她们","是","女","生","。"]}}
 {"id":"hsk1-0172","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0173","v":"v1","example":{"text":"他正在用手机打电话。","pinyin":"ta1 zheng4 zai4 yong4 shou3 ji1 da3 dian4 hua4","translation":"He is using a mobile phone to make a call.","segments":["他","正在","用","手机","打电话","。"]}}
 {"id":"hsk1-0174","v":"v1","example":{"text":"今天很忙。","pinyin":"jin1 tian1 hen3 mang2","translation":"I am very busy today.","segments":["今天","很","忙","。"]}}
-{"id":"hsk1-0175","v":"v1","example":{"text":"我有十个苹果。","pinyin":"wo3 you3 shi2 ge4 ping2 guo3","translation":"I have ten apples.","segments":["我","有","十","个","苹果","。"]}}
-{"id":"hsk1-0176","v":"v1","example":{"text":"我看见一只狗。","pinyin":"wo5 kan5 jian5 yi5 zhi5 gou5","translation":"I saw a dog.","segments":["我","看见","一","只","狗","。"]}}
+{"id":"hsk1-0175","v":"v1","example":{"text":"我有十个苹果。","pinyin":"wo3 you3 shi2 ge3 ping2 guo3","translation":"I have ten apples.","segments":["我","有","十","个","苹果","。"]}}
+{"id":"hsk1-0176","v":"v1","example":{"text":"我看见一只狗。","pinyin":"wo3 kan4 jian4 yi1 zhi3 gou3","translation":"I saw a dog.","segments":["我","看见","一","只","狗","。"]}}
 {"id":"hsk1-0177","v":"v1","example":{"text":"我的女儿很可爱。","pinyin":"wo3 de5 nv3 er2 hen3 ke3 ai4","translation":"My daughter is very cute.","segments":["我","的","女儿","很","可","爱","。"]}}
-{"id":"hsk1-0178","v":"v1","example":{"text":"我喜欢说话。","pinyin":"wo5 xi3 huan5 shuo1 hua4","translation":"I like to speak.","segments":["我","喜欢","说话","。"]}}
+{"id":"hsk1-0178","v":"v1","example":{"text":"我喜欢说话。","pinyin":"wo3 xi3 huan5 shuo1 hua4","translation":"I like to speak.","segments":["我","喜欢","说话","。"]}}
 {"id":"hsk1-0179","v":"v1","example":{"text":"爸爸今天在家做饭。","pinyin":"ba4 ba5 jin1 tian1 zai4 jia1 zuo4 fan4","translation":"Dad is cooking at home today.","segments":["爸爸","今天","在","家","做饭","。"]}}
 {"id":"hsk1-0180","v":"v1","example":{"text":"这些字是汉字。","pinyin":"zhe4 xie1 zi4 shi4 han4 zi4","translation":"These characters are Chinese characters.","segments":["这些","字","是","汉字","。"]}}
-{"id":"hsk1-0181","v":"v1","example":{"text":"我哥哥很漂亮。","pinyin":"wo5 ge5 ge5 hen5 piao4 liang5","translation":"My older brother is very handsome.","segments":["我","哥哥","很","漂亮","。"]}}
+{"id":"hsk1-0181","v":"v1","example":{"text":"我哥哥很漂亮。","pinyin":"wo3 ge1 ge5 hen3 piao4 liang5","translation":"My older brother is very handsome.","segments":["我","哥哥","很","漂亮","。"]}}
 {"id":"hsk1-0182","v":"v1","example":{"text":"我很高兴去电影院。","pinyin":"wo3 hen3 gao1 xing4 qu4 dian4 ying3 yuan4","translation":"I am very happy to go to the cinema.","segments":["我","很","高兴","去","电影院","。"]}}
 {"id":"hsk1-0183","v":"v1","example":{"text":"去年我吃了饺子。","pinyin":"qu4 nian2 wo3 chi1 le5 jiao3 zi5","translation":"Last year I ate dumplings.","segments":["去年","我","吃","了","饺子","。"]}}
 {"id":"hsk1-0184","v":"v1","example":{"text":"今天天气很热。","pinyin":"jin1 tian1 tian1 qi4 hen3 re4","translation":"The weather is very hot today.","segments":["今天","天气","很","热","。"]}}
-{"id":"hsk1-0185","v":"v1","example":{"text":"我晚上睡觉。","pinyin":"wo3 wan3 shang4 shui4 jiao4","translation":"I sleep at night.","segments":["我","晚上","睡觉","。"]}}
+{"id":"hsk1-0185","v":"v1","example":{"text":"我晚上睡觉。","pinyin":"wo3 wan3 shang5 shui4 jiao4","translation":"I sleep at night.","segments":["我","晚上","睡觉","。"]}}
 {"id":"hsk1-0186","v":"v1","example":{"text":"我有一台电脑。","pinyin":"wo3 you3 yi1 tai2 dian4 nao3","translation":"I have a computer.","segments":["我","有","一","台","电脑","。"]}}
 {"id":"hsk1-0187","v":"v1","example":{"text":"这是第一本书。","pinyin":"zhe4 shi4 di4 yi1 ben3 shu1","translation":"This is the first book.","segments":["这","是","第","一","本","书","。"]}}
 {"id":"hsk1-0188","v":"v1","rejected":["length 1","length 1","no translation","length 1","no translation"]}
-{"id":"hsk1-0189","v":"v1","example":{"text":"我姓冷，今天天气很冷。","pinyin":"wo5 xing5 leng5 jin5 tian5 tian5 qi5 hen5 leng5","translation":"My surname is Leng, and the weather today is very cold.","segments":["我","姓","冷","，","今天","天气","很","冷","。"]}}
-{"id":"hsk1-0190","v":"v1","example":{"text":"我喜欢坐飞机。","pinyin":"wo5 xi3 huan5 zuo4 fei1 ji1","translation":"I like to take a plane.","segments":["我","喜欢","坐","飞机","。"]}}
+{"id":"hsk1-0189","v":"v1","example":{"text":"我姓冷，今天天气很冷。","pinyin":"wo3 xing4 leng3 jin1 tian1 tian1 qi4 hen3 leng3","translation":"My surname is Leng, and the weather today is very cold.","segments":["我","姓","冷","，","今天","天气","很","冷","。"]}}
+{"id":"hsk1-0190","v":"v1","example":{"text":"我喜欢坐飞机。","pinyin":"wo3 xi3 huan5 zuo4 fei1 ji1","translation":"I like to take a plane.","segments":["我","喜欢","坐","飞机","。"]}}
 {"id":"hsk1-0191","v":"v1","example":{"text":"早上我吃饭。","pinyin":"zao3 shang5 wo3 chi1 fan4","translation":"I eat breakfast in the morning.","segments":["早上","我","吃","饭","。"]}}
-{"id":"hsk1-0192","v":"v1","example":{"text":"我有一只猫。","pinyin":"wo3 you3 yi1 zhi1 mao1","translation":"I have a cat.","segments":["我","有","一","只","猫","。"]}}
+{"id":"hsk1-0192","v":"v1","example":{"text":"我有一只猫。","pinyin":"wo3 you3 yi1 zhi3 mao1","translation":"I have a cat.","segments":["我","有","一","只","猫","。"]}}
 {"id":"hsk1-0193","v":"v1","example":{"text":"我打电话给妈妈。","pinyin":"wo3 da3 dian4 hua4 gei3 ma1 ma5","translation":"I call my mother.","segments":["我","打电话","给","妈妈","。"]}}
-{"id":"hsk1-0194","v":"v1","example":{"text":"我中午休息一会儿。","pinyin":"wo3 zhong1 wu3 xiu1 xi1 yi2 hui4 r5","translation":"I will rest for a while at noon.","segments":["我","中午","休息","一","会","儿","。"]}}
+{"id":"hsk1-0194","v":"v1","example":{"text":"我中午休息一会儿。","pinyin":"wo3 zhong1 wu3 xiu1 xi5 yi1 hui4 r5","translation":"I will rest for a while at noon.","segments":["我","中午","休息","一","会","儿","。"]}}
 {"id":"hsk1-0195","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","missing word","pinyin syllable count"]}
-{"id":"hsk1-0196","v":"v1","example":{"text":"喂，我是你男朋友。","pinyin":"wei2 wo3 shi4 ni3 nan2 peng2 you3","translation":"Hello, it's your boyfriend.","segments":["喂","，","我","是","你","男朋友","。"]}}
-{"id":"hsk1-0197","v":"v1","example":{"text":"我们住在这个大房间。","pinyin":"wo3 men5 zhu4 zai4 zhe4 ge5 da4 fang2 jian1","translation":"We live in this big room.","segments":["我们","住","在","这","个","大","房间","。"]}}
-{"id":"hsk1-0198","v":"v1","example":{"text":"我有八个苹果。","pinyin":"wo3 you3 ba1 ge4 ping2 guo3","translation":"I have eight apples.","segments":["我","有","八","个","苹果","。"]}}
+{"id":"hsk1-0196","v":"v1","example":{"text":"喂，我是你男朋友。","pinyin":"wei2 wo3 shi4 ni3 nan2 peng2 you5","translation":"Hello, it's your boyfriend.","segments":["喂","，","我","是","你","男朋友","。"]}}
+{"id":"hsk1-0197","v":"v1","example":{"text":"我们住在这个大房间。","pinyin":"wo3 men5 zhu4 zai4 zhe4 ge3 da4 fang2 jian1","translation":"We live in this big room.","segments":["我们","住","在","这","个","大","房间","。"]}}
+{"id":"hsk1-0198","v":"v1","example":{"text":"我有八个苹果。","pinyin":"wo3 you3 ba1 ge3 ping2 guo3","translation":"I have eight apples.","segments":["我","有","八","个","苹果","。"]}}
 {"id":"hsk1-0199","v":"v1","example":{"text":"你怎么样？","pinyin":"ni3 zen3 me5 yang4","translation":"How are you?","segments":["你","怎么样","？"]}}
 {"id":"hsk1-0200","v":"v1","example":{"text":"我有七本书。","pinyin":"wo3 you3 qi1 ben3 shu1","translation":"I have seven books.","segments":["我","有","七","本","书","。"]}}
 {"id":"hsk1-0201","v":"v1","example":{"text":"我喜欢吃菜。","pinyin":"wo3 xi3 huan5 chi1 cai4","translation":"I like eating dishes.","segments":["我","喜欢","吃","菜","。"]}}
-{"id":"hsk1-0202","v":"v1","example":{"text":"我喜欢买新衣服。","pinyin":"wo5 xi5 huan5 mai5 xin5 yi5 fu5","translation":"I like buying new clothes.","segments":["我","喜欢","买","新","衣服","。"]}}
+{"id":"hsk1-0202","v":"v1","example":{"text":"我喜欢买新衣服。","pinyin":"wo3 xi3 huan5 mai3 xin1 yi1 fu5","translation":"I like buying new clothes.","segments":["我","喜欢","买","新","衣服","。"]}}
 {"id":"hsk1-0203","v":"v1","example":{"text":"我早上八点上班。","pinyin":"wo3 zao3 shang5 ba1 dian3 shang4 ban1","translation":"I go to work at eight in the morning.","segments":["我","早上","八","点","上班","。"]}}
 {"id":"hsk1-0204","v":"v1","example":{"text":"我姐姐今天在家休息。","pinyin":"wo3 jie3 jie5 jin1 tian1 zai4 jia1 xiu1 xi5","translation":"My older sister is resting at home today.","segments":["我","姐姐","今天","在","家","休息","。"]}}
 {"id":"hsk1-0205","v":"v1","example":{"text":"明天上课。","pinyin":"ming2 tian1 shang4 ke4","translation":"Class is tomorrow.","segments":["明天","上课","。"]}}
 {"id":"hsk1-0206","v":"v1","example":{"text":"我的姓是国。","pinyin":"wo3 de5 xing4 shi4 guo2","translation":"My surname is Guo.","segments":["我","的","姓","是","国","。"]}}
-{"id":"hsk1-0207","v":"v1","example":{"text":"我想吃米饭。","pinyin":"wo3 xiang3 chi1 fan4 mi3","translation":"I want to eat rice.","segments":["我","想","吃","米饭","。"]}}
+{"id":"hsk1-0207","v":"v1","example":{"text":"我想吃米饭。","pinyin":"wo3 xiang3 chi1 mi3 fan4","translation":"I want to eat rice.","segments":["我","想","吃","米饭","。"]}}
 {"id":"hsk1-0208","v":"v1","rejected":["missing word","pinyin syllable count","missing word"]}
-{"id":"hsk1-0209","v":"v1","example":{"text":"我的家人都在家。","pinyin":"wo3 de5 jia1 ren2 dou1 zai4 jia1","translation":"My family members are all at home.","segments":["我","的","家人","都","在","家","。"]}}
+{"id":"hsk1-0209","v":"v1","example":{"text":"我的家人都在家。","pinyin":"wo3 de5 jia1 ren2 du1 zai4 jia1","translation":"My family members are all at home.","segments":["我","的","家人","都","在","家","。"]}}
 {"id":"hsk1-0210","v":"v1","example":{"text":"对不起，我昨天没回电话。","pinyin":"dui4 bu5 qi3 wo3 zuo2 tian1 mei2 hui2 dian4 hua4","translation":"I'm sorry I didn't call back yesterday.","segments":["对不起","，","我","昨天","没","回","电话","。"]}}
-{"id":"hsk1-0211","v":"v1","example":{"text":"哥哥，你中午吃什么？","pinyin":"ge1 ge5 ni3 zhong1 wu4 chi1 shen2 me5","translation":"Brother, what are you having for lunch?","segments":["哥哥","，","你","中午","吃","什么","？"]}}
+{"id":"hsk1-0211","v":"v1","example":{"text":"哥哥，你中午吃什么？","pinyin":"ge1 ge5 ni3 zhong1 wu3 chi1 shen2 me5","translation":"Brother, what are you having for lunch?","segments":["哥哥","，","你","中午","吃","什么","？"]}}
 {"id":"hsk1-0212","v":"v1","example":{"text":"今天天气很好。","pinyin":"jin1 tian1 tian1 qi4 hen3 hao3","translation":"The weather is very good today.","segments":["今天","天气","很","好","。"]}}
-{"id":"hsk1-0213","v":"v1","example":{"text":"我有千个朋友。","pinyin":"wo3 you3 qian1 ge4 peng2 you3","translation":"I have a thousand friends.","segments":["我","有","千","个","朋友","。"]}}
+{"id":"hsk1-0213","v":"v1","example":{"text":"我有千个朋友。","pinyin":"wo3 you3 qian1 ge3 peng2 you5","translation":"I have a thousand friends.","segments":["我","有","千","个","朋友","。"]}}
 {"id":"hsk1-0214","v":"v1","rejected":["pinyin syllable count","unknown words: 李 明","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0215","v":"v1","example":{"text":"这部电影很好看。","pinyin":"na4 bu4 dian4 ying3 hen3 hao3 kan4","translation":"That movie is very good.","segments":["这","部","电影","很","好看","。"]}}
-{"id":"hsk1-0216","v":"v1","example":{"text":"我想喝杯茶。","pinyin":"wo5 xiang5 he5 bei5 cha5","translation":"I want to drink a cup of tea.","segments":["我","想","喝","杯","茶","。"]}}
+{"id":"hsk1-0215","v":"v1","example":{"text":"这部电影很好看。","pinyin":"zhe4 bu4 dian4 ying3 hen3 hao3 kan4","translation":"That movie is very good.","segments":["这","部","电影","很","好看","。"]}}
+{"id":"hsk1-0216","v":"v1","example":{"text":"我想喝杯茶。","pinyin":"wo3 xiang3 he1 bei5 cha2","translation":"I want to drink a cup of tea.","segments":["我","想","喝","杯","茶","。"]}}
 {"id":"hsk1-0217","v":"v1","example":{"text":"今天下雨了。","pinyin":"jin1 tian1 xia4 yu3 le5","translation":"It is raining today.","segments":["今天","下雨","了","。"]}}
-{"id":"hsk1-0218","v":"v1","example":{"text":"今天是星期一。","pinyin":"jin1 tian1 shi4 xing1 qi1 ri4","translation":"Today is Monday.","segments":["今天","是","星期","一","。"]}}
+{"id":"hsk1-0218","v":"v1","example":{"text":"今天是星期一。","pinyin":"jin1 tian1 shi4 xing1 qi1 yi1","translation":"Today is Monday.","segments":["今天","是","星期","一","。"]}}
 {"id":"hsk1-0219","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0220","v":"v1","example":{"text":"我有九本书。","pinyin":"wo3 you3 jiu3 ben3 shu1","translation":"I have nine books.","segments":["我","有","九","本","书","。"]}}
 {"id":"hsk1-0221","v":"v1","example":{"text":"我的妹妹很可爱。","pinyin":"wo3 de5 mei4 mei5 hen3 ke3 ai4","translation":"My younger sister is very cute.","segments":["我","的","妹妹","很","可","爱","。"]}}
-{"id":"hsk1-0222","v":"v1","example":{"text":"请问女士，您叫什么名字？","pinyin":"qing5 wen5 nu5 shi5 nin5 jiao5 shen5 me5 ming5 zi5","translation":"Excuse me, madam, what is your name?","segments":["请问","女士","，","您","叫","什么","名字","？"]}}
+{"id":"hsk1-0222","v":"v1","example":{"text":"请问女士，您叫什么名字？","pinyin":"qing3 wen4 nv3 shi4 nin2 jiao4 shen2 me5 ming2 zi5","translation":"Excuse me, madam, what is your name?","segments":["请问","女士","，","您","叫","什么","名字","？"]}}
 {"id":"hsk1-0223","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","unknown words: 教 室","pinyin syllable count"]}
 {"id":"hsk1-0224","v":"v1","example":{"text":"这件衣服太贵了。","pinyin":"zhe4 jian4 yi1 fu5 tai4 gui4 le5","translation":"This piece of clothing is too expensive.","segments":["这","件","衣服","太","贵","了","。"]}}
-{"id":"hsk1-0225","v":"v1","example":{"text":"那边有书店吗？","pinyin":"na4 bian1 you3 shu1 dian4 ma5","translation":"Is there a bookstore over there?","segments":["那边","有","书店","吗","？"]}}
+{"id":"hsk1-0225","v":"v1","example":{"text":"那边有书店吗？","pinyin":"na4 bian5 you3 shu1 dian4 ma2","translation":"Is there a bookstore over there?","segments":["那边","有","书店","吗","？"]}}
 {"id":"hsk1-0226","v":"v1","example":{"text":"我弟弟今年九岁。","pinyin":"wo3 di4 di5 jin1 nian2 jiu3 sui4","translation":"My younger brother is nine years old this year.","segments":["我","弟弟","今年","九","岁","。"]}}
-{"id":"hsk1-0227","v":"v1","example":{"text":"我叫百，很高兴认识你。","pinyin":"wo3 jiao4 bai3 hen3 gao1 xing4 ren4 shi2 ni3","translation":"My surname is Bai, nice to meet you.","segments":["我","叫","百","，","很","高兴","认识","你","。"]}}
-{"id":"hsk1-0228","v":"v1","example":{"text":"这个菜很好吃。","pinyin":"zhe4 ge5 cai4 hen3 hao3 chi1","translation":"This dish is very delicious.","segments":["这","个","菜","很","好吃","。"]}}
+{"id":"hsk1-0227","v":"v1","example":{"text":"我叫百，很高兴认识你。","pinyin":"wo3 jiao4 bai3 hen3 gao1 xing4 ren4 shi5 ni3","translation":"My surname is Bai, nice to meet you.","segments":["我","叫","百","，","很","高兴","认识","你","。"]}}
+{"id":"hsk1-0228","v":"v1","example":{"text":"这个菜很好吃。","pinyin":"zhe4 ge3 cai4 hen3 hao3 chi1","translation":"This dish is very delicious.","segments":["这","个","菜","很","好吃","。"]}}
 {"id":"hsk1-0229","v":"v1","rejected":["unknown words: 北 京","pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0230","v":"v1","example":{"text":"明天见，再见！","pinyin":"ming5 tian5 jian5 zai5 jian5","translation":"See you tomorrow, goodbye!","segments":["明天","见","，","再见","！"]}}
+{"id":"hsk1-0230","v":"v1","example":{"text":"明天见，再见！","pinyin":"ming2 tian1 jian4 zai4 jian4","translation":"See you tomorrow, goodbye!","segments":["明天","见","，","再见","！"]}}
 {"id":"hsk1-0231","v":"v1","example":{"text":"这儿有我的书。","pinyin":"zhe4 r5 you3 wo3 de5 shu1","translation":"My book is here.","segments":["这儿","有","我","的","书","。"]}}
 {"id":"hsk1-0232","v":"v1","example":{"text":"请问，哪儿有医院？","pinyin":"qing3 wen4 na3 r5 you3 yi1 yuan4","translation":"Excuse me, where is the hospital?","segments":["请问","，","哪儿","有","医院","？"]}}
-{"id":"hsk1-0233","v":"v1","example":{"text":"我买了一个苹果。","pinyin":"wo3 mai3 le5 yi1 ge4 ping2 guo3","translation":"I bought an apple.","segments":["我","买","了","一","个","苹果","。"]}}
+{"id":"hsk1-0233","v":"v1","example":{"text":"我买了一个苹果。","pinyin":"wo3 mai3 le5 yi1 ge3 ping2 guo3","translation":"I bought an apple.","segments":["我","买","了","一","个","苹果","。"]}}
 {"id":"hsk1-0234","v":"v1","example":{"text":"中午我们吃午饭。","pinyin":"zhong1 wu3 wo3 men5 chi1 wu3 fan4","translation":"We eat lunch at noon.","segments":["中午","我们","吃","午饭","。"]}}
 {"id":"hsk1-0235","v":"v1","example":{"text":"我早上七点起床。","pinyin":"wo3 zao3 shang5 qi1 dian3 qi3 chuang2","translation":"I get up at seven in the morning.","segments":["我","早上","七","点","起床","。"]}}
-{"id":"hsk1-0236","v":"v1","example":{"text":"爸爸开车去超市。","pinyin":"ba5 ba5 kai1 che1 qu4 chao1 shi4","translation":"Dad drives to the supermarket.","segments":["爸爸","开车","去","超市","。"]}}
+{"id":"hsk1-0236","v":"v1","example":{"text":"爸爸开车去超市。","pinyin":"ba4 ba5 kai1 che1 qu4 chao1 shi4","translation":"Dad drives to the supermarket.","segments":["爸爸","开车","去","超市","。"]}}
 {"id":"hsk1-0237","v":"v1","example":{"text":"我坐出租车去公司。","pinyin":"wo3 zuo4 chu1 zu1 che1 qu4 gong1 si1","translation":"I take a taxi to the company.","segments":["我","坐","出租车","去","公司","。"]}}
 {"id":"hsk1-0238","v":"v1","example":{"text":"这边有卖好吃的。","pinyin":"zhe4 bian1 you3 mai4 hao3 chi1 de5","translation":"There is something delicious for sale here.","segments":["这边","有","卖","好吃","的","。"]}}
 {"id":"hsk1-0239","v":"v1","rejected":["unknown words: 北 京","unknown words: 北 京","unknown words: 北 京"]}
-{"id":"hsk1-0240","v":"v1","example":{"text":"超市里东西便宜。","pinyin":"chao5 shi5 li5 dong5 xi5 pian5 yi5","translation":"Things are cheap in the supermarket.","segments":["超市","里","东西","便宜","。"]}}
+{"id":"hsk1-0240","v":"v1","example":{"text":"超市里东西便宜。","pinyin":"chao1 shi4 li3 dong1 xi1 bian4 yi2","translation":"Things are cheap in the supermarket.","segments":["超市","里","东西","便宜","。"]}}
 {"id":"hsk1-0241","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0242","v":"v1","example":{"text":"我想喝牛奶。","pinyin":"wo3 xiang3 he1 niu2 nai3","translation":"I want to drink milk.","segments":["我","想","喝","牛奶","。"]}}
-{"id":"hsk1-0243","v":"v1","example":{"text":"我的女朋友昨天去超市买水果了。","pinyin":"wo3 de5 nv3 peng2 you3 zuo2 tian1 qu4 chao1 shi4 mai3 shui3 guo3 le5","translation":"My girlfriend went to the supermarket to buy fruit yesterday.","segments":["我","的","女朋友","昨天","去","超市","买","水果","了","。"]}}
-{"id":"hsk1-0244","v":"v1","example":{"text":"明天早上我要去上课。","pinyin":"ming5 tian5 zao5 shang5 wo5 yao5 qu5 shang5 ke5","translation":"Tomorrow morning I will go to class.","segments":["明天","早上","我","要","去","上课","。"]}}
+{"id":"hsk1-0243","v":"v1","example":{"text":"我的女朋友昨天去超市买水果了。","pinyin":"wo3 de5 nv3 peng2 you5 zuo2 tian1 qu4 chao1 shi4 mai3 shui3 guo3 le5","translation":"My girlfriend went to the supermarket to buy fruit yesterday.","segments":["我","的","女朋友","昨天","去","超市","买","水果","了","。"]}}
+{"id":"hsk1-0244","v":"v1","example":{"text":"明天早上我要去上课。","pinyin":"ming2 tian1 zao3 shang5 wo3 yao1 qu4 shang4 ke4","translation":"Tomorrow morning I will go to class.","segments":["明天","早上","我","要","去","上课","。"]}}
 {"id":"hsk1-0245","v":"v1","example":{"text":"我听见猫叫。","pinyin":"wo3 ting1 jian4 mao1 jiao4","translation":"I heard the cat meow.","segments":["我","听见","猫","叫","。"]}}
-{"id":"hsk1-0246","v":"v1","example":{"text":"我的男朋友很好。","pinyin":"wo3 de5 nan2 peng2 you3 hen3 hao3","translation":"My boyfriend is very good.","segments":["我","的","男朋友","很","好","。"]}}
+{"id":"hsk1-0246","v":"v1","example":{"text":"我的男朋友很好。","pinyin":"wo3 de5 nan2 peng2 you5 hen3 hao3","translation":"My boyfriend is very good.","segments":["我","的","男朋友","很","好","。"]}}
 {"id":"hsk1-0247","v":"v1","example":{"text":"我下班了。","pinyin":"wo3 xia4 ban1 le5","translation":"I have finished work.","segments":["我","下班","了","。"]}}
 {"id":"hsk1-0248","v":"v1","example":{"text":"我喜欢吃水果。","pinyin":"wo3 xi3 huan5 chi1 shui3 guo3","translation":"I like to eat fruit.","segments":["我","喜欢","吃","水果","。"]}}
-{"id":"hsk1-0249","v":"v1","example":{"text":"我喜欢读书。","pinyin":"wo5 xi5 huan5 du5 shu5","translation":"I like reading.","segments":["我","喜欢","读书","。"]}}
-{"id":"hsk1-0250","v":"v1","example":{"text":"书在那儿。","pinyin":"shu5 zai5 na5 r5","translation":"The book is there.","segments":["书","在","那儿","。"]}}
-{"id":"hsk1-0251","v":"v1","example":{"text":"我在商店买水果。","pinyin":"wo5 zai5 shang5 dian5 mai5 shui5 guo5","translation":"I buy fruit at the store.","segments":["我","在","商店","买","水果","。"]}}
-{"id":"hsk1-0252","v":"v1","example":{"text":"我想吃鸡蛋。","pinyin":"wo5 xi5 chi5 ji5 dan5","translation":"I want to eat an egg.","segments":["我","想","吃","鸡蛋","。"]}}
-{"id":"hsk1-0253","v":"v1","example":{"text":"没关系，我明天再给你打电话。","pinyin":"mei5 guan5 xi5 wo5 ming5 tian5 zai5 gei5 ni5 da5 dian5 hua5","translation":"It doesn't matter, I will call you again tomorrow.","segments":["没关系","，","我","明天","再","给","你","打电话","。"]}}
-{"id":"hsk1-0254","v":"v1","example":{"text":"零个苹果。","pinyin":"ling2 ge4 ping2 guo3","translation":"Zero apples.","segments":["零","个","苹果","。"]}}
-{"id":"hsk1-0255","v":"v1","example":{"text":"桌子上有一本书。","pinyin":"zhuo1 zi5 shang4 you3 yi1 ben3 shu1","translation":"There is a book on the table.","segments":["桌子","上","有","一","本","书","。"]}}
-{"id":"hsk1-0256","v":"v1","example":{"text":"我喜欢白天。","pinyin":"wo5 xi5 huan5 bai5 tian5","translation":"I like daytime.","segments":["我","喜欢","白天","。"]}}
+{"id":"hsk1-0249","v":"v1","example":{"text":"我喜欢读书。","pinyin":"wo3 xi3 huan5 du2 shu1","translation":"I like reading.","segments":["我","喜欢","读书","。"]}}
+{"id":"hsk1-0250","v":"v1","example":{"text":"书在那儿。","pinyin":"shu1 zai4 na4 r5","translation":"The book is there.","segments":["书","在","那儿","。"]}}
+{"id":"hsk1-0251","v":"v1","example":{"text":"我在商店买水果。","pinyin":"wo3 zai4 shang1 dian4 mai3 shui3 guo3","translation":"I buy fruit at the store.","segments":["我","在","商店","买","水果","。"]}}
+{"id":"hsk1-0252","v":"v1","example":{"text":"我想吃鸡蛋。","pinyin":"wo3 xiang3 chi1 ji1 dan4","translation":"I want to eat an egg.","segments":["我","想","吃","鸡蛋","。"]}}
+{"id":"hsk1-0253","v":"v1","example":{"text":"没关系，我明天再给你打电话。","pinyin":"mei2 guan1 xi5 wo3 ming2 tian1 zai4 gei3 ni3 da3 dian4 hua4","translation":"It doesn't matter, I will call you again tomorrow.","segments":["没关系","，","我","明天","再","给","你","打电话","。"]}}
+{"id":"hsk1-0254","v":"v1","example":{"text":"零个苹果。","pinyin":"ling2 ge3 ping2 guo3","translation":"Zero apples.","segments":["零","个","苹果","。"]}}
+{"id":"hsk1-0255","v":"v1","example":{"text":"桌子上有一本书。","pinyin":"zhuo1 zi5 shang3 you3 yi1 ben3 shu1","translation":"There is a book on the table.","segments":["桌子","上","有","一","本","书","。"]}}
+{"id":"hsk1-0256","v":"v1","example":{"text":"我喜欢白天。","pinyin":"wo3 xi3 huan5 bai2 tian1","translation":"I like daytime.","segments":["我","喜欢","白天","。"]}}
 {"id":"hsk1-0257","v":"v1","example":{"text":"请问，您去哪儿？","pinyin":"qing3 wen4 nin2 qu4 na3 r5","translation":"Excuse me, where are you going?","segments":["请问","，","您","去","哪儿","？"]}}
-{"id":"hsk1-0258","v":"v1","example":{"text":"你想知道哪些电影好看吗？","pinyin":"ni3 xiang3 zhi1 dao4 na3 xie1 dian4 ying3 hao3 kan4 ma5","translation":"Do you want to know which movies are good?","segments":["你","想","知道","哪些","电影","好看","吗","？"]}}
+{"id":"hsk1-0258","v":"v1","example":{"text":"你想知道哪些电影好看吗？","pinyin":"ni3 xiang3 zhi1 dao4 na3 xie1 dian4 ying3 hao3 kan4 ma2","translation":"Do you want to know which movies are good?","segments":["你","想","知道","哪些","电影","好看","吗","？"]}}
 {"id":"hsk1-0259","v":"v1","example":{"text":"我们晚饭吃饺子。","pinyin":"wo3 men5 wan3 fan4 chi1 jiao3 zi5","translation":"We eat dumplings for dinner.","segments":["我们","晚饭","吃","饺子","。"]}}
 {"id":"hsk1-0260","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0261","v":"v1","example":{"text":"这家饭店很好吃。","pinyin":"zhe4 jia1 fan4 dian4 hen3 hao3 chi1","translation":"This restaurant is delicious.","segments":["这","家","饭店","很","好吃","。"]}}
 {"id":"hsk1-0262","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0263","v":"v1","example":{"text":"我喜欢吃面包。","pinyin":"wo3 xi3 huan5 chi1 mian4 bao1","translation":"I like eating bread.","segments":["我","喜欢","吃","面包","。"]}}
-{"id":"hsk1-0264","v":"v1","example":{"text":"我生病了，要去医院。","pinyin":"wo3 sheng1 le5 bing4 yao4 qu4 yi1 yuan4","translation":"I am sick and need to go to the hospital.","segments":["我","生病","了","，","要","去","医院","。"]}}
+{"id":"hsk1-0264","v":"v1","example":{"text":"我生病了，要去医院。","pinyin":"wo3 sheng1 bing4 le5 yao1 qu4 yi1 yuan4","translation":"I am sick and need to go to the hospital.","segments":["我","生病","了","，","要","去","医院","。"]}}
 {"id":"hsk1-0265","v":"v1","example":{"text":"这首歌很好听。","pinyin":"zhe4 shou3 ge1 hen3 hao3 ting1","translation":"This song is pleasant to hear.","segments":["这","首","歌","很","好听","。"]}}
 {"id":"hsk1-0266","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0267","v":"v1","example":{"text":"我在超市买苹果。","pinyin":"wo5 zai5 chao5 shi5 mai5 ping5 guo5","translation":"I buy apples at the supermarket.","segments":["我","在","超市","买","苹果","。"]}}
-{"id":"hsk1-0268","v":"v1","example":{"text":"我喜欢坐这把椅子。","pinyin":"wo5 xi5 huan5 zuo5 zhe5 ba5 yi5 zi5","translation":"I like sitting on this chair.","segments":["我","喜欢","坐","这","把","椅子","。"]}}
-{"id":"hsk1-0269","v":"v1","example":{"text":"小朋友，今天去电影院吗？","pinyin":"xiao3 peng2 you3 jin1 tian1 qu4 dian4 ying3 yuan4 ma5","translation":"Child, are you going to the cinema today?","segments":["小朋友","，","今天","去","电影院","吗","？"]}}
-{"id":"hsk1-0270","v":"v1","example":{"text":"中午我们吃午饭。","pinyin":"zhong5 wu5 wo5 men5 chi5 wu5 fan5","translation":"At noon we eat lunch.","segments":["中午","我们","吃","午饭","。"]}}
+{"id":"hsk1-0267","v":"v1","example":{"text":"我在超市买苹果。","pinyin":"wo3 zai4 chao1 shi4 mai3 ping2 guo3","translation":"I buy apples at the supermarket.","segments":["我","在","超市","买","苹果","。"]}}
+{"id":"hsk1-0268","v":"v1","example":{"text":"我喜欢坐这把椅子。","pinyin":"wo3 xi3 huan5 zuo4 zhe4 ba3 yi3 zi5","translation":"I like sitting on this chair.","segments":["我","喜欢","坐","这","把","椅子","。"]}}
+{"id":"hsk1-0269","v":"v1","example":{"text":"小朋友，今天去电影院吗？","pinyin":"xiao3 peng2 you3 jin1 tian1 qu4 dian4 ying3 yuan4 ma2","translation":"Child, are you going to the cinema today?","segments":["小朋友","，","今天","去","电影院","吗","？"]}}
+{"id":"hsk1-0270","v":"v1","example":{"text":"中午我们吃午饭。","pinyin":"zhong1 wu3 wo3 men5 chi1 wu3 fan4","translation":"At noon we eat lunch.","segments":["中午","我们","吃","午饭","。"]}}
 {"id":"hsk1-0271","v":"v1","example":{"text":"我在家做饭。","pinyin":"wo3 zai4 jia1 zuo4 fan4","translation":"I cook at home.","segments":["我","在","家","做饭","。"]}}
 {"id":"hsk1-0272","v":"v1","example":{"text":"今天下雨了。","pinyin":"jin1 tian1 xia4 yu3 le5","translation":"It is raining today.","segments":["今天","下雨","了","。"]}}
 {"id":"hsk1-0273","v":"v1","example":{"text":"我喝杯子里的水。","pinyin":"wo3 he1 bei1 zi5 li3 de5 shui3","translation":"I drink the water in the cup.","segments":["我","喝","杯子","里","的","水","。"]}}
 {"id":"hsk1-0274","v":"v1","example":{"text":"中文的汉字很好写。","pinyin":"zhong1 wen2 de5 han4 zi4 hen3 hao3 xie3","translation":"Chinese characters are easy to write.","segments":["中文","的","汉字","很","好","写","。"]}}
 {"id":"hsk1-0275","v":"v1","example":{"text":"今天早饭吃包子。","pinyin":"jin1 tian1 zao3 fan4 chi1 bao1 zi5","translation":"Today I eat baozi for breakfast.","segments":["今天","早饭","吃","包子","。"]}}
-{"id":"hsk1-0276","v":"v1","example":{"text":"我不太喜欢喝一点儿牛奶。","pinyin":"wo5 bu5 tai5 xi5 huan5 he5 yi5 dian5 er5 nai5 niao5","translation":"I don't like to drink a little milk.","segments":["我","不","太","喜欢","喝","一点儿","牛奶","。"]}}
+{"id":"hsk1-0276","v":"v1","example":{"text":"我不太喜欢喝一点儿牛奶。","pinyin":"wo3 bu4 tai4 xi3 huan5 he1 yi1 dian3 r5 niu2 nai3","translation":"I don't like to drink a little milk.","segments":["我","不","太","喜欢","喝","一点儿","牛奶","。"]}}
 {"id":"hsk1-0277","v":"v1","example":{"text":"我在书店买书。","pinyin":"wo3 zai4 shu1 dian4 mai3 shu1","translation":"I am buying books at the bookstore.","segments":["我","在","书店","买","书","。"]}}
 {"id":"hsk1-0278","v":"v1","example":{"text":"星期天我在家。","pinyin":"xing1 qi1 tian1 wo3 zai4 jia1","translation":"I am at home on Sunday.","segments":["星期天","我","在","家","。"]}}
 {"id":"hsk1-0279","v":"v1","example":{"text":"我生病，去医院看病。","pinyin":"wo3 sheng1 bing4 qu4 yi1 yuan4 kan4 bing4","translation":"I am sick, so I go to the hospital to see a doctor.","segments":["我","生病","，","去","医院","看病","。"]}}
-{"id":"hsk1-0280","v":"v1","example":{"text":"我喜欢去电影院看电影。","pinyin":"wo5 xi5 huan5 qu5 dian5 ying5 yuan5 kan5 dian5 ying5","translation":"I like going to the cinema to watch movies.","segments":["我","喜欢","去","电影院","看","电影","。"]}}
-{"id":"hsk1-0281","v":"v1","example":{"text":"下课了，我们一起去吃饭吧。","pinyin":"xia5 ke5 le5 wo5 men5 yi5 qi5 qu5 chi5 fan5 ba5","translation":"Class is over, let's go eat together.","segments":["下课","了","，","我们","一","起","去","吃","饭","吧","。"]}}
+{"id":"hsk1-0280","v":"v1","example":{"text":"我喜欢去电影院看电影。","pinyin":"wo3 xi3 huan5 qu4 dian4 ying3 yuan4 kan1 dian4 ying3","translation":"I like going to the cinema to watch movies.","segments":["我","喜欢","去","电影院","看","电影","。"]}}
+{"id":"hsk1-0281","v":"v1","example":{"text":"下课了，我们一起去吃饭吧。","pinyin":"xia4 ke4 le5 wo3 men5 yi1 qi3 qu4 chi1 fan4 ba1","translation":"Class is over, let's go eat together.","segments":["下课","了","，","我们","一","起","去","吃","饭","吧","。"]}}
 {"id":"hsk1-0282","v":"v1","example":{"text":"妈妈做了米饭。","pinyin":"ma1 ma5 zuo4 le5 mi3 fan4","translation":"Mom cooked rice.","segments":["妈妈","做","了","米饭","。"]}}
-{"id":"hsk1-0283","v":"v1","example":{"text":"今天天气有点儿冷。","pinyin":"jin1 tian1 tian1 qi4 you3 dian3 r5 leng5","translation":"The weather is a little cold today.","segments":["今天","天气","有点儿","冷","。"]}}
+{"id":"hsk1-0283","v":"v1","example":{"text":"今天天气有点儿冷。","pinyin":"jin1 tian1 tian1 qi4 you3 dian3 r5 leng3","translation":"The weather is a little cold today.","segments":["今天","天气","有点儿","冷","。"]}}
 {"id":"hsk1-0284","v":"v1","example":{"text":"妈妈做的饺子很好吃。","pinyin":"ma1 ma5 zuo4 de5 jiao3 zi5 hen3 hao3 chi1","translation":"The dumplings mom made are delicious.","segments":["妈妈","做","的","饺子","很","好吃","。"]}}
 {"id":"hsk1-0285","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
 {"id":"hsk1-0286","v":"v1","example":{"text":"外边下雨，我想回家。","pinyin":"wai4 bian5 xia4 yu3 wo3 xiang3 hui2 jia1","translation":"It is raining outside, I want to go home.","segments":["外边","下雨","，","我","想","回","家","。"]}}
 {"id":"hsk1-0287","v":"v1","rejected":["pinyin syllable count","pinyin syllable count","pinyin syllable count"]}
-{"id":"hsk1-0288","v":"v1","example":{"text":"星期日，我在家看电视。","pinyin":"xing1 qi1 ri4 wo3 zai4 jia1 kan4 dian4 shi4","translation":"On Sunday, I watch TV at home.","segments":["星期日","，","我","在","家","看","电视","。"]}}
+{"id":"hsk1-0288","v":"v1","example":{"text":"星期日，我在家看电视。","pinyin":"xing1 qi1 ri4 wo3 zai4 jia1 kan1 dian4 shi4","translation":"On Sunday, I watch TV at home.","segments":["星期日","，","我","在","家","看","电视","。"]}}
 {"id":"hsk1-0289","v":"v1","rejected":["pinyin syllable count","unknown words: 语 言","pinyin syllable count"]}
 {"id":"hsk1-0290","v":"v1","example":{"text":"妈妈做了包子。","pinyin":"ma1 ma5 zuo4 le5 bao1 zi5","translation":"Mom made baozi.","segments":["妈妈","做","了","包子","。"]}}
-{"id":"hsk1-0291","v":"v1","example":{"text":"不客气，再见。","pinyin":"bu5 ke5 qi5 zai5 jian5","translation":"You're welcome, goodbye.","segments":["不客气","，","再见","。"]}}
+{"id":"hsk1-0291","v":"v1","example":{"text":"不客气，再见。","pinyin":"bu4 ke4 qi5 zai4 jian4","translation":"You're welcome, goodbye.","segments":["不客气","，","再见","。"]}}
 {"id":"hsk1-0292","v":"v1","example":{"text":"汉字是中国文字。","pinyin":"han4 zi4 shi4 zhong1 guo2 wen2 zi4","translation":"Chinese characters are Chinese writing.","segments":["汉字","是","中国","文","字","。"]}}
-{"id":"hsk1-0293","v":"v1","example":{"text":"这个电影很好玩儿。","pinyin":"zhe4 ge5 dian4 ying3 hen3 hao3 wan2 r5","translation":"This movie is very fun.","segments":["这","个","电影","很","好玩儿","。"]}}
-{"id":"hsk1-0294","v":"v1","example":{"text":"我喜欢吃面条儿。","pinyin":"wo5 xi5 huan5 chi5 mian5 tiao5 r5","translation":"I like to eat noodles.","segments":["我","喜欢","吃","面条儿","。"]}}
+{"id":"hsk1-0293","v":"v1","example":{"text":"这个电影很好玩儿。","pinyin":"zhe4 ge3 dian4 ying3 hen3 hao3 wan2 r5","translation":"This movie is very fun.","segments":["这","个","电影","很","好玩儿","。"]}}
+{"id":"hsk1-0294","v":"v1","example":{"text":"我喜欢吃面条儿。","pinyin":"wo3 xi3 huan5 chi1 mian4 tiao2 r5","translation":"I like to eat noodles.","segments":["我","喜欢","吃","面条儿","。"]}}

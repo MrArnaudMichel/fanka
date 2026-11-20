@@ -29,6 +29,8 @@ export function openCache(file) {
   return {
     has: (/** @type {string} */ id, /** @type {string} */ v) => records.has(`${id}|${v}`),
     get: (/** @type {string} */ id, /** @type {string} */ v) => records.get(`${id}|${v}`),
+    /** An accepted example from any prompt version. */
+    hasExample: (/** @type {string} */ id) => [...records.values()].some((r) => r.id === id && r.example),
     all: () => [...records.values()],
     append(/** @type {any} */ rec) {
       appendFileSync(file, `${JSON.stringify(rec)}\n`);

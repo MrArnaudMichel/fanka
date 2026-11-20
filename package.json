@@ -22,6 +22,7 @@
     "content:fetch": "node scripts/content/fetch.mjs",
     "content:words": "node scripts/content/words.mjs",
     "content:examples": "node scripts/content/examples.mjs",
+    "content:repin": "node scripts/content/repin.mjs",
     "android:sync": "npm run build:app && cap sync android",
     "android:build": "[ -x \"$JAVA_HOME/bin/java\" ] || unset JAVA_HOME; cd android && ./gradlew assembleDebug",
     "android:bundle": "npm run android:sync && ([ -x \"$JAVA_HOME/bin/java\" ] || unset JAVA_HOME; cd android && ./gradlew bundleRelease)",

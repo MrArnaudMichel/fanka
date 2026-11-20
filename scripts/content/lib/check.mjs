@@ -112,13 +112,50 @@ export function syllabify(raw, expected) {
 }
 
 /**
+ * Pinyin for an example, taken from the word list where possible: each Han
+ * segment that is a known word uses that word's first (citation) reading;
+ * other segments use the model's numbered syllables, aligned by Han-character
+ * index. Non-Han segments add nothing.
+ * @param {string[]} segments
+ * @param {(w: string) => string | undefined} readingOf numbered, space-separated
+ * @param {string[]} modelSyllables numbered, one per Han character
+ * @returns {string}
+ */
+export function examplePinyin(segments, readingOf, modelSyllables) {
+  return derive(segments, readingOf, modelSyllables).pinyin;
+}
+
+/** @returns {{ pinyin: string, tonelessFallback: boolean }} */
+function derive(/** @type {string[]} */ segments, /** @type {(w: string) => string | undefined} */ readingOf, /** @type {string[]} */ modelSyllables) {
+  /** @type {string[]} */
+  const out = [];
+  let index = 0;
+  let tonelessFallback = false;
+  for (const seg of segments) {
+    if (!isHan(seg)) continue;
+    const n = [...seg].length;
+    const reading = readingOf(seg)?.split(/\s+/).filter(Boolean);
+    if (reading && reading.length === n) {
+      out.push(...reading);
+    } else {
+      const part = modelSyllables.slice(index, index + n);
+      out.push(...part);
+      if (n > 1 && part.length > 0 && part.every((x) => x.endsWith('5'))) tonelessFallback = true;
+    }
+    index += n;
+  }
+  return { pinyin: out.join(' '), tonelessFallback };
+}
+
+/**
  * @param {{ text: string, pinyin: string, translation: string }} ex
  * @param {{ hanzi: string, variants?: string[] }} word
  * @param {ReadonlySet<string>} allowed
  * @param {'mainland' | 'taiwan'} bundle
+ * @param {(w: string) => string | undefined} [readingOf]
  * @returns {{ ok: true, segments: string[], pinyin: string } | { ok: false, reasons: string[] }}
  */
-export function checkExample(ex, word, allowed, bundle) {
+export function checkExample(ex, word, allowed, bundle, readingOf = () => undefined) {
   /** @type {string[]} */
   const reasons = [];
   const text = typeof ex.text === 'string' ? ex.text.trim() : '';
@@ -144,8 +181,15 @@ export function checkExample(ex, word, allowed, bundle) {
   const pinyin = syllabify(typeof ex.pinyin === 'string' ? ex.pinyin : '', hanCount);
   if (pinyin === null) reasons.push('pinyin syllable count');
 
+  let derived = '';
+  if (pinyin !== null) {
+    const d = derive(segments, readingOf, pinyin.split(' '));
+    derived = d.pinyin;
+    if (d.tonelessFallback) reasons.push('toneless pinyin');
+  }
+
   if (typeof ex.translation !== 'string' || !ex.translation.trim()) reasons.push('no translation');
 
   if (reasons.length > 0) return { ok: false, reasons };
-  return { ok: true, segments, pinyin: /** @type {string} */ (pinyin) };
+  return { ok: true, segments, pinyin: derived };
 }

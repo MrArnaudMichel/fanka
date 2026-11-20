@@ -16,11 +16,11 @@ const valid = JSON.stringify({ text: '我的朋友很好。', pinyin: 'wǒ de p�
 const file = () => path.join(mkdtempSync(path.join(tmpdir(), 'ex-')), 'out.jsonl');
 const run = (replies: string[], f: string, only = ['hsk1-0002']) => {
   const pre = openCache(f);
-  for (const w of words) if (!only.includes(w.id) && !pre.has(w.id, 'v1')) pre.append({ id: w.id, v: 'v1', rejected: [] });
+  for (const w of words) if (!only.includes(w.id) && !pre.has(w.id, 'v2')) pre.append({ id: w.id, v: 'v2', rejected: [] });
   const calls: string[] = [];
   const client = { chat: async (p: string) => { calls.push(p); return replies.shift() ?? 'nope'; } };
   const cache = openCache(f);
-  return generate(words, { bundle: 'mainland', client, cache, promptVersion: 'v1', attempts: 3 }).then(() => calls);
+  return generate(words, { bundle: 'mainland', client, cache, promptVersion: 'v2', attempts: 3 }).then(() => calls);
 };
 const lines = (f: string) => readFileSync(f, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 
@@ -35,7 +35,7 @@ describe('generate', () => {
   });
   it('skips a cached id', async () => {
     const f = file();
-    writeFileSync(f, `${JSON.stringify({ id: 'hsk1-0002', v: 'v1', rejected: [] })}\n`);
+    writeFileSync(f, `${JSON.stringify({ id: 'hsk1-0002', v: 'v2', rejected: [] })}\n`);
     expect(await run([valid], f)).toHaveLength(0);
     expect(lines(f).filter((l) => l.id === 'hsk1-0002')).toHaveLength(1);
   });
@@ -43,7 +43,7 @@ describe('generate', () => {
     const f = file();
     writeFileSync(f, '');
     appendFileSync(f, '{"id":"hsk1-0002","v":"v1","exa');
-    expect(openCache(f).has('hsk1-0002', 'v1')).toBe(false);
+    expect(openCache(f).has('hsk1-0002', 'v2')).toBe(false);
   });
   it('records rejected reasons after three failures', async () => {
     const f = file();

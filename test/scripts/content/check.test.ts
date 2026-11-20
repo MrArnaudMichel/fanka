@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkExample, syllabify } from '../../../scripts/content/lib/check.mjs';
+import { checkExample, examplePinyin, syllabify } from '../../../scripts/content/lib/check.mjs';
 
 const allowed = new Set(['我', '的', '朋友', '很', '好', '是', '你', '他', '们', '学生', '老师', '今天', '喜欢', '都', '在', '家']);
 const word = { hanzi: '朋友' };
@@ -40,5 +40,27 @@ describe('syllabify', () => {
   });
   it('handles ü and punctuation', () => {
     expect(syllabify('nǚ, hái.', 2)).toBe('nv3 hai2');
+  });
+});
+
+describe('examplePinyin', () => {
+  const readings: Record<string, string> = { 我: 'wo3', 想: 'xiang3', 喝: 'he1', 杯: 'bei1', 茶: 'cha2' };
+  const readingOf = (w: string) => readings[w];
+  it('uses the word list readings, not the model tones', () => {
+    const model = ['wo5', 'xiang5', 'he5', 'bei5', 'cha5'];
+    expect(examplePinyin(['我', '想', '喝', '杯', '茶', '。'], readingOf, model)).toBe('wo3 xiang3 he1 bei1 cha2');
+  });
+  it('falls back to model syllables for an unknown segment', () => {
+    expect(examplePinyin(['我', '龘'], readingOf, ['wo5', 'da2'])).toBe('wo3 da2');
+  });
+  it('rejects a toneless multi-character fallback segment', () => {
+    const r = checkExample(
+      { text: '我想喝咖啡。', pinyin: 'wo xiang he ka fei', translation: 'x' },
+      { hanzi: '喝' },
+      new Set(['我', '想', '喝', '咖啡']),
+      'mainland',
+      (w) => ({ 我: 'wo3', 想: 'xiang3', 喝: 'he1' })[w],
+    );
+    expect((r as { reasons: string[] }).reasons).toContain('toneless pinyin');
   });
 });

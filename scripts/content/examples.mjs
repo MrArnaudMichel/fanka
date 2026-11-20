@@ -9,7 +9,7 @@ import { checkExample, cleanHanzi } from './lib/check.mjs';
 import { createOllama } from './lib/ollama.mjs';
 import { openCache } from './lib/cache.mjs';
 
-export const PROMPT_VERSION = 'v1';
+export const PROMPT_VERSION = 'v2';
 const SAMPLE_SIZE = 400;
 
 const SCRIPT_NAME = {
@@ -34,7 +34,7 @@ function parseJson(s) {
 }
 
 /** Words of each level and below, as hanzi forms, cumulative by level. */
-function allowedByLevel(/** @type {any[]} */ words) {
+export function allowedByLevel(/** @type {any[]} */ words) {
   const levels = [...new Set(words.map((w) => w.level))].sort((a, b) => a - b);
   /** @type {Map<number, Set<string>>} */
   const map = new Map();
@@ -50,6 +50,21 @@ function allowedByLevel(/** @type {any[]} */ words) {
     map.set(level, new Set(running));
   }
   return map;
+}
+
+/** First reading's numbered pinyin of each headword form (first word wins). */
+export function readingLookup(/** @type {any[]} */ words) {
+  /** @type {Map<string, string>} */
+  const map = new Map();
+  for (const w of words) {
+    const pinyin = w.readings?.[0]?.pinyin;
+    if (!pinyin) continue;
+    for (const f of [w.hanzi, ...(w.variants ?? [])]) {
+      const c = cleanHanzi(f);
+      if (c && !map.has(c)) map.set(c, pinyin);
+    }
+  }
+  return (/** @type {string} */ w) => map.get(w);
 }
 
 /** Up to SAMPLE_SIZE allowed words, the word's own level first. */
@@ -73,7 +88,7 @@ function examplePrompt(/** @type {any} */ word, /** @type {any[]} */ words, /** 
     `Use mostly words from this list, and no other rare words: ${sampleVocab(words, word).join(' ')}`,
     'The sentence must be one natural sentence of 4 to 20 characters, and must contain the word exactly as written.',
     'Reply with JSON only, with these fields:',
-    '"text" (the sentence), "pinyin" (with tone marks, exactly one syllable per Chinese character, space separated, no punctuation), "translation" (English).',
+    '"text" (the sentence), "pinyin" (with tone marks on every syllable, never plain letters, exactly one syllable per Chinese character, space separated, no punctuation), "translation" (English).',
   ].join('\n');
 }
 
@@ -91,7 +106,8 @@ function meaningPrompt(/** @type {any} */ word, /** @type {string} */ bundle) {
 export async function generate(words, opts) {
   const { bundle, client, cache, promptVersion, attempts, limit, levels, onProgress } = opts;
   const byLevel = allowedByLevel(words);
-  let todo = words.filter((w) => !cache.has(w.id, promptVersion) && (!levels || levels.includes(w.level)));
+  const readingOf = readingLookup(words);
+  let todo = words.filter((w) => !cache.has(w.id, promptVersion) && !cache.hasExample(w.id) && (!levels || levels.includes(w.level)));
   if (limit !== undefined) todo = todo.slice(0, limit);
   let done = 0;
   for (const word of todo) {
@@ -122,7 +138,7 @@ export async function generate(words, opts) {
           rejected.push('invalid JSON');
           continue;
         }
-        const result = checkExample(reply, word, allowed, bundle);
+        const result = checkExample(reply, word, allowed, bundle, readingOf);
         if (result.ok) {
           rec.example = {
             text: reply.text.trim(),
