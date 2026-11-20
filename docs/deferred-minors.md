@@ -146,3 +146,11 @@ findings are never parked here.
 | `app/components/stats/StatsOverview.vue` | Grid minimums (150px, 280px) are literal sizes, as in StatsMemory | Same pattern as the existing tabs; needs a Kanto token | Stats and retry final review |
 | `core/stats/progress.ts` (`knownBefore`) | An item known through imported state that has later reviews counts as unknown before its first logged review | Imported history only | Stats and retry final review |
 | `app/components/stats/StatsMemory.vue` | With no reviews yet, the charts draw an empty -1 to 1 axis | Pre-existing; empty state covers the no-items case | Stats and retry branch |
+| `.github/workflows/release.yml` | A manual run can ship any branch to any track with no tag; the `play` environment could be limited to `main` and `v*` tags | Docs steer track moves to Console promotion | Play CI/CD final review |
+| `.github/workflows/release.yml` | `production` with `completed` rolls out to 100% at once; no staged rollout (`inProgress` + `userFraction`) | Production goes through Console promotion | Play CI/CD final review |
+| `docs/play-store.md` | No troubleshooting for "Changes cannot be sent for review automatically" (`changesNotSentForReview`) or permissions that take hours after inviting the service account | Appears in the action's error output | Play CI/CD final review |
+| `docs/play-store.md` | The draft-app fallback run builds from a branch, so that tag gets no GitHub Release | Once only, before the first review | Play CI/CD final review |
+| `scripts/build-store-graphics.mjs` | Imports `sharp`, which only arrives hoisted through `@capacitor/assets` | The PNGs are committed | Play CI/CD final review |
+| `scripts/build-store-graphics.mjs` | Text uses the system `sans-serif`, so a rebuild elsewhere looks different | The PNGs are committed | Play CI/CD final review |
+| `.github/workflows/*.yml` | `checkout`, `setup-node`, `setup-java`, `upload-artifact` at v4 run on Node 20, which GitHub is retiring | Deprecation warnings only, for now | Play CI/CD final review |
+| `docs/play-store.md` | Screenshot guidance says "at least 1080 px"; Play's hard limit is 320–3840 px, max 2:1 | Advice is stricter than the rule, not wrong | Play CI/CD final review |

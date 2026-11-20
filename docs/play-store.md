@@ -12,12 +12,17 @@ The tag starts `.github/workflows/release.yml`. It checks the tag matches
 `package.json`, runs the tests, builds the signed AAB, uploads it to Play's
 **internal** track and attaches it to a GitHub Release.
 
-To send a build to another track, run **Release** by hand in GitHub › Actions
-and choose the track: `alpha` is the closed test, `production` is production.
-Promoting an existing release in the Play Console works too.
+To move a build to another track, **promote it in the Play Console**
+(Test and release › the track › Promote release): closed testing, then
+production. Play refuses a `versionCode` it has already seen, on any track, so
+rebuilding the same version for another track always fails.
 
-Play refuses a `versionCode` it has already seen. If a release run fails after
-the upload, bump the version and tag again rather than re-running.
+Running **Release** by hand (GitHub › Actions) is only for a commit whose
+version is not on Play yet, or for the draft-app case below. It skips the tag
+check and the GitHub Release.
+
+If a release run fails after the upload, bump the version and tag again rather
+than re-running.
 
 `.github/workflows/ci.yml` runs typecheck, tests and a debug APK on every push
 to `main` and every pull request.
@@ -100,7 +105,10 @@ Play Console › Create app:
 3. Testers tab: create an email list with your own address and open the
    opt-in link on the phone.
 
-From here on the tag workflow uploads. If Play answers "Only releases with
+From here on the tag workflow uploads. Version 1.0.0 is now on Play, so the
+first tag is `v1.0.1`: run `npm version patch` before tagging. A tag pushed
+before the app exists in the Console fails at the upload step (package not
+found). If Play answers "Only releases with
 status draft may be created on draft app", the app has not been through its
 first review yet: run **Release** by hand with status `draft`, then roll it
 out from the Console.
@@ -114,11 +122,10 @@ for 14 days in a row before it can apply for production.
    `Alpha`). Countries: all.
 2. Testers: an email list (or Google Group) of at least 12 people with Google
    accounts. Share the opt-in link; each one must accept and install.
-3. Send a build: run **Release** by hand with track `alpha`, or promote the
-   internal release.
+3. Send a build: promote the internal release to the closed track.
 4. After 14 days: Dashboard › Apply for production. Google asks how the test
    went; answer from what testers reported.
-5. Once approved: run **Release** with track `production`, or promote.
+5. Once approved: promote the closed-test release to production.
 
 ## Store listing
 
@@ -136,7 +143,7 @@ for 14 days in a row before it can apply for production.
 > and Fanka schedules the next review for when you are about to forget it.
 >
 > - Decks grouped by lesson, with characters, pinyin and translations
-> - Writing practice with stroke order for every character
+> - Writing practice with stroke order
 > - Speaking practice: answer discussion questions aloud, then hear a model
 >   answer
 > - The 80 most common radicals
@@ -178,7 +185,7 @@ for 14 days in a row before it can apply for production.
 
 ## Content rating answers (IARC)
 
-- Category: **All other app types** (reference, education).
+- Category: **Reference, News, or Educational**.
 - Violence, sexuality, language, controlled substances, gambling: **No** to
   all.
 - Users interact or exchange content: **No**.
