@@ -1,6 +1,6 @@
 # Fanka
 
-Spaced-repetition app for Traditional Chinese. Generic deck/scheduler core,
+Spaced-repetition app for Mandarin Chinese (Mainland and Taiwan bundles). Generic deck/scheduler core,
 Chinese behaviour isolated in `core/chinese`.
 
 Design spec: `docs/superpowers/specs/2026-09-16-fanka-design.md`
@@ -17,7 +17,8 @@ Design spec: `docs/superpowers/specs/2026-09-16-fanka-design.md`
 - `core/srs` and `core/chinese` are pure: no Vue, Nuxt, Dexie or Capacitor
   imports. They are tested first.
 - Pages never touch Dexie or a scheduler directly — always through a composable.
-- Traditional characters only in content. Never simplified.
+- Content is in its bundle's script: traditional for Taiwan, simplified for
+  Mainland. Never mixed.
 - **Kanto first.** Before building any interface element, check Kanto's
   components (listed in `node_modules/kanto-ds/dist/AGENTS.md`, one page each
   in `dist/docs`). A native interactive or structural

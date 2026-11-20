@@ -31,7 +31,7 @@ function onNavigate(event: CustomEvent<{ item: KtNavItem }>): void {
       <BrandMark size="large" />
       <span class="wordmark">
         <span class="name">FANKA</span>
-        <span class="tagline">Traditional Chinese</span>
+        <span class="tagline">Chinese</span>
       </span>
       <!-- Opens the command palette: the way in for a tablet with no keyboard; the tooltip teaches the shortcut. -->
       <kt-tooltip class="search" :text="`Search · ${shortcut}`" placement="bottom">

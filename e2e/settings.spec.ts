@@ -127,3 +127,17 @@ test('a backup exported here restores without an error', async ({ page }) => {
   await reloaded;
   await expect(page.getByText("Couldn't restore the backup")).toHaveCount(0);
 });
+
+test('switching what you learn hides the other bundle\'s decks, and back', async ({ page }) => {
+  await page.goto('/settings/study');
+  await page.getByRole('button', { name: /Mainland Chinese/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-bundle', 'mainland');
+  await page.goto('/decks');
+  await expect(page.getByRole('heading', { name: 'Decks', level: 1 })).toBeVisible();
+  await expect(page.getByText('HSK 1 — traditional')).toHaveCount(0);
+  await page.goto('/settings/study');
+  await page.getByRole('button', { name: /Taiwanese Mandarin/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-bundle', 'taiwan');
+  await page.goto('/decks');
+  await expect(page.getByText('HSK 1 — traditional').first()).toBeVisible();
+});

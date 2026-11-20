@@ -25,10 +25,6 @@ const index = ref(0);
 const step = computed(() => steps[index.value]!.id as StepId);
 const last = computed(() => index.value === steps.length - 1);
 
-const BUNDLES: { value: Bundle; title: string; text: string }[] = [
-  { value: 'mainland', title: 'Mainland Chinese', text: 'Simplified characters, pinyin, HSK' },
-  { value: 'taiwan', title: 'Taiwanese Mandarin', text: 'Traditional characters, zhuyin and pinyin, TBCL' },
-];
 const bundle = ref<Bundle | null>(null);
 onMounted(async () => {
   const suggested = await suggestedBundle().catch(() => null);
@@ -111,12 +107,7 @@ function onTime(event: CustomEvent<{ value: string | null }>): void {
 
         <template v-else-if="step === 'bundle'">
           <h1 ref="heading" tabindex="-1">What do you want to learn?</h1>
-          <div class="choices">
-            <kt-card v-for="b in BUNDLES" :key="b.value" clickable :selected="bundle === b.value" @kt-card-click="bundle = b.value">
-              <span class="choice-title">{{ b.title }}</span>
-              <span class="choice-text">{{ b.text }}</span>
-            </kt-card>
-          </div>
+          <BundleChoice v-model="bundle" />
         </template>
 
         <template v-else-if="step === 'lessons'">
@@ -165,9 +156,6 @@ function onTime(event: CustomEvent<{ value: string | null }>): void {
 .step { display: flex; flex-direction: column; gap: var(--gap-card); }
 h1 { margin: 0; font: var(--font-title-h4); color: var(--text-body); }
 h1:focus { outline: none; }
-.choices { display: flex; flex-direction: column; gap: var(--gap-element); }
-.choice-title { display: block; font: var(--font-title-h6); color: var(--text-body); }
-.choice-text { display: block; font: var(--font-normal-small); color: var(--text-muted); }
 .actions { display: flex; align-items: center; gap: var(--gap-element); }
 .spacer { flex: 1; }
 </style>

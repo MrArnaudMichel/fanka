@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { toaster } from 'kanto-ds';
 import type { KtOption } from 'kanto-ds';
+import type { Bundle } from '~core/chinese/script';
 import { useCompactLayout } from '~/composables/useCompactLayout';
 import { useLeaveGuard } from '~/composables/useLeaveGuard';
+import { useSettings } from '~/composables/useSettings';
 import { useSettingsForm } from '~/composables/useSettingsForm';
 
+const { settings, update } = useSettings();
 const { compact } = useCompactLayout();
 const { draft, ready, saving, dirty, save } = useSettingsForm(['algorithm', 'newPerDay', 'desiredRetention', 'maxInterval'] as const);
 const leaveGuard = useLeaveGuard(dirty);
@@ -22,6 +25,16 @@ function validate(): boolean {
   return !errors.newPerDay && !errors.maxInterval;
 }
 
+async function onBundle(bundle: Bundle): Promise<void> {
+  if (bundle === settings.value.bundle) return;
+  try {
+    await update({ bundle });
+  } catch (err) {
+    console.error('study settings: failed to switch bundle', err);
+    toaster.error("Couldn't switch", { description: 'Try again.' });
+  }
+}
+
 async function onSave(): Promise<void> {
   if (!validate()) return;
   if (await save()) toaster.success('Settings saved');
@@ -31,6 +44,9 @@ async function onSave(): Promise<void> {
 
 <template>
   <SettingsHeader heading="Study" description="Daily allowance and the algorithm behind due dates." />
+  <kt-form heading="What you learn" description="Each has its own decks and progress. Nothing is deleted.">
+    <BundleChoice :model-value="settings.bundle" @update:model-value="onBundle" />
+  </kt-form>
   <form novalidate @submit.prevent="onSave">
     <kt-form heading="Scheduler" :loading="!ready" loading-fields="4">
       <kt-label-input label="Scheduler algorithm">
