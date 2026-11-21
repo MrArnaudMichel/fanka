@@ -110,10 +110,16 @@ export function useLesson(id: string) {
     shownAt = at;
   }
 
-  /** Writes the cards, reviews and progress in one go, then refreshes the due counts. */
+  /**
+   * Writes the cards, reviews and progress in one go, then refreshes the due
+   * counts. A failed write can be tried again.
+   */
   function finish(): Promise<void> {
     // Set before the first await, so a second tap shares the write in flight.
-    finishing ??= write();
+    finishing ??= write().catch((err: unknown) => {
+      finishing = null;
+      throw err;
+    });
     return finishing;
   }
 

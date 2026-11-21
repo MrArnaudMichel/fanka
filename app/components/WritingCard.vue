@@ -10,7 +10,13 @@ import type { Settings } from '~core/db/settings';
  * slot holds whatever sits between prompt and answer — the drawing pad, or
  * the verdict once the drawing is checked.
  */
-defineProps<{ card: Card; revealed: boolean; settings: DeepReadonly<Settings>; canSpeak: boolean }>();
+defineProps<{
+  /** A card, or a lesson word shaped like one: only these fields are shown. */
+  card: Pick<Card, 'hanzi' | 'pinyin' | 'zhuyin' | 'translation'>;
+  revealed: boolean;
+  settings: DeepReadonly<Settings>;
+  canSpeak: boolean;
+}>();
 defineEmits<{ speak: [text: string] }>();
 </script>
 

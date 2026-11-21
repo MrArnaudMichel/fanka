@@ -51,3 +51,24 @@ describe('useLesson', () => {
     expect(await db.lessonProgress.count()).toBe(1);
   });
 });
+
+describe('useLesson after a failed write', () => {
+  it('lets finish be tried again', async () => {
+    const actual = await vi.importActual<typeof import('~core/db/curriculum')>('~core/db/curriculum');
+    const completeLesson = vi
+      .fn<typeof actual.completeLesson>()
+      .mockRejectedValueOnce(new Error('disk full'))
+      .mockImplementation(actual.completeLesson);
+    vi.doMock('~core/db/curriculum', () => ({ ...actual, completeLesson }));
+    const { useLesson } = await import('../../app/composables/useLesson');
+    const lesson = useLesson('hsk1-u01-l1');
+    await lesson.start();
+    for (let i = 0; i < lesson.exercises.value.length; i += 1) lesson.answer(true);
+    await expect(lesson.finish()).rejects.toThrow('disk full');
+    expect(lesson.finished.value).toBe(false);
+    await lesson.finish();
+    expect(lesson.finished.value).toBe(true);
+    expect(await db.lessonProgress.count()).toBe(1);
+    vi.doUnmock('~core/db/curriculum');
+  });
+});

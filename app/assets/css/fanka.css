@@ -4,6 +4,18 @@
   --fk-font-hanzi-serif: 'Noto Serif TC', 'Songti TC', serif;
   --fk-font-hanzi-sans: 'Noto Sans TC', 'PingFang TC', sans-serif;
   --fk-font-hanzi: var(--fk-font-hanzi-serif);
+  /* Hanzi and reading sizes for the lesson screens, matching the review cards. */
+  --fk-hanzi-display: clamp(64px, 14vw, 110px);
+  --fk-hanzi-prompt: clamp(44px, 10vw, 72px);
+  --fk-hanzi-choice: 28px;
+  --fk-reading-size: 22px;
+  --fk-reading-size-small: 16px;
+  /*
+   * A drawing pad wide enough to draw in, never so tall that the sticky
+   * action bar covers its lower edge (see writing.vue), never below 200px.
+   */
+  --fk-pad-max: min(100%, 420px, max(200px, calc(100dvh - 440px)));
+  --fk-intro-max: 560px;
 }
 
 /* Mainland content is simplified: the SC families come first. */
