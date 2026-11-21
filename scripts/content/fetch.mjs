@@ -1,6 +1,9 @@
 // Download the pinned content sources into .cache/content/ (untracked) and
 // check them by SHA-256 recorded in sources.json on first download.
 // Downloaded files are untrusted data: they are only hashed and written.
+// CC-CEDICT is read from the copy kept in the repository (sources.json
+// `local`): MDBG republishes its export daily, so the pinned bytes cannot be
+// downloaded again later.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -38,10 +41,18 @@ for (const [name, src] of Object.entries(SOURCES)) {
     console.log(`${name}: cached`);
     continue;
   }
-  console.log(`${name}: downloading ${src.url}`);
-  const res = await fetch(src.url, { signal: AbortSignal.timeout(300_000) });
-  if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
-  const raw = new Uint8Array(await res.arrayBuffer());
+  const local = recorded[name]?.local;
+  /** @type {Uint8Array} */
+  let raw;
+  if (local) {
+    console.log(`${name}: reading ${local}`);
+    raw = new Uint8Array(readFileSync(path.join(root, local)));
+  } else {
+    console.log(`${name}: downloading ${src.url}`);
+    const res = await fetch(src.url, { signal: AbortSignal.timeout(300_000) });
+    if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
+    raw = new Uint8Array(await res.arrayBuffer());
+  }
   const hash = sha256(raw);
   const known = recorded[name]?.sha256;
   if (!known) recorded[name] = { url: src.url, sha256: hash };

@@ -1,0 +1,15 @@
+cedict_1_0_ts_utf-8_mdbg-2026-11-20.txt.gz
+
+CC-CEDICT, the community-maintained Chinese-English dictionary, exactly as
+exported by MDBG (https://www.mdbg.net/chinese/dictionary?page=cc-cedict) on
+2026-11-20T07:26:16Z (the file's "#! date=" header). Unmodified; kept here so
+that the content build is reproducible after MDBG's daily export moves on.
+
+Licence: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0),
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Referenced works: CEDICT - Copyright (C) 1997, 1998 Paul Andrew Denisowski.
+More about CC-CEDICT: https://cc-cedict.org/wiki/
+
+The English meanings Fanka ships for both courses derive from this file and
+are shared under the same licence.

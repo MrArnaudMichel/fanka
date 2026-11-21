@@ -9,6 +9,8 @@
   },
   "cedict": {
     "url": "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz",
-    "sha256": "26ee61c4259c9c52bff630d2f7a9920511c3c519b876c7f18391766e1b703540"
+    "sha256": "26ee61c4259c9c52bff630d2f7a9920511c3c519b876c7f18391766e1b703540",
+    "local": "scripts/content/data/cedict_1_0_ts_utf-8_mdbg-2026-11-20.txt.gz",
+    "date": "2026-11-20T07:26:16Z"
   }
 }
