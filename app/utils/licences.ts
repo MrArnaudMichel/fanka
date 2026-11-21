@@ -30,25 +30,26 @@ export const CONTENT_SOURCES: readonly ContentSource[] = [
     name: 'HSK vocabulary',
     licence: 'MIT',
     url: 'https://github.com/drkameleon/complete-hsk-vocabulary',
-    notice: 'Word lists for the Mainland course, from drkameleon/complete-hsk-vocabulary.',
+    notice: 'Word lists and pinyin for the Mainland course, from drkameleon/complete-hsk-vocabulary. Its English meanings come from CC-CEDICT.',
   },
   {
     name: 'CC-CEDICT',
     licence: 'CC BY-SA 4.0',
     url: 'https://cc-cedict.org',
-    notice: 'English meanings for the Taiwan course, from the CC-CEDICT dictionary. Shared under the same licence.',
+    notice: 'English meanings for both courses, adapted from the CC-CEDICT dictionary (MDBG export of 20 November 2026). Shared under the same licence.',
   },
   {
     name: '臺灣華語文能力基準 詞語表',
     licence: 'CC BY',
     url: 'https://coct.naer.edu.tw',
-    notice: 'Word lists for the Taiwan course, from the 國家教育研究院 (National Academy for Educational Research).',
+    notice:
+      'Word lists, pinyin and zhuyin for the Taiwan course, adapted from 國家教育研究院《臺灣華語文能力基準》 (National Academy for Educational Research). Reformatted, with readings regrouped and a few source errors corrected. NAER states CC BY without a version.',
   },
   {
     name: 'Example sentences',
-    licence: 'Apache-2.0',
-    url: 'https://github.com/QwenLM/Qwen3',
-    notice: 'Generated with Qwen3.5 (Apache-2.0 model) and checked against the course vocabulary.',
+    licence: 'Model: Apache-2.0',
+    url: 'https://github.com/QwenLM',
+    notice: 'Generated with the Qwen3.5 model (licensed Apache-2.0) and checked against the course vocabulary.',
   },
 ];
 
