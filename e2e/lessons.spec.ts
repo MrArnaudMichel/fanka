@@ -30,6 +30,15 @@ async function discover(page: Page): Promise<Seen[]> {
 
 /** Answers one choice exercise from what discover showed; a listening one has no visible answer, so it takes the first choice. */
 async function answerChoice(page: Page, seen: Seen[], instruction: string): Promise<void> {
+  if (instruction === 'Put the sentence in order') {
+    // Order is not checked here: place every word as offered, then move on.
+    const pool = page.getByRole('group', { name: 'Words to place' }).locator('kt-button');
+    while ((await pool.count()) > 0) await pool.first().click();
+    const check = page.getByRole('button', { name: 'Check', exact: true });
+    if (await check.isVisible()) await check.click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    return;
+  }
   const choices = page.getByRole('group', { name: instruction }).locator('kt-button');
   const texts = (await choices.allTextContents()).map(squash);
   let at = 0;

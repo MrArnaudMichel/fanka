@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DeepReadonly } from 'vue';
+import { parsePinyin } from '~core/chinese/pinyin';
 import type { Card, Item } from '~core/db/schema';
 import { showsPinyin, showsZhuyin } from '~core/db/settings';
 import type { Settings } from '~core/db/settings';
@@ -51,7 +52,10 @@ defineEmits<{ speak: [text: string] }>();
             />
           </div>
           <p class="example-hanzi">{{ card.example }}</p>
-          <p class="example-pinyin">{{ card.examplePinyin }}</p>
+          <!-- Stored numbered ("wo3 men5") by lessons and the seed, or with marks by imports: parsed either way. -->
+          <p v-if="card.examplePinyin" class="example-pinyin">
+            <PinyinText :syllables="parsePinyin(card.examplePinyin)" :colored="settings.toneColors" size="13px" />
+          </p>
           <p class="example-translation">{{ card.exampleTranslation }}</p>
         </div>
         <p v-if="card.note" class="note">Mnemonic · {{ card.note }}</p>

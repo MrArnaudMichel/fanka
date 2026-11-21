@@ -19,5 +19,6 @@ const color = (syllable: PinyinSyllable) =>
 </template>
 
 <style scoped>
-.pinyin { display: inline-flex; gap: 8px; font-family: var(--font-family-code); }
+/* Wraps, so a long example sentence stays inside its card on a phone. */
+.pinyin { display: inline-flex; flex-wrap: wrap; gap: 8px; font-family: var(--font-family-code); }
 </style>

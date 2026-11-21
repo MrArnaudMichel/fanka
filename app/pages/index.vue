@@ -209,7 +209,7 @@ async function retrySeed(): Promise<void> {
       v-else-if="decks.length === 0"
       icon="layers"
       heading="No decks yet"
-      description="Seeded decks load on first launch. If none appeared, reload the page."
+      description="The words of each lesson you finish appear here as a deck. You can also add your own."
     />
 
     <kt-card v-else>
