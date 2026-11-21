@@ -8,6 +8,7 @@ import path from 'node:path';
 import { cleanHanzi } from './lib/check.mjs';
 import { wrongScriptCharactersIn } from './lib/core.mjs';
 import { cutLessons } from './lib/lessons.mjs';
+import { cleanMeanings } from './lib/senses.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const BUNDLES = /** @type {const} */ (['mainland', 'taiwan']);
@@ -68,15 +69,18 @@ export function assembleBundle(bundle, words, generated) {
   const rejected = [];
   /** @type {Map<number, any[]>} */
   const byLevel = new Map();
+  let droppedExamples = 0;
   for (const raw of words) {
     const { needsMeaning, ...word } = raw;
     const gen = generated.get(word.id);
     if (needsMeaning || word.readings.some((/** @type {any} */ r) => r.meanings.length === 0)) {
-      if (!gen?.meaning) {
+      // A generated meaning is held to the same rules as CC-CEDICT's.
+      const meaning = gen?.meaning ? cleanMeanings(gen.meaning, bundle) : [];
+      if (meaning.length === 0) {
         rejected.push({ id: word.id, hanzi: word.hanzi, reason: 'no meaning yet' });
         continue;
       }
-      word.readings = word.readings.map((/** @type {any} */ r) => (r.meanings.length ? r : { ...r, meanings: gen.meaning }));
+      word.readings = word.readings.map((/** @type {any} */ r) => (r.meanings.length ? r : { ...r, meanings: meaning }));
     }
     const wrong = formsOf(word).flatMap((f) => wrongScriptCharactersIn(f, bundle));
     if (wrong.length) throw new Error(`${word.id} ${word.hanzi}: wrong script ${wrong.join('')}`);
@@ -85,6 +89,7 @@ export function assembleBundle(bundle, words, generated) {
       const bad = wrongScriptCharactersIn(text, bundle);
       if (bad.length) throw new Error(`${word.id} example: wrong script ${bad.join('')}`);
       if (containsWord(text, word)) word.example = { text, pinyin, translation, segments };
+      else droppedExamples += 1;
     }
     const list = byLevel.get(word.level) ?? [];
     list.push(word);
@@ -105,14 +110,14 @@ export function assembleBundle(bundle, words, generated) {
   const hash = createHash('sha256');
   for (const f of levelFiles) hash.update(f.json);
   const index = { bundle, version: hash.digest('hex').slice(0, 12), levels };
-  return { index, levelFiles, rejected };
+  return { index, levelFiles, rejected, droppedExamples };
 }
 
 function main() {
   for (const bundle of BUNDLES) {
     const words = JSON.parse(readFileSync(path.join(root, '.cache', 'content', `${bundle}-words.json`), 'utf8'));
     const generated = readGenerated(path.join(root, 'content', 'generated', `${bundle}.jsonl`));
-    const { index, levelFiles, rejected } = assembleBundle(bundle, words, generated);
+    const { index, levelFiles, rejected, droppedExamples } = assembleBundle(bundle, words, generated);
     const dir = path.join(root, 'public', 'content', bundle);
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
@@ -124,7 +129,7 @@ function main() {
       const withEx = lw.filter((/** @type {any} */ w) => w.example).length;
       console.log(`${bundle} ${l.name}: ${l.wordCount} words, ${l.lessons.length} lessons, ${l.units.length} units, examples ${withEx}`);
     }
-    console.log(`${bundle}: version ${index.version}, ${rejected.length} left out`);
+    console.log(`${bundle}: version ${index.version}, ${rejected.length} left out, ${droppedExamples} example(s) dropped for not containing their word`);
   }
 }
 

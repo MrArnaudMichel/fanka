@@ -170,5 +170,17 @@ findings are never parked here.
 | `test/db/backup.test.ts` | A duplicate import line; `migration-v5` closes a possibly unopened db | Test hygiene | Bundles and onboarding final review |
 | `app/composables/useSpeech.ts` | `supported` is computed once | It does not depend on the bundle in effect | Bundles and onboarding final review |
 | `core/db/repositories.ts` write paths | Card move and create check `deletedAt`, not `deckInScope`; direct `/decks/<id>` and `/cards/<id>` of the other bundle still open | The UI cannot target a hidden deck | Bundles and onboarding final review |
+| `core/chinese/zhuyin.ts` and its test | The round-trip test is circular; `ZHUYIN_SYLLABLES` holds non-syllables (bio, liong); a trailing `˙` throws | Inputs from the word lists are already cleaned; no shipped reading is affected | Content pipeline final review |
+| `scripts/content/lib/xlsx.mjs` | The first sheet is the lowest `sheetN`, a row's `r` is ignored, and `String.fromCodePoint` can throw on a bad entity; no tests for inlineStr, rPh or entities | The one pinned TBCL file parses correctly | Content pipeline final review |
+| `scripts/content/fetch.mjs` | A cached file is never re-verified, the write is not atomic, and `sources.json` is not written when an HTTP error throws | Developer-only tool; deleting `.cache/content` recovers | Content pipeline final review |
+| `scripts/content/lib/segment.mjs` | Recomputes `maxLen` over the whole vocabulary on every call | Cost only, in an offline script | Content pipeline final review |
+| `scripts/content/lib/check.mjs` (`cleanHanzi`) | `cleanHanzi("不…不")` puts "不不" into the allowed set and the prompt sample | Affects a handful of pattern words only | Content pipeline final review |
+| Example pinyin | Tone sandhi is inconsistent within a sentence: words from the list may carry it (TBCL 一起 yi4 qi3), lone characters do not (一本 yi1 ben3) | The ruling stores citation tones; either document that list readings may include sandhi or normalise | Content pipeline final review |
+| `scripts/content/assemble.mjs` | A generated meaning is copied to every empty-meaning reading of a word | Words with several empty readings are rare | Content pipeline final review |
+| Lesson ids | Positional: any later change to the word set shifts every lesson after it, and phase 3's done set is keyed by lesson id | Fine before release; after release, pin lessons or derive done from cards | Content pipeline final review |
+| `scripts/content/lib/check.mjs` | `examplePinyin` is a test-only export | Test seam only | Content pipeline final review |
+| `scripts/content/examples.mjs` (`sampleVocab`) | Uses `Math.random`, so prompts are not reproducible | Results are cached | Content pipeline final review |
+| TBCL headwords | Optional markers are shown as written: `沒(有)用`, `有助（於）` | Readable as is | Content pipeline final review |
+| Phase 3 prompts | Only `meanings[0]` is used; even after the sense ranking, CC-CEDICT's first gloss can be an odd sense (跟 "heel", 裡 "lining", 太 "highest") | Consider joining 2 or 3 glosses in the prompt | Content pipeline final review |
 
 - Lesson-source attempts show no "practice" tag in the card detail panel and Statistics journal, and the journal's source filter has no Lesson option (`app/components/CardDetailPanel.vue`, `app/components/stats/StatsJournal.vue`).

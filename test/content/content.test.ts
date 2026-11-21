@@ -42,6 +42,16 @@ describe.each(['mainland', 'taiwan'] as Bundle[])('%s content', (bundle) => {
     expect(wrong).toEqual([]);
   });
 
+  it('keeps every meaning in the bundle script, without cross-reference pinyin', () => {
+    const meanings = all.flatMap((w) => w.readings.flatMap((r) => r.meanings));
+    expect(meanings.filter((m) => wrongScriptCharactersIn(m, bundle).length > 0)).toEqual([]);
+    expect(meanings.filter((m) => /\p{Script=Han}[|[]/u.test(m))).toEqual([]);
+  });
+
+  it('shows at most three glosses per reading', () => {
+    expect(all.filter((w) => w.readings.some((r) => r.meanings.length > 3)).map((w) => w.id)).toEqual([]);
+  });
+
   it('gives every word a meaning', () => {
     expect(all.filter((w) => !w.readings.some((r) => r.meanings.length > 0)).map((w) => w.id)).toEqual([]);
   });
