@@ -182,5 +182,16 @@ findings are never parked here.
 | `scripts/content/examples.mjs` (`sampleVocab`) | Uses `Math.random`, so prompts are not reproducible | Results are cached | Content pipeline final review |
 | TBCL headwords | Optional markers are shown as written: `沒(有)用`, `有助（於）` | Readable as is | Content pipeline final review |
 | Phase 3 prompts | Only `meanings[0]` is used; even after the sense ranking, CC-CEDICT's first gloss can be an odd sense (跟 "heel", 裡 "lining", 太 "highest") | Consider joining 2 or 3 glosses in the prompt | Content pipeline final review |
+| `app/composables/useContent.ts` | The index is memoised for the whole run, so the version part of the level key only changes across restarts; `retryAction` is last-call-wins; a local `ref` shadows Vue's `ref` | None misbehaves today | Lessons final review |
+| `core/curriculum/exercises.ts` (slots) | The same word can come back to back where two shuffles meet | Cosmetic; the exercise kinds differ | Lessons final review |
+| Lesson feedback and the missed list | Show only `readings[0]`; for a multi-reading word this may not be the reading that was tested | Rare, and the card has the other readings | Lessons final review |
+| `app/pages/lessons/[id].vue` | Close on the summary stays enabled while the save is in flight; Back is disabled | Leaving then only loses the retry, not data already queued | Lessons final review |
+| `app/pages/lessons/[id].vue` | A lesson of the other bundle opened by URL uses the active bundle's reading display and speech voice | Only reachable by typing the URL | Lessons final review |
+| `core/db/repositories.ts` (`lessonProgress.markKnown`) | Stamps `updatedAt = now`, so a known row marked on a second device can overwrite, by last-write-wins, a really completed row from the first and lose its score | Narrow race across two devices | Lessons final review |
+| `app/pages/index.vue` | Ignores `useLessons().error`: a failed index hides the Next card with no retry | Lessons has the retry state | Lessons final review |
+| e2e | The Mainland e2e does not assert Review = 0, and no e2e covers the sign-in follow against Dexie | The follow is unit tested | Lessons final review |
+| `app/pages/welcome.vue` | Toggling the bundle quickly can let a slower index load overwrite `levels` with the other bundle's levels | Needs two fast toggles on a slow network | Lessons final review |
+| `core/seed/seed.ts` (`seedIfNeeded(now)`) | The `now` parameter is unused | Harmless | Lessons final review |
+| Daily goal | A redone lesson counts again toward today's goal, because `completedAt` is overwritten; arguably intended, to be decided | Product choice | Lessons final review |
 
 - Lesson-source attempts show no "practice" tag in the card detail panel and Statistics journal, and the journal's source filter has no Lesson option (`app/components/CardDetailPanel.vue`, `app/components/stats/StatsJournal.vue`).
