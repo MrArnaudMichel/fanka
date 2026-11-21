@@ -20,7 +20,7 @@ import { useSync } from '~/composables/useSync';
  */
 export default defineNuxtPlugin(() => {
   const { user } = useAuth();
-  const { triggerSync, notifyWrite } = useSync();
+  const { triggerSync, notifyWrite, signedOut } = useSync();
 
   db.outbox.hook('creating', () => {
     notifyWrite();
@@ -40,5 +40,6 @@ export default defineNuxtPlugin(() => {
 
   watch(user, (next, prev) => {
     if (next && !prev) void triggerSync();
+    if (!next && prev) void signedOut();
   });
 });

@@ -49,6 +49,16 @@ const { bundles, settingsRef, update } = vi.hoisted(() => ({
   update: vi.fn(async (_patch: object) => {}),
 }));
 
+const { marker } = vi.hoisted(() => ({ marker: { value: null as string | null } }));
+vi.mock('~core/db/bundle-follow', () => ({
+  followedUser: async () => marker.value,
+  markFollowed: async (id: string) => {
+    marker.value = id;
+  },
+  clearFollowed: async () => {
+    marker.value = null;
+  },
+}));
 vi.mock('~core/db/repositories', () => ({ lessonProgress: { bundles } }));
 vi.mock('~/composables/useSettings', () => ({ useSettings: () => ({ settings: settingsRef, update }) }));
 vi.mock('~core/sync', () => ({ runSync }));
@@ -185,6 +195,24 @@ describe('useSync', () => {
       await signInAs('follow-4', [], 'taiwan', 5);
       await signInAs('follow-5', ['taiwan'], 'taiwan', 5);
       expect(update).not.toHaveBeenCalled();
+    });
+
+    it('does not switch back after a restart: the marker survives a fresh module', async () => {
+      await signInAs('follow-7', ['mainland'], 'taiwan', 5);
+      expect(marker.value).toBe('follow-7');
+      vi.resetModules();
+      // The learner then chose Taiwan on purpose; a restored session is not a sign-in.
+      await signInAs('follow-7', ['mainland'], 'taiwan', 5);
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it('follows again after signing out and back in', async () => {
+      await signInAs('follow-8', ['mainland'], 'taiwan', 5);
+      const { useSync } = await import('~/composables/useSync');
+      await useSync().signedOut();
+      expect(marker.value).toBeNull();
+      await signInAs('follow-8', ['mainland'], 'taiwan', 5);
+      expect(update).toHaveBeenCalledWith({ bundle: 'mainland' });
     });
 
     it('does it only on the first pull after a sign-in', async () => {

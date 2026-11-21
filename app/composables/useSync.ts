@@ -1,6 +1,7 @@
 import { type SyncDetails, readSyncDetails } from '~core/db/sync-details';
 import { runSync } from '~core/sync';
 import { createSupabaseTransport } from '~core/sync/supabase';
+import { clearFollowed, followedUser, markFollowed } from '~core/db/bundle-follow';
 import { lessonProgress } from '~core/db/repositories';
 import { useAuth } from '~/composables/useAuth';
 import { useSettings } from '~/composables/useSettings';
@@ -36,14 +37,13 @@ function currentTransport() {
   return createSupabaseTransport(getSupabaseClient(), user.value.id);
 }
 
-/** The account whose studied bundle was last followed, so only the first pull after a sign-in does it. */
-let followedFor: string | null = null;
-
 /**
  * After the first pull following a sign-in: an account with lesson progress
  * in exactly one bundle studies that one, so a device set up for the other
  * switches to it (and counts as onboarded). Progress in both, or in neither,
- * leaves the choice alone.
+ * leaves the choice alone. The account is remembered on the device, so a
+ * restored session after a restart is not taken for a sign-in and does not undo
+ * a bundle the learner switched to on purpose.
  */
 async function followStudiedBundle(): Promise<void> {
   try {
@@ -73,8 +73,8 @@ async function runOnce(): Promise<void> {
   try {
     await runSync(transport);
     const userId = useAuth().user.value?.id ?? null;
-    if (userId && userId !== followedFor) {
-      followedFor = userId;
+    if (userId && userId !== (await followedUser())) {
+      await markFollowed(userId);
       await followStudiedBundle();
     }
     lastSyncedAt.value = Date.now();
@@ -140,6 +140,14 @@ export function useSync() {
     triggerSync(): Promise<void> {
       clearDebounce();
       return runExclusive();
+    },
+    /** Forgets whose bundle was followed, so the next sign-in follows again. */
+    async signedOut(): Promise<void> {
+      try {
+        await clearFollowed();
+      } catch (err) {
+        console.error('useSync: could not clear the followed account', err);
+      }
     },
     /** Debounced: several outbox writes in quick succession schedule only one run. */
     notifyWrite(): void {
