@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { hskWords, numberedPinyin } from '../../../scripts/content/lib/hsk.mjs';
 
 const form = (numeric: string, meanings: string[], bopomofo = '') => ({
@@ -75,5 +77,44 @@ describe('numberedPinyin', () => {
   it('falls back to bopomofo when the numeric form has diacritics', () => {
     expect(numberedPinyin({ numeric: 'bu4 lìyú', bopomofo: 'ㄅㄨˋ ㄌㄧˋ ㄩˊ' })).toBe('bu4 li4 yu2');
     expect(numberedPinyin({ numeric: 'chènzhe', bopomofo: 'ㄔㄣˋ ㄓㄜ˙' })).toBe('chen4 zhe5');
+  });
+});
+
+describe('hskWords reading order', () => {
+  // Real complete.json entries (forms in CC-CEDICT order, proper nouns first).
+  const common = JSON.parse(readFileSync(path.join(__dirname, 'fixtures', 'hsk-common.json'), 'utf8')) as unknown[];
+  // TBCL levels of these readings, as tbclReadingLevels gives them.
+  const TBCL: Record<string, Array<[string, number]>> = {
+    都: [['dou1', 1]], 個: [['ge5', 1]], 和: [['han4', 1], ['he2', 1], ['huo4', 6]], 家: [['jia1', 1]],
+    看: [['kan4', 1], ['kan1', 5]], 那: [['na4', 1]], 日: [['ri4', 1]], 上: [['shang4', 1]], 新: [['xin1', 1]],
+    要: [['yao4', 1]], 也: [['ye3', 1]], 長: [['chang2', 1], ['zhang3', 2]], 得: [['de5', 1], ['dei3', 1], ['de2', 7]],
+    讀: [['du2', 1]], 還: [['hai2', 1], ['huan2', 2]], 只: [['zhi3', 1]], 地: [['de5', 2], ['di4', 2]],
+    行: [['hang2', 2], ['xing2', 2]], 隻: [['zhi1', 2]], 為: [['wei4', 4], ['wei2', 6]],
+    著: [['zhu4', 6], ['zhuo2', 6], ['zhao2', 7]],
+  };
+  const tbclReadings = (traditional: string) => (TBCL[traditional] ?? []).map(([pinyin, level]) => ({ pinyin, level }));
+  const words = hskWords(common, { tbclReadings });
+  const of = (hanzi: string) => words.find((w) => w.hanzi === hanzi)!;
+
+  it.each([
+    ['个', 'ge4'], ['都', 'dou1'], ['读', 'du2'], ['也', 'ye3'], ['和', 'he2'], ['看', 'kan4'], ['要', 'yao4'],
+    ['着', 'zhe5'], ['还', 'hai2'], ['那', 'na4'], ['只', 'zhi3'], ['得', 'de5'], ['地', 'de5'], ['长', 'chang2'],
+    ['行', 'xing2'], ['为', 'wei4'], ['了', 'le5'], ['新', 'xin1'], ['上', 'shang4'], ['日', 'ri4'],
+  ])('%s leads with %s', (hanzi, pinyin) => {
+    expect(of(hanzi).readings[0]?.pinyin).toBe(pinyin);
+  });
+
+  it('merges forms that share a reading and drops reference-only senses', () => {
+    expect(of('只').readings.map((r) => r.pinyin)).toEqual(['zhi3', 'zhi1']);
+    expect(of('只').readings[0]?.meanings).toEqual(['only', 'merely', 'just']);
+    expect(of('只').readings[1]?.meanings[0]).toMatch(/^classifier for birds/);
+    expect(of('个').readings.map((r) => r.pinyin)).toEqual(['ge4']);
+    expect(of('都').readings[0]?.meanings[0]).toBe('all; both; entirely');
+    expect(of('也').readings[0]?.meanings[0]).toMatch(/^\(adverb\) also/);
+    expect(of('家').readings[0]?.meanings).not.toContain('used in 家伙 and 家俱');
+    for (const w of words) {
+      expect(new Set(w.readings.map((r) => r.pinyin)).size).toBe(w.readings.length);
+      for (const r of w.readings) expect(r.meanings.length).toBeLessThanOrEqual(3);
+    }
   });
 });

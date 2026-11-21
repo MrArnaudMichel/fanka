@@ -47,3 +47,20 @@ export function assignIds(words, prefix) {
     return { id: `${prefix}${word.level}-${String(n).padStart(4, '0')}`, ...word };
   });
 }
+
+/**
+ * Readings that do not have one syllable per Han character of the headword,
+ * as "<id> <hanzi> <pinyin>" lines. The build fails on any.
+ * @param {Array<{ id: string, hanzi: string, readings: Array<{ pinyin: string }> }>} words
+ * @returns {string[]}
+ */
+export function syllableMismatches(words) {
+  const out = [];
+  for (const w of words) {
+    const han = [...w.hanzi.replace(/[^\p{Script=Han}]/gu, '')].length;
+    for (const r of w.readings) {
+      if (r.pinyin.split(/\s+/).filter(Boolean).length !== han) out.push(`${w.id} ${w.hanzi} ${r.pinyin}`);
+    }
+  }
+  return out;
+}

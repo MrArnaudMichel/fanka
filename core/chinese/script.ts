@@ -13,6 +13,13 @@ export type Bundle = 'mainland' | 'taiwan';
  */
 const SIMPLIFIED_ONLY = new Set<string>(simplifiedOnly.characters);
 
+/**
+ * Characters the generated table lists as simplified-only that are standard
+ * traditional characters in Taiwan: 霉 (mould, 發霉) is the simplified form of
+ * 黴 but also a character of its own in Taiwan's standard list.
+ */
+for (const character of ['霉']) SIMPLIFIED_ONLY.delete(character);
+
 /** A character that exists only in traditional form (the mirror of SIMPLIFIED_ONLY). */
 const TRADITIONAL_ONLY = new Set<string>(traditionalOnly.characters);
 

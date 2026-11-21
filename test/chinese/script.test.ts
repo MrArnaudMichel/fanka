@@ -23,6 +23,11 @@ describe('simplifiedCharactersIn', () => {
     expect(simplifiedCharactersIn('床上')).toEqual([]);
   });
 
+  it('accepts 霉, a standard traditional character (發霉)', () => {
+    expect(simplifiedCharactersIn('發霉')).toEqual([]);
+    expect(wrongScriptCharactersIn('發霉', 'taiwan')).toEqual([]);
+  });
+
   it('reports each character once, in order of first appearance', () => {
     expect(simplifiedCharactersIn('这个这个')).toEqual(['这', '个']);
   });

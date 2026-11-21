@@ -5,8 +5,9 @@ import path from 'node:path';
 import { readXlsxRows } from './lib/xlsx.mjs';
 import { parseCedict } from './lib/cedict.mjs';
 import { hskWords } from './lib/hsk.mjs';
-import { tbclWords } from './lib/tbcl.mjs';
-import { wrongScriptCharactersIn } from './lib/core.mjs';
+import { tbclReadingLevels, tbclWords } from './lib/tbcl.mjs';
+import { guardScript } from './lib/guard.mjs';
+import { syllableMismatches } from './lib/order.mjs';
 
 const cacheDir = path.resolve(import.meta.dirname, '../../.cache/content');
 const read = (/** @type {string} */ name) => readFileSync(path.join(cacheDir, name));
@@ -15,20 +16,21 @@ const read = (/** @type {string} */ name) => readFileSync(path.join(cacheDir, na
 const MAX_EXCLUDED = 0.01;
 
 /**
- * Words whose hanzi or variants hold a character of the wrong script are left
- * out, listed in <bundle>-excluded.json and warned about; too many fail the build.
+ * Script guard (see lib/guard.mjs): a failing variant is dropped, a word whose
+ * headword fails is left out, listed in <bundle>-excluded.json and warned
+ * about; too many fail the build, and so does any reading without one
+ * syllable per Han character.
  * @param {'mainland' | 'taiwan'} bundle
  * @param {ReturnType<typeof hskWords>} words
  */
 function guardAndWrite(bundle, words) {
-  const kept = [];
-  const excluded = [];
-  for (const word of words) {
-    const wrong = [word.hanzi, ...(word.variants ?? [])].flatMap((t) => wrongScriptCharactersIn(t, bundle));
-    if (wrong.length > 0) excluded.push({ id: word.id, hanzi: word.hanzi, variants: word.variants, wrong: [...new Set(wrong)] });
-    else kept.push(word);
+  const mismatches = syllableMismatches(words);
+  if (mismatches.length > 0) {
+    throw new Error(`${bundle}: ${mismatches.length} reading(s) without one syllable per character:\n  ${mismatches.join('\n  ')}`);
   }
-  writeFileSync(path.join(cacheDir, `${bundle}-excluded.json`), JSON.stringify(excluded, null, 2));
+  const { kept, excluded, droppedVariants } = guardScript(words, bundle);
+  writeFileSync(path.join(cacheDir, `${bundle}-excluded.json`), JSON.stringify({ excluded, droppedVariants }, null, 2));
+  for (const d of droppedVariants) console.warn(`  ${bundle} ${d.id}: variant ${d.variant} dropped (${d.wrong.join('')})`);
   if (excluded.length > 0) {
     console.warn(`${bundle}: ${excluded.length} word(s) excluded for wrong-script characters:`);
     for (const e of excluded) console.warn(`  ${e.id} ${e.hanzi} (${e.wrong.join('')})`);
@@ -43,9 +45,10 @@ function guardAndWrite(bundle, words) {
   console.log(`${bundle}: ${kept.length} words`, Object.fromEntries([...perLevel].sort((a, b) => a[0] - b[0])), `needsMeaning ${needs}`);
 }
 
-const hsk = JSON.parse(read('hsk-complete.json').toString('utf8'));
-guardAndWrite('mainland', hskWords(hsk));
-
 const tbclRows = readXlsxRows(read('tbcl.xlsx'));
+const hsk = JSON.parse(read('hsk-complete.json').toString('utf8'));
+// The Mainland ranking cross-checks its readings against TBCL's.
+guardAndWrite('mainland', hskWords(hsk, { tbclReadings: tbclReadingLevels(tbclRows) }));
+
 const cedict = parseCedict(read('cedict.txt').toString('utf8'));
 guardAndWrite('taiwan', tbclWords(tbclRows, cedict));

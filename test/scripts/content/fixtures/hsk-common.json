@@ -1,0 +1,1090 @@
+[
+ {
+  "simplified": "个",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 19,
+  "pos": [
+   "q",
+   "g"
+  ],
+  "forms": [
+   {
+    "traditional": "個",
+    "transcriptions": {
+     "numeric": "ge3",
+     "bopomofo": "ㄍㄜˇ"
+    },
+    "meanings": [
+     "used in 自个儿"
+    ]
+   },
+   {
+    "traditional": "個",
+    "transcriptions": {
+     "numeric": "ge4",
+     "bopomofo": "ㄍㄜˋ"
+    },
+    "meanings": [
+     "(classifier used before a noun that has no specific classifier)",
+     "(bound form) individual"
+    ]
+   },
+   {
+    "traditional": "箇",
+    "transcriptions": {
+     "numeric": "ge4",
+     "bopomofo": "ㄍㄜˋ"
+    },
+    "meanings": [
+     "variant of 个"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "都",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 25,
+  "pos": [
+   "d",
+   "g"
+  ],
+  "forms": [
+   {
+    "traditional": "都",
+    "transcriptions": {
+     "numeric": "Du1",
+     "bopomofo": "ㄉㄨ"
+    },
+    "meanings": [
+     "surname Du"
+    ]
+   },
+   {
+    "traditional": "都",
+    "transcriptions": {
+     "numeric": "dou1",
+     "bopomofo": "ㄉㄡ"
+    },
+    "meanings": [
+     "all; both; entirely",
+     "(used for emphasis) even",
+     "already",
+     "(not) at all"
+    ]
+   },
+   {
+    "traditional": "都",
+    "transcriptions": {
+     "numeric": "du1",
+     "bopomofo": "ㄉㄨ"
+    },
+    "meanings": [
+     "capital city",
+     "metropolis"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "读",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 1013,
+  "pos": [
+   "v"
+  ],
+  "forms": [
+   {
+    "traditional": "讀",
+    "transcriptions": {
+     "numeric": "dou4",
+     "bopomofo": "ㄉㄡˋ"
+    },
+    "meanings": [
+     "comma",
+     "phrase marked by pause"
+    ]
+   },
+   {
+    "traditional": "讀",
+    "transcriptions": {
+     "numeric": "du2",
+     "bopomofo": "ㄉㄨˊ"
+    },
+    "meanings": [
+     "to read out; to read aloud",
+     "to read",
+     "to attend (school); to study (a subject in school)",
+     "to pronounce"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "也",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 23,
+  "pos": [
+   "d",
+   "y",
+   "u",
+   "b"
+  ],
+  "forms": [
+   {
+    "traditional": "也",
+    "transcriptions": {
+     "numeric": "Ye3",
+     "bopomofo": "ㄧㄝˇ"
+    },
+    "meanings": [
+     "surname Ye"
+    ]
+   },
+   {
+    "traditional": "也",
+    "transcriptions": {
+     "numeric": "ye3",
+     "bopomofo": "ㄧㄝˇ"
+    },
+    "meanings": [
+     "(adverb) also; both ... and ... (before predicates only)",
+     "(literary) particle having functions similar to 啊"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "和",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 19,
+  "pos": [
+   "cc",
+   "p",
+   "v",
+   "qv",
+   "g",
+   "n"
+  ],
+  "forms": [
+   {
+    "traditional": "咊",
+    "transcriptions": {
+     "numeric": "he2",
+     "bopomofo": "ㄏㄜˊ"
+    },
+    "meanings": [
+     "old variant of 和"
+    ]
+   },
+   {
+    "traditional": "和",
+    "transcriptions": {
+     "numeric": "He2",
+     "bopomofo": "ㄏㄜˊ"
+    },
+    "meanings": [
+     "surname He"
+    ]
+   },
+   {
+    "traditional": "和",
+    "transcriptions": {
+     "numeric": "he2",
+     "bopomofo": "ㄏㄜˊ"
+    },
+    "meanings": [
+     "(joining two nouns) and; together with; with (Taiwan pr. [hàn])",
+     "(math.) sum",
+     "to make peace",
+     "(sports) to draw; to tie",
+     "(bound form) harmonious",
+     "(bound form) Japan; Japanese"
+    ]
+   },
+   {
+    "traditional": "和",
+    "transcriptions": {
+     "numeric": "he4",
+     "bopomofo": "ㄏㄜˋ"
+    },
+    "meanings": [
+     "to compose a poem in reply (to sb's poem) using the same rhyme sequence",
+     "to join in the singing",
+     "to chime in with others"
+    ]
+   },
+   {
+    "traditional": "和",
+    "transcriptions": {
+     "numeric": "hu2",
+     "bopomofo": "ㄏㄨˊ"
+    },
+    "meanings": [
+     "to complete a set in mahjong or playing cards"
+    ]
+   },
+   {
+    "traditional": "和",
+    "transcriptions": {
+     "numeric": "huo2",
+     "bopomofo": "ㄏㄨㄛˊ"
+    },
+    "meanings": [
+     "to combine a powdery substance (flour, plaster etc) with water",
+     "Taiwan pr. [huò]"
+    ]
+   },
+   {
+    "traditional": "和",
+    "transcriptions": {
+     "numeric": "huo4",
+     "bopomofo": "ㄏㄨㄛˋ"
+    },
+    "meanings": [
+     "to mix (ingredients) together",
+     "to blend",
+     "classifier for rinses of clothes",
+     "classifier for boilings of medicinal herbs"
+    ]
+   },
+   {
+    "traditional": "龢",
+    "transcriptions": {
+     "numeric": "he2",
+     "bopomofo": "ㄏㄜˊ"
+    },
+    "meanings": [
+     "old variant of 和",
+     "harmonious"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "看",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 52,
+  "pos": [
+   "v",
+   "u"
+  ],
+  "forms": [
+   {
+    "traditional": "看",
+    "transcriptions": {
+     "numeric": "kan1",
+     "bopomofo": "ㄎㄢ"
+    },
+    "meanings": [
+     "to look after",
+     "to take care of",
+     "to watch",
+     "to guard"
+    ]
+   },
+   {
+    "traditional": "看",
+    "transcriptions": {
+     "numeric": "kan4",
+     "bopomofo": "ㄎㄢˋ"
+    },
+    "meanings": [
+     "to see; to look at",
+     "to read",
+     "to watch",
+     "to visit; to call on",
+     "to consider; to regard as",
+     "to look after",
+     "to treat (a patient or illness)",
+     "to depend on",
+     "to feel (that)",
+     "(after a verb) to give it a try",
+     "to watch out for"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "要",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 19,
+  "pos": [
+   "v"
+  ],
+  "forms": [
+   {
+    "traditional": "要",
+    "transcriptions": {
+     "numeric": "yao1",
+     "bopomofo": "ㄧㄠ"
+    },
+    "meanings": [
+     "(bound form) to demand; to coerce"
+    ]
+   },
+   {
+    "traditional": "要",
+    "transcriptions": {
+     "numeric": "yao4",
+     "bopomofo": "ㄧㄠˋ"
+    },
+    "meanings": [
+     "to want; to need; to ask for",
+     "will; shall; about to",
+     "need to; should",
+     "if (same as 是)",
+     "(bound form) important"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "着",
+  "level": [
+   "newest-2"
+  ],
+  "frequency": 38,
+  "pos": [
+   "u",
+   "v",
+   "n",
+   "q"
+  ],
+  "forms": [
+   {
+    "traditional": "著",
+    "transcriptions": {
+     "numeric": "zhao1",
+     "bopomofo": "ㄓㄠ"
+    },
+    "meanings": [
+     "(chess) move",
+     "trick",
+     "all right!",
+     "(dialect) to add"
+    ]
+   },
+   {
+    "traditional": "著",
+    "transcriptions": {
+     "numeric": "zhao2",
+     "bopomofo": "ㄓㄠˊ"
+    },
+    "meanings": [
+     "to touch",
+     "to come in contact with",
+     "to feel",
+     "to be affected by",
+     "to catch fire",
+     "to burn",
+     "(coll.) to fall asleep",
+     "(after a verb) hitting the mark",
+     "succeeding in"
+    ]
+   },
+   {
+    "traditional": "著",
+    "transcriptions": {
+     "numeric": "zhe5",
+     "bopomofo": "ㄓㄜ˙"
+    },
+    "meanings": [
+     "aspect particle indicating action in progress or ongoing state"
+    ]
+   },
+   {
+    "traditional": "著",
+    "transcriptions": {
+     "numeric": "zhuo2",
+     "bopomofo": "ㄓㄨㄛˊ"
+    },
+    "meanings": [
+     "to wear (clothes)",
+     "to contact",
+     "to use",
+     "to apply"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "还",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 37,
+  "pos": [
+   "d",
+   "v"
+  ],
+  "forms": [
+   {
+    "traditional": "還",
+    "transcriptions": {
+     "numeric": "Huan2",
+     "bopomofo": "ㄏㄨㄢˊ"
+    },
+    "meanings": [
+     "surname Huan"
+    ]
+   },
+   {
+    "traditional": "還",
+    "transcriptions": {
+     "numeric": "hai2",
+     "bopomofo": "ㄏㄞˊ"
+    },
+    "meanings": [
+     "still",
+     "still in progress",
+     "still more",
+     "yet",
+     "even more",
+     "in addition",
+     "fairly",
+     "passably (good)",
+     "as early as",
+     "even",
+     "also",
+     "else"
+    ]
+   },
+   {
+    "traditional": "還",
+    "transcriptions": {
+     "numeric": "huan2",
+     "bopomofo": "ㄏㄨㄢˊ"
+    },
+    "meanings": [
+     "to pay back",
+     "to return"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "那",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 48,
+  "pos": [
+   "r",
+   "c"
+  ],
+  "forms": [
+   {
+    "traditional": "那",
+    "transcriptions": {
+     "numeric": "Na1",
+     "bopomofo": "ㄋㄚ"
+    },
+    "meanings": [
+     "surname Na"
+    ]
+   },
+   {
+    "traditional": "那",
+    "transcriptions": {
+     "numeric": "Nuo2",
+     "bopomofo": "ㄋㄨㄛˊ"
+    },
+    "meanings": [
+     "surname Nuo"
+    ]
+   },
+   {
+    "traditional": "那",
+    "transcriptions": {
+     "numeric": "na3",
+     "bopomofo": "ㄋㄚˇ"
+    },
+    "meanings": [
+     "variant of 哪"
+    ]
+   },
+   {
+    "traditional": "那",
+    "transcriptions": {
+     "numeric": "na4",
+     "bopomofo": "ㄋㄚˋ"
+    },
+    "meanings": [
+     "(specifier) that; the; those (colloquial pr. [nèi])",
+     "(pronoun) that (referring to persons, things or situations)",
+     "then (in that case)"
+    ]
+   },
+   {
+    "traditional": "那",
+    "transcriptions": {
+     "numeric": "nuo2",
+     "bopomofo": "ㄋㄨㄛˊ"
+    },
+    "meanings": [
+     "(archaic) many",
+     "beautiful",
+     "how",
+     "old variant of 挪"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "只",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 98,
+  "pos": [
+   "d",
+   "q"
+  ],
+  "forms": [
+   {
+    "traditional": "只",
+    "transcriptions": {
+     "numeric": "zhi3",
+     "bopomofo": "ㄓˇ"
+    },
+    "meanings": [
+     "only",
+     "merely",
+     "just",
+     "but"
+    ]
+   },
+   {
+    "traditional": "祇",
+    "transcriptions": {
+     "numeric": "zhi3",
+     "bopomofo": "ㄓˇ"
+    },
+    "meanings": [
+     "variant of 只"
+    ]
+   },
+   {
+    "traditional": "秖",
+    "transcriptions": {
+     "numeric": "zhi1",
+     "bopomofo": "ㄓ"
+    },
+    "meanings": [
+     "grain that has begun to ripen"
+    ]
+   },
+   {
+    "traditional": "衹",
+    "transcriptions": {
+     "numeric": "zhi3",
+     "bopomofo": "ㄓˇ"
+    },
+    "meanings": [
+     "variant of 只"
+    ]
+   },
+   {
+    "traditional": "隻",
+    "transcriptions": {
+     "numeric": "zhi1",
+     "bopomofo": "ㄓ"
+    },
+    "meanings": [
+     "classifier for birds and certain animals, one of a pair, some utensils, vessels etc"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "得",
+  "level": [
+   "newest-2"
+  ],
+  "frequency": 58,
+  "pos": [
+   "u",
+   "v"
+  ],
+  "forms": [
+   {
+    "traditional": "得",
+    "transcriptions": {
+     "numeric": "de2",
+     "bopomofo": "ㄉㄜˊ"
+    },
+    "meanings": [
+     "to obtain",
+     "to get",
+     "to gain",
+     "to catch (a disease)",
+     "proper",
+     "suitable",
+     "proud",
+     "contented",
+     "to allow",
+     "to permit",
+     "ready",
+     "finished"
+    ]
+   },
+   {
+    "traditional": "得",
+    "transcriptions": {
+     "numeric": "de5",
+     "bopomofo": "ㄉㄜ˙"
+    },
+    "meanings": [
+     "structural particle: used after a verb (or adjective as main verb), linking it to following phrase indicating effect, degree, possibility etc"
+    ]
+   },
+   {
+    "traditional": "得",
+    "transcriptions": {
+     "numeric": "dei3",
+     "bopomofo": "ㄉㄟˇ"
+    },
+    "meanings": [
+     "to have to",
+     "must",
+     "ought to",
+     "to need to"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "地",
+  "level": [
+   "newest-2"
+  ],
+  "frequency": 132,
+  "pos": [
+   "u",
+   "n"
+  ],
+  "forms": [
+   {
+    "traditional": "地",
+    "transcriptions": {
+     "numeric": "de5",
+     "bopomofo": "ㄉㄜ˙"
+    },
+    "meanings": [
+     "-ly",
+     "structural particle: used before a verb or adjective, linking it to preceding modifying adverbial adjunct"
+    ]
+   },
+   {
+    "traditional": "地",
+    "transcriptions": {
+     "numeric": "di4",
+     "bopomofo": "ㄉㄧˋ"
+    },
+    "meanings": [
+     "earth",
+     "ground",
+     "field",
+     "place",
+     "land"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "长",
+  "level": [
+   "newest-2"
+  ],
+  "frequency": 246,
+  "pos": [
+   "a",
+   "v",
+   "ad",
+   "g"
+  ],
+  "forms": [
+   {
+    "traditional": "長",
+    "transcriptions": {
+     "numeric": "chang2",
+     "bopomofo": "ㄔㄤˊ"
+    },
+    "meanings": [
+     "length",
+     "long",
+     "forever",
+     "always",
+     "constantly"
+    ]
+   },
+   {
+    "traditional": "長",
+    "transcriptions": {
+     "numeric": "zhang3",
+     "bopomofo": "ㄓㄤˇ"
+    },
+    "meanings": [
+     "chief",
+     "head",
+     "elder",
+     "to grow",
+     "to develop",
+     "to increase",
+     "to enhance"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "行",
+  "level": [
+   "newest-3"
+  ],
+  "frequency": 272,
+  "pos": [
+   "v",
+   "g",
+   "q",
+   "a",
+   "n"
+  ],
+  "forms": [
+   {
+    "traditional": "行",
+    "transcriptions": {
+     "numeric": "hang2",
+     "bopomofo": "ㄏㄤˊ"
+    },
+    "meanings": [
+     "row",
+     "line",
+     "commercial firm",
+     "line of business",
+     "profession",
+     "to rank (first, second etc) among one's siblings (by age)",
+     "(in data tables) row",
+     "(Tw) column"
+    ]
+   },
+   {
+    "traditional": "行",
+    "transcriptions": {
+     "numeric": "xing2",
+     "bopomofo": "ㄒㄧㄥˊ"
+    },
+    "meanings": [
+     "to walk",
+     "to go",
+     "to travel",
+     "a visit",
+     "temporary",
+     "makeshift",
+     "current",
+     "in circulation",
+     "to do",
+     "to perform",
+     "capable",
+     "competent",
+     "effective",
+     "all right",
+     "OK!",
+     "will do",
+     "behavior",
+     "conduct",
+     "Taiwan pr. [xìng] for the behavior-conduct sense"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "为",
+  "level": [
+   "newest-3"
+  ],
+  "frequency": 58,
+  "pos": [
+   "p",
+   "v"
+  ],
+  "forms": [
+   {
+    "traditional": "為",
+    "transcriptions": {
+     "numeric": "wei2",
+     "bopomofo": "ㄨㄟˊ"
+    },
+    "meanings": [
+     "as (in the capacity of)",
+     "to take sth as",
+     "to act as",
+     "to serve as",
+     "to behave as",
+     "to become",
+     "to be",
+     "to do",
+     "by (in the passive voice)"
+    ]
+   },
+   {
+    "traditional": "為",
+    "transcriptions": {
+     "numeric": "wei4",
+     "bopomofo": "ㄨㄟˋ"
+    },
+    "meanings": [
+     "because of",
+     "for",
+     "to"
+    ]
+   },
+   {
+    "traditional": "爲",
+    "transcriptions": {
+     "numeric": "wei2",
+     "bopomofo": "ㄨㄟˊ"
+    },
+    "meanings": [
+     "variant of 为"
+    ]
+   },
+   {
+    "traditional": "爲",
+    "transcriptions": {
+     "numeric": "wei4",
+     "bopomofo": "ㄨㄟˋ"
+    },
+    "meanings": [
+     "variant of 为"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "了",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 3,
+  "pos": [
+   "y",
+   "u",
+   "v"
+  ],
+  "forms": [
+   {
+    "traditional": "了",
+    "transcriptions": {
+     "numeric": "le5",
+     "bopomofo": "ㄌㄜ˙"
+    },
+    "meanings": [
+     "(completed action marker)",
+     "(modal particle indicating change of state, situation now)",
+     "(modal particle intensifying preceding clause)"
+    ]
+   },
+   {
+    "traditional": "了",
+    "transcriptions": {
+     "numeric": "liao3",
+     "bopomofo": "ㄌㄧㄠˇ"
+    },
+    "meanings": [
+     "to finish",
+     "to achieve",
+     "variant of 了",
+     "to understand clearly"
+    ]
+   },
+   {
+    "traditional": "瞭",
+    "transcriptions": {
+     "numeric": "liao3",
+     "bopomofo": "ㄌㄧㄠˇ"
+    },
+    "meanings": [
+     "(of eyes) bright",
+     "clear-sighted",
+     "to understand clearly"
+    ]
+   },
+   {
+    "traditional": "瞭",
+    "transcriptions": {
+     "numeric": "liao4",
+     "bopomofo": "ㄌㄧㄠˋ"
+    },
+    "meanings": [
+     "unofficial variant of 瞭"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "新",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 150,
+  "pos": [
+   "a",
+   "d",
+   "b"
+  ],
+  "forms": [
+   {
+    "traditional": "新",
+    "transcriptions": {
+     "numeric": "Xin1",
+     "bopomofo": "ㄒㄧㄣ"
+    },
+    "meanings": [
+     "abbr. for Xinjiang 疆 or Singapore 坡",
+     "surname Xin"
+    ]
+   },
+   {
+    "traditional": "新",
+    "transcriptions": {
+     "numeric": "xin1",
+     "bopomofo": "ㄒㄧㄣ"
+    },
+    "meanings": [
+     "new",
+     "newly",
+     "meso- (chemistry)"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "上",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 29,
+  "pos": [
+   "f",
+   "v",
+   "g"
+  ],
+  "forms": [
+   {
+    "traditional": "上",
+    "transcriptions": {
+     "numeric": "shang3",
+     "bopomofo": "ㄕㄤˇ"
+    },
+    "meanings": [
+     "used in 上声"
+    ]
+   },
+   {
+    "traditional": "上",
+    "transcriptions": {
+     "numeric": "shang4",
+     "bopomofo": "ㄕㄤˋ"
+    },
+    "meanings": [
+     "(bound form) up; upper; above; previous",
+     "first (of multiple parts)",
+     "to climb; to get onto; to go up",
+     "to attend (class or university)",
+     "(directional complement) up",
+     "(noun suffix) on; above"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "家",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 124,
+  "pos": [
+   "n",
+   "q"
+  ],
+  "forms": [
+   {
+    "traditional": "傢",
+    "transcriptions": {
+     "numeric": "jia1",
+     "bopomofo": "ㄐㄧㄚ"
+    },
+    "meanings": [
+     "used in 家伙 and 家俱"
+    ]
+   },
+   {
+    "traditional": "家",
+    "transcriptions": {
+     "numeric": "jia1",
+     "bopomofo": "ㄐㄧㄚ"
+    },
+    "meanings": [
+     "home",
+     "family",
+     "(polite) my (sister, uncle etc)",
+     "classifier for families or businesses",
+     "refers to the philosophical schools of pre-Han China",
+     "noun suffix for a specialist in some activity, such as a musician or revolutionary, corresponding to English -ist, -er, -ary or -ian"
+    ]
+   }
+  ]
+ },
+ {
+  "simplified": "日",
+  "level": [
+   "newest-1"
+  ],
+  "frequency": 395,
+  "pos": [
+   "t",
+   "g",
+   "b",
+   "qt"
+  ],
+  "forms": [
+   {
+    "traditional": "日",
+    "transcriptions": {
+     "numeric": "Ri4",
+     "bopomofo": "ㄖˋ"
+    },
+    "meanings": [
+     "abbr. for 本, Japan"
+    ]
+   },
+   {
+    "traditional": "日",
+    "transcriptions": {
+     "numeric": "ri4",
+     "bopomofo": "ㄖˋ"
+    },
+    "meanings": [
+     "sun",
+     "day",
+     "date, day of the month"
+    ]
+   }
+  ]
+ }
+]

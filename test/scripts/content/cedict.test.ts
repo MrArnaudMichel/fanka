@@ -14,13 +14,18 @@ describe('parseCedict', () => {
 
   it('skips comments and splits meanings', () => {
     expect(map.get('你好')).toEqual([
-      { traditional: '你好', simplified: '你好', pinyin: 'ni3 hao3', meanings: ['hello', 'hi'] },
+      { traditional: '你好', simplified: '你好', pinyin: 'ni3 hao3', proper: false, meanings: ['hello', 'hi'] },
     ]);
   });
 
   it('normalises u: to v and lower-cases', () => {
     expect(map.get('綠')?.[0]?.pinyin).toBe('lv4');
     expect(map.get('女')?.[0]?.pinyin).toBe('nv3');
+  });
+
+  it('flags a capitalised reading as a proper noun', () => {
+    expect(map.get('女')?.[0]?.proper).toBe(true);
+    expect(map.get('綠')?.[0]?.proper).toBe(false);
   });
 
   it('keys by traditional and by simplified', () => {

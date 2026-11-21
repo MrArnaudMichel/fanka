@@ -1,8 +1,10 @@
 // CC-CEDICT parser. Pinyin is numbered and lower-case, with ü written `v`
-// (same convention as core/chinese/pinyin.ts `toNumbered`).
+// (same convention as core/chinese/pinyin.ts `toNumbered`). A capitalised
+// reading in the source marks a proper noun (`也 [Ye3] /surname Ye/`); the
+// `proper` flag keeps that after lower-casing.
 
 /**
- * @typedef {{ traditional: string, simplified: string, pinyin: string, meanings: string[] }} CedictEntry
+ * @typedef {{ traditional: string, simplified: string, pinyin: string, proper: boolean, meanings: string[] }} CedictEntry
  */
 
 const LINE = /^(\S+) (\S+) \[([^\]]*)\] \/(.*)\/\s*$/;
@@ -23,6 +25,7 @@ export function parseCedict(text) {
       traditional: m[1],
       simplified: m[2],
       pinyin: m[3].toLowerCase().replace(/u:/g, 'v'),
+      proper: /^\p{Lu}/u.test(m[3]),
       meanings: m[4].split('/').filter(Boolean),
     };
     for (const key of new Set([entry.traditional, entry.simplified])) {
