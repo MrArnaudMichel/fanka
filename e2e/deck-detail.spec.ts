@@ -1,4 +1,9 @@
 import { expect, test } from './fixtures/onboarded';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 /**
  * Ruling 6 (task-13-report.md): the active tab lives in `?tab=cards|settings`,

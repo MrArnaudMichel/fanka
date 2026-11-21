@@ -8,7 +8,7 @@ import { useDueCounts } from '~/composables/useDueCounts';
 import { useImport } from '~/composables/useImport';
 import { db } from '~core/db/db';
 import { DECK_COLORS } from '~core/db/repositories';
-import { seedIfNeeded } from '~core/seed/seed';
+import { seedStarterDeck } from '../helpers/starterDeck';
 
 /**
  * Final review I1: the shell's due count is a module singleton, so every
@@ -31,7 +31,7 @@ async function settledTotal(): Promise<ComputedRef<number>> {
 
 describe('due counts stay fresh after collection writes', () => {
   it('drops to zero once every deck is deleted', async () => {
-    await seedIfNeeded(Date.now());
+    await seedStarterDeck(Date.now());
     const total = await settledTotal();
     expect(total.value).toBeGreaterThan(0);
 
@@ -56,7 +56,7 @@ describe('due counts stay fresh after collection writes', () => {
   });
 
   it('drops to zero once Browse suspends every card', async () => {
-    await seedIfNeeded(Date.now());
+    await seedStarterDeck(Date.now());
     const total = await settledTotal();
     expect(total.value).toBeGreaterThan(0);
 

@@ -1,4 +1,9 @@
 import { expect, test } from './fixtures/onboarded';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 /**
  * `.shell` in `app/layouts/default.vue` used to be a flex *row* at every

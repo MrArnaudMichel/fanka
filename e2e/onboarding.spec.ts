@@ -14,6 +14,8 @@ test('picking Mainland Chinese and finishing leads to Today in the Mainland bund
   await expect(page.getByRole('button', { name: 'Continue' })).toBeDisabled();
   await page.getByRole('button', { name: /Mainland Chinese/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'Where do you start?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'How many lessons a day?' })).toBeVisible();
   await page.getByRole('radio', { name: '2' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
@@ -39,4 +41,18 @@ test('the privacy policy opens without the onboarding', async ({ page }) => {
   await page.goto('/privacy');
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page.getByRole('heading', { name: 'Privacy policy', level: 1 })).toBeVisible();
+});
+
+test('"I already know" asks for a level and finishes onboarding', async ({ page }) => {
+  await page.goto('/welcome');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: /Taiwanese Mandarin/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'Where do you start?' })).toBeVisible();
+  await page.getByRole('radio', { name: 'I already know' }).click();
+  await expect(page.getByRole('combobox', { name: 'Levels you know' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Not now' }).click();
+  await expect(page).toHaveURL(/\/$/);
 });

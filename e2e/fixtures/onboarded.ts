@@ -13,6 +13,9 @@ export const test = base.extend<{ onboarded: void }>({
       await page.getByRole('button', { name: 'Continue' }).click();
       await page.getByRole('button', { name: /Taiwanese Mandarin/ }).click();
       await page.getByRole('button', { name: 'Continue' }).click();
+      // Where do you start? The default is "I'm new".
+      await page.getByRole('radio', { name: "I'm new" }).click();
+      await page.getByRole('button', { name: 'Continue' }).click();
       await page.getByRole('button', { name: 'Continue' }).click();
       // The web build has no reminder step; the last one is the account's.
       await page.getByRole('button', { name: 'Not now' }).click();

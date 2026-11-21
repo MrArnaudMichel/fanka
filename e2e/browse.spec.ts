@@ -1,5 +1,10 @@
 import { expect, test } from './fixtures/onboarded';
 import { installReadFaults } from './fixtures/read-faults';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 /**
  * The seed's one card whose translation contains "study" — unique across

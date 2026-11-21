@@ -2,6 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures/onboarded';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 /**
  * The phase's three end-to-end scenarios, plus one carried regression test
@@ -32,7 +37,7 @@ test('importing small.csv through the file zone shows the right counts and lands
   const deckName = `Collection import ${Date.now()}`;
 
   await page.goto('/decks');
-  await page.getByRole('button', { name: 'New deck' }).click();
+  await page.getByRole('button', { name: 'New deck' }).first().click();
   await page.getByRole('textbox', { name: 'Name' }).fill(deckName);
   await page.getByRole('button', { name: 'Create deck' }).click();
   await expect(page.getByRole('main').getByText(deckName)).toBeVisible();

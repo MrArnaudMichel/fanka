@@ -2,19 +2,21 @@
 import { toaster } from 'kanto-ds';
 import type { KtSegmentedOption, KtStep } from 'kanto-ds';
 import type { Bundle } from '~core/chinese/script';
+import type { LevelRef } from '~core/curriculum/types';
 import { useAuth } from '~/composables/useAuth';
 import { useOnboarding } from '~/composables/useOnboarding';
 
 definePageMeta({ layout: false });
 useHead({ title: 'Welcome · Fanka' });
 
-const { settings, remindersAvailable, suggestedBundle, enableReminder, finish } = useOnboarding();
+const { settings, remindersAvailable, suggestedBundle, levelsOf, enableReminder, finish } = useOnboarding();
 const { user } = useAuth();
 
-type StepId = 'welcome' | 'bundle' | 'lessons' | 'reminder' | 'account';
+type StepId = 'welcome' | 'bundle' | 'level' | 'lessons' | 'reminder' | 'account';
 const ALL_STEPS: KtStep[] = [
   { id: 'welcome', label: 'Welcome' },
   { id: 'bundle', label: 'Learn' },
+  { id: 'level', label: 'Level' },
   { id: 'lessons', label: 'Lessons' },
   { id: 'reminder', label: 'Reminder' },
   { id: 'account', label: 'Sync' },
@@ -31,6 +33,21 @@ onMounted(async () => {
   if (bundle.value === null) bundle.value = suggested;
 });
 
+const START_OPTIONS: KtSegmentedOption[] = [
+  { value: 'new', label: "I'm new" },
+  { value: 'known', label: 'I already know' },
+];
+const start = ref<'new' | 'known'>('new');
+const levels = ref<LevelRef[]>([]);
+const knownLevel = ref<number | null>(null);
+const levelOptions = computed(() => levels.value.map((l) => ({ id: String(l.level), label: `Through ${l.name}` })));
+// Reload the choices whenever the bundle changes; a failed load leaves only "I'm new".
+watch(bundle, async (value) => {
+  start.value = 'new';
+  knownLevel.value = null;
+  levels.value = value ? await levelsOf(value).catch(() => []) : [];
+});
+
 const LESSON_OPTIONS: KtSegmentedOption[] = [1, 2, 3].map((n) => ({ value: n, label: String(n) }));
 const dailyLessons = ref<1 | 2 | 3>(settings.value.dailyLessons);
 
@@ -42,6 +59,7 @@ const busy = ref(false);
 const canContinue = computed(() => {
   if (busy.value) return false;
   if (step.value === 'bundle') return bundle.value !== null;
+  if (step.value === 'level') return start.value === 'new' || knownLevel.value !== null;
   if (step.value === 'account') return linkSent.value || user.value !== null;
   return true;
 });
@@ -58,7 +76,7 @@ async function next(): Promise<void> {
   }
   busy.value = true;
   try {
-    await finish({ bundle: bundle.value!, dailyLessons: dailyLessons.value });
+    await finish({ bundle: bundle.value!, dailyLessons: dailyLessons.value, knownThrough: start.value === 'known' ? knownLevel.value : null });
     await navigateTo('/', { replace: true });
   } catch (err) {
     console.error('welcome: failed to save the onboarding', err);
@@ -85,6 +103,16 @@ async function onContinue(): Promise<void> {
   await next();
 }
 
+function onStart(event: CustomEvent<{ value: string | number }>): void {
+  start.value = event.detail.value === 'known' ? 'known' : 'new';
+  if (start.value === 'known' && knownLevel.value === null) knownLevel.value = levels.value[0]?.level ?? null;
+  if (start.value === 'new') knownLevel.value = null;
+}
+
+function onKnownLevel(event: CustomEvent<{ value: string | number | null }>): void {
+  knownLevel.value = event.detail.value === null ? null : Number(event.detail.value);
+}
+
 function onLessons(event: CustomEvent<{ value: string | number }>): void {
   dailyLessons.value = Number(event.detail.value) as 1 | 2 | 3;
 }
@@ -108,6 +136,24 @@ function onTime(event: CustomEvent<{ value: string | null }>): void {
         <template v-else-if="step === 'bundle'">
           <h1 ref="heading" tabindex="-1">What do you want to learn?</h1>
           <BundleChoice v-model="bundle" />
+        </template>
+
+        <template v-else-if="step === 'level'">
+          <h1 ref="heading" tabindex="-1">Where do you start?</h1>
+          <kt-segmented-control
+            label="Where you start"
+            :options="levels.length > 0 ? START_OPTIONS : START_OPTIONS.slice(0, 1)"
+            :value="start"
+            @kt-change="onStart"
+          />
+          <kt-select
+            v-if="start === 'known'"
+            label="Levels you know"
+            :options="levelOptions"
+            :value="knownLevel === null ? null : String(knownLevel)"
+            :clearable="false"
+            @kt-change="onKnownLevel"
+          />
         </template>
 
         <template v-else-if="step === 'lessons'">

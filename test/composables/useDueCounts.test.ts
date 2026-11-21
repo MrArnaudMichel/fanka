@@ -5,7 +5,7 @@ import { db } from '~core/db/db';
 import type { Item } from '~core/db/schema';
 import { saveSettings } from '~core/db/settings';
 import type { ItemState } from '~core/srs';
-import { seedIfNeeded } from '~core/seed/seed';
+import { seedStarterDeck } from '../helpers/starterDeck';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
 const DAY = 86_400_000;
@@ -24,7 +24,7 @@ beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'], now: NOW });
   await db.delete();
   await db.open();
-  await seedIfNeeded(NOW);
+  await seedStarterDeck(NOW);
 });
 
 afterEach(() => {

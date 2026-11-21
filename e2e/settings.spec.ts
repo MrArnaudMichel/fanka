@@ -1,5 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from './fixtures/onboarded';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 test('settings opens on Account with the sections beside it on a wide screen', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });

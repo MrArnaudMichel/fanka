@@ -39,3 +39,14 @@ export function scoreLesson(results: { wordId: string; right: boolean }[]): {
   }
   return { right, total: results.length, missed };
 }
+
+/** Every lesson id and writing session id of levels `1..through`: what "I already know this far" marks done. */
+export function idsKnownThrough(index: ContentIndex, through: number): string[] {
+  const ids: string[] = [];
+  for (const level of index.levels) {
+    if (level.level > through) continue;
+    for (const lesson of level.lessons) ids.push(lesson.id);
+    for (const unit of level.units) ids.push(writingId(unit.id));
+  }
+  return ids;
+}

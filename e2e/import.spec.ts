@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures/onboarded';
+import { seedStarterDeck } from './fixtures/starter-deck';
 
 /**
  * The spec's own end-to-end scenario: import a small CSV and find its cards
@@ -10,7 +11,7 @@ test('importing a small CSV lands on the deck and shows its cards', async ({ pag
   const deckName = `Import test ${Date.now()}`;
 
   await page.goto('/decks');
-  await page.getByRole('button', { name: 'New deck' }).click();
+  await page.getByRole('button', { name: 'New deck' }).first().click();
   await page.getByRole('textbox', { name: 'Name' }).fill(deckName);
   await page.getByRole('button', { name: 'Create deck' }).click();
   await expect(page.getByRole('main').getByText(deckName)).toBeVisible();
@@ -52,7 +53,7 @@ test('changing a column mapping in step 2 changes the step-3 counts', async ({ p
   const deckName = `Mapping test ${Date.now()}`;
 
   await page.goto('/decks');
-  await page.getByRole('button', { name: 'New deck' }).click();
+  await page.getByRole('button', { name: 'New deck' }).first().click();
   await page.getByRole('textbox', { name: 'Name' }).fill(deckName);
   await page.getByRole('button', { name: 'Create deck' }).click();
   await expect(page.getByRole('main').getByText(deckName)).toBeVisible();
@@ -85,7 +86,7 @@ test('a duplicate can update the existing card and a broken row can be fixed', a
   const deckName = `Duplicate test ${Date.now()}`;
 
   await page.goto('/decks');
-  await page.getByRole('button', { name: 'New deck' }).click();
+  await page.getByRole('button', { name: 'New deck' }).first().click();
   await page.getByRole('textbox', { name: 'Name' }).fill(deckName);
   await page.getByRole('button', { name: 'Create deck' }).click();
   await expect(page.getByRole('main').getByText(deckName)).toBeVisible();
@@ -123,6 +124,8 @@ test('a duplicate can update the existing card and a broken row can be fixed', a
 });
 
 test('leaving an import with rows loaded asks first', async ({ page }) => {
+  // Continuing needs a destination deck, and a new install has none.
+  await seedStarterDeck(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/import');
   const csv = ['hanzi,pinyin,translation', '朋友,peng2 you5,friend'].join('\n');

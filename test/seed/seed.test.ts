@@ -1,122 +1,60 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { simplifiedCharactersIn } from '~core/chinese/script';
 import { db } from '~core/db/db';
-import { cards, decks } from '~core/db/repositories';
-import { SEED_VERSION, seedIfNeeded } from '~core/seed/seed';
+import { decks, reviews } from '~core/db/repositories';
+import { isSeededCard, SEED_VERSION, seedIfNeeded } from '~core/seed/seed';
+import { seedStarterDeck } from '../helpers/starterDeck';
 
-const NOW = Date.parse('2026-09-16T08:00:00Z');
+const NOW = Date.parse('2026-11-21T08:00:00Z');
+const STARTER = 'hsk1-traditional';
 
 beforeEach(async () => {
   await db.delete();
   await db.open();
 });
 
+/** An install from before seed version 2: the starter deck is there and version 1 is recorded. */
+async function oldInstall(): Promise<void> {
+  await seedStarterDeck(NOW);
+  await db.settings.put({ key: 'seedVersion', value: 1 });
+}
+
 describe('seedIfNeeded', () => {
-  it('creates decks and cards on a fresh database', async () => {
+  it('gives a fresh install no starter deck', async () => {
     const result = await seedIfNeeded(NOW);
     expect(result.seeded).toBe(true);
-    expect(result.deckCount).toBeGreaterThan(0);
-    expect(await db.cards.count()).toBeGreaterThan(0);
-  });
-
-  it('creates two items per seeded card', async () => {
-    await seedIfNeeded(NOW);
-    expect(await db.items.count()).toBe((await db.cards.count()) * 2);
-  });
-
-  it('is idempotent — running twice changes nothing', async () => {
-    await seedIfNeeded(NOW);
-    const before = await db.cards.count();
-    const second = await seedIfNeeded(NOW);
-    expect(second.seeded).toBe(false);
-    expect(await db.cards.count()).toBe(before);
-  });
-
-  it('records the version it seeded', async () => {
-    await seedIfNeeded(NOW);
+    expect(await db.decks.count()).toBe(0);
+    expect(await db.cards.count()).toBe(0);
     expect((await db.settings.get('seedVersion'))?.value).toBe(SEED_VERSION);
   });
 
-  it('gives every seeded card parsed pinyin and derived zhuyin', async () => {
+  it('is idempotent', async () => {
     await seedIfNeeded(NOW);
-    for (const card of await db.cards.toArray()) {
-      expect(card.pinyin.length).toBeGreaterThan(0);
-      expect(card.pinyin.every((s) => s.tone >= 1 && s.tone <= 5)).toBe(true);
-      expect(card.zhuyin.length).toBeGreaterThan(0);
-    }
+    expect((await seedIfNeeded(NOW)).seeded).toBe(false);
   });
 
-  it('seeds traditional characters only', async () => {
-    await seedIfNeeded(NOW);
-    for (const card of await db.cards.toArray()) {
-      // A learner memorises the example sentence exactly as much as the
-      // headword, so a simplified character hiding in `example` is just as
-      // much a defect as one in `hanzi` — check both. Uses the same
-      // OpenCC-derived detection as the importer, rather than a hand-picked
-      // character class, so the seed and any imported deck share one
-      // definition of "traditional only".
-      expect(simplifiedCharactersIn(card.hanzi + card.example)).toEqual([]);
-    }
+  it('soft-deletes a starter deck nothing was answered in, and queues the change', async () => {
+    await oldInstall();
+    await db.outbox.clear();
+    await seedIfNeeded(NOW + 1000);
+    expect((await decks.get(STARTER))!.deletedAt).toBe(NOW + 1000);
+    expect(await db.outbox.toArray()).toMatchObject([{ entity: 'deck', entityId: STARTER }]);
   });
 
-  it('does not overwrite a card the learner has edited', async () => {
-    await seedIfNeeded(NOW);
-    const [first] = await db.cards.toArray();
-    await db.cards.put({ ...first!, translation: 'my own wording', updatedAt: NOW + 1000 });
-    await seedIfNeeded(NOW + 2000);
-    expect((await db.cards.get(first!.id))!.translation).toBe('my own wording');
+  it('leaves a starter deck that was reviewed alone', async () => {
+    await oldInstall();
+    const item = (await db.items.toArray())[0]!;
+    await reviews.record({ item, before: item, grade: 3, reviewedAt: NOW, durationMs: 1 });
+    await seedIfNeeded(NOW + 1000);
+    expect((await decks.get(STARTER))!.deletedAt).toBeNull();
   });
+});
 
-  // The test above proves nothing about the per-card guard: after a first
-  // seed, `recorded === SEED_VERSION` is true, so the second call returns
-  // early — before it ever reaches `if (await cards.get(id)) continue` — and
-  // touches no card at all. This test forces a genuine reseed (as a version
-  // bump would in production) past that early return, so the per-card guard
-  // that actually protects a learner's edit is exercised.
-  it('does not overwrite an edited card when a genuine reseed runs past the early return', async () => {
-    await seedIfNeeded(NOW);
-    const [first] = await db.cards.toArray();
-    await db.cards.put({ ...first!, translation: 'my own wording', updatedAt: NOW + 1000 });
-
-    await db.settings.put({ key: 'seedVersion', value: SEED_VERSION - 1 });
-    const before = await db.cards.count();
-    const result = await seedIfNeeded(NOW + 2000);
-
-    expect(result.seeded).toBe(true);
-    expect(await db.cards.count()).toBe(before);
-    expect((await db.cards.get(first!.id))!.translation).toBe('my own wording');
-    expect((await db.settings.get('seedVersion'))?.value).toBe(SEED_VERSION);
-  });
-
-  // Card ids are derived from each entry's stable `id` field, not from its
-  // hanzi, precisely so that a later `SEED_VERSION` correcting a typo in the
-  // seed source's headword still resolves to the *same* card id — not a
-  // fresh one beside an orphaned old row. Mutating only the stored row's
-  // hanzi (as an earlier version of this test did) would pass under a
-  // hanzi-derived id too, because it never changes what the *source entry*
-  // itself would hash to — so this pins the id to the known entry-id scheme
-  // first, which is the part that actually distinguishes the two schemes.
-  it('keeps the card id stable when the source hanzi is corrected, so a reseed cannot orphan the old row as a duplicate', async () => {
-    await seedIfNeeded(NOW);
-    const id = 'hsk1-traditional:hsk1-01';
-    const original = await db.cards.get(id);
-    expect(original).toBeDefined();
-    expect(original!.hanzi).toBe('學習');
-
-    // Represents the state a learner's row is in right after a future
-    // SEED_VERSION corrects a typo at the source: the row already on disk
-    // still holds the pre-correction hanzi.
-    await db.cards.put({ ...original!, hanzi: '舊字', updatedAt: NOW + 1000 });
-
-    await db.settings.put({ key: 'seedVersion', value: SEED_VERSION - 1 });
-    const before = await db.cards.count();
-    const result = await seedIfNeeded(NOW + 2000);
-
-    expect(result.seeded).toBe(true);
-    // No duplicate: the id this entry hashes to is unaffected by hanzi, so
-    // the reseed resolves to the same row and the per-card guard skips it.
-    expect(await db.cards.count()).toBe(before);
-    expect((await db.cards.get(id))!.hanzi).toBe('舊字');
+describe('isSeededCard', () => {
+  it('still recognises the retired starter cards', async () => {
+    await seedStarterDeck(NOW);
+    const card = (await db.cards.toArray())[0]!;
+    expect(isSeededCard(card)).toBe(true);
+    expect(isSeededCard({ id: 'c1', deckId: 'd1' })).toBe(false);
   });
 });

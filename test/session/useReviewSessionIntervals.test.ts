@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '~core/db/db';
 import { loadSettings } from '~core/db/settings';
-import { seedIfNeeded } from '~core/seed/seed';
+import { seedStarterDeck } from '../helpers/starterDeck';
 import { useDisposableSessions } from './disposableSessions';
 
 const NOW = Date.parse('2026-09-16T08:00:00Z');
@@ -21,7 +21,7 @@ const createSession = useDisposableSessions();
 beforeEach(async () => {
   await db.delete();
   await db.open();
-  await seedIfNeeded(NOW);
+  await seedStarterDeck(NOW);
 });
 
 // Runs even when a test fails part-way: restores the `visibilityState` and

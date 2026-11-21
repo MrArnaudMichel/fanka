@@ -2,8 +2,10 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '~core/db/db';
 import { needsOnboarding, suggestedBundle } from '~core/db/onboarding';
-import { cards, decks, reviews } from '~core/db/repositories';
-import { seedIfNeeded } from '~core/seed/seed';
+import { idsKnownThrough, nextStep } from '~core/curriculum/engine';
+import type { ContentIndex, LevelRef } from '~core/curriculum/types';
+import { cards, decks, lessonProgress, reviews } from '~core/db/repositories';
+import { seedStarterDeck } from '../helpers/starterDeck';
 
 const NOW = Date.parse('2026-11-21T08:00:00Z');
 
@@ -30,7 +32,7 @@ describe('needsOnboarding', () => {
 describe('suggestedBundle', () => {
   it('suggests nothing to a fresh install, even once the starter deck is seeded', async () => {
     expect(await suggestedBundle()).toBeNull();
-    await seedIfNeeded(NOW);
+    await seedStarterDeck(NOW);
     expect(await suggestedBundle()).toBeNull();
   });
 
@@ -41,9 +43,35 @@ describe('suggestedBundle', () => {
   });
 
   it('suggests Taiwan to an install that already has an attempt', async () => {
-    await seedIfNeeded(NOW);
+    await seedStarterDeck(NOW);
     const seeded = (await db.items.toArray())[0]!;
     await reviews.record({ item: seeded, before: seeded, grade: 3, reviewedAt: NOW, durationMs: 1 });
     expect(await suggestedBundle()).toBe('taiwan');
+  });
+});
+
+function aLevel(level: number): LevelRef {
+  const lessonIds = [1, 2, 3].map((n) => `l${level}-u1-${n}`);
+  return {
+    level,
+    name: `HSK ${level}`,
+    file: `level-${level}.json`,
+    wordCount: 3,
+    units: [{ id: `l${level}-u1`, lessonIds }],
+    lessons: lessonIds.map((id) => ({ id, unit: `l${level}-u1`, wordIds: [] })),
+  };
+}
+const index: ContentIndex = { bundle: 'taiwan', version: '1', levels: [aLevel(1), aLevel(2), aLevel(3)] };
+
+describe('knowing levels already', () => {
+  it('marks every lesson and writing session of levels 1 to 2, and the next step starts at level 3', async () => {
+    const ids = idsKnownThrough(index, 2);
+    expect(ids).toHaveLength(8);
+    expect(ids).toContain('l2-u1-writing');
+    expect(ids).not.toContain('l3-u1-1');
+
+    await lessonProgress.markKnown('taiwan', ids, NOW);
+    const step = nextStep(index, await lessonProgress.done('taiwan'));
+    expect(step).toMatchObject({ kind: 'lesson', lesson: { id: 'l3-u1-1' } });
   });
 });

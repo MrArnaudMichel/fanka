@@ -1,4 +1,9 @@
 import { expect, test } from './fixtures/onboarded';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 test('statistics open on Overview, empty before any answer, then with this week and the words to work on', async ({ page }) => {
   await page.goto('/stats');

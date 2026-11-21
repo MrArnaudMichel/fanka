@@ -1,5 +1,10 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures/onboarded';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 /**
  * Writing practice end to end: the learner draws on the pad with a real

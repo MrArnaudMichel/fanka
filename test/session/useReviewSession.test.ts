@@ -4,7 +4,7 @@ import { db } from '~core/db/db';
 import { cards, items, reviews } from '~core/db/repositories';
 import { loadSession, saveSession } from '~core/db/session';
 import { saveSettings } from '~core/db/settings';
-import { seedIfNeeded } from '~core/seed/seed';
+import { seedStarterDeck } from '../helpers/starterDeck';
 import { useDisposableSessions } from './disposableSessions';
 import { startOfDay } from '~/composables/useDueCounts';
 
@@ -16,7 +16,7 @@ const createSession = useDisposableSessions();
 beforeEach(async () => {
   await db.delete();
   await db.open();
-  await seedIfNeeded(NOW);
+  await seedStarterDeck(NOW);
 });
 
 // Restores every spy here even when a test fails before reaching its end, so

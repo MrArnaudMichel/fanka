@@ -1,11 +1,17 @@
 import type { Bundle } from '~core/chinese/script';
+import { idsKnownThrough } from '~core/curriculum/engine';
+import type { LevelRef } from '~core/curriculum/types';
 import { suggestedBundle } from '~core/db/onboarding';
+import { lessonProgress } from '~core/db/repositories';
+import { useContent } from '~/composables/useContent';
 import { useReminder } from '~/composables/useReminder';
 import { useSettings } from '~/composables/useSettings';
 
 export interface OnboardingChoice {
   bundle: Bundle;
   dailyLessons: 1 | 2 | 3;
+  /** The highest level the learner already knows (levels 1..n are marked known), or null for a beginner. */
+  knownThrough: number | null;
 }
 
 /**
@@ -25,9 +31,22 @@ export function useOnboarding() {
     return true;
   }
 
+  /** The bundle's levels, or none when its content index cannot be loaded: the level step then offers only "I'm new". */
+  async function levelsOf(bundle: Bundle): Promise<LevelRef[]> {
+    const content = useContent();
+    await content.loadIndex(bundle);
+    return content.index.value?.levels ?? [];
+  }
+
   async function finish(choice: OnboardingChoice): Promise<void> {
+    if (choice.knownThrough !== null) {
+      const content = useContent();
+      await content.loadIndex(choice.bundle);
+      if (!content.index.value) throw new Error('The lesson index could not be loaded.');
+      await lessonProgress.markKnown(choice.bundle, idsKnownThrough(content.index.value, choice.knownThrough), Date.now());
+    }
     await update({ bundle: choice.bundle, dailyLessons: choice.dailyLessons, onboardedAt: Date.now() });
   }
 
-  return { settings, remindersAvailable: native, suggestedBundle, enableReminder, finish };
+  return { settings, remindersAvailable: native, suggestedBundle, levelsOf, enableReminder, finish };
 }

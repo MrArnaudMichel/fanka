@@ -1,5 +1,10 @@
 import { expect, test } from './fixtures/onboarded';
 import { installReadFaults } from './fixtures/read-faults';
+import { seedStarterDeck } from './fixtures/starter-deck';
+
+test.beforeEach(async ({ page }) => {
+  await seedStarterDeck(page);
+});
 
 /**
  * Each test gets its own browser context and so its own IndexedDB — the
