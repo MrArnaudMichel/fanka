@@ -22,6 +22,8 @@ const holdsNext = (units: SectionRow['units']) =>
 const toggled = reactive(new Map<string, boolean>());
 const isOpen = (key: string, holds: boolean) => toggled.get(key) ?? holds;
 const onToggle = (key: string, event: Event) => {
+  // kt-toggle bubbles: a section closing inside a level must not close the level.
+  if (event.target !== event.currentTarget) return;
   toggled.set(key, (event as CustomEvent<{ open: boolean }>).detail.open);
 };
 const levelKey = (row: LevelRow) => `level:${row.level.level}`;
@@ -41,7 +43,7 @@ const sectionKey = (row: LevelRow, s: number) => `${levelKey(row)}:${s}`;
       <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retry">Retry</kt-button>
     </kt-empty-state>
 
-    <kt-skeleton v-else-if="!loaded" count="4" />
+    <kt-skeleton v-else-if="!loaded" :count="4" />
 
     <kt-empty-state
       v-else-if="levels.length === 0"

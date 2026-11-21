@@ -135,4 +135,8 @@ test('switching the bundle reloads the lessons list, and a long level opens', as
   await expect(firstSection).toBeVisible();
   await firstSection.locator('..').click();
   await expect(long.getByRole('button', { name: 'Lesson 1', exact: true })).toBeVisible();
+  // Closing a section leaves its level open.
+  await firstSection.locator('..').click();
+  await expect(long.getByRole('button', { name: 'Lesson 1', exact: true })).toBeHidden();
+  await expect(firstSection).toBeVisible();
 });

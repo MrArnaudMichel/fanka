@@ -165,7 +165,7 @@ const guard = useLeaveGuard(inProgress);
       <kt-button slot="actions" variant="secondary" size="medium" @click="navigateTo('/lessons')">Back to lessons</kt-button>
     </kt-empty-state>
 
-    <kt-skeleton v-else-if="phase === 'loading' || !target" count="6" />
+    <kt-skeleton v-else-if="phase === 'loading' || !target" :count="6" />
 
     <template v-else-if="phase === 'discover' && words[discoverAt]">
       <WordIntro :key="words[discoverAt]!.id" :word="words[discoverAt]!" :settings="settings" :can-speak="canSpeak" @speak="speak" />
