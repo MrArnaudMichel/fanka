@@ -54,6 +54,12 @@ function cuts(plain) {
     if (hit) return hit;
     /** @type {Array<Array<[number, number]>>} */
     const res = [];
+    // Pinyin writes an apostrophe before a, o or e inside a word (xī'ān), and
+    // apostrophes split tokens: a syllable starting so mid-token is made up.
+    if (at > 0 && 'aoe'.includes(plain[at])) {
+      memo.set(at, res);
+      return res;
+    }
     for (let end = at + 1; end <= Math.min(plain.length, at + 6); end += 1) {
       if (!SYLLABLE.test(plain.slice(at, end))) continue;
       for (const rest of go(end)) {
@@ -125,7 +131,9 @@ const bare = (/** @type {string} */ syl) => syl.replace(/[1-5]$/, '');
  * For each Han segment that is a known word, the reading is the one matching
  * the model's syllables (exact, then ignoring tone), else the first reading.
  * An unknown single character is looked up in `charReadings` (CC-CEDICT):
- * the entry matching the model syllable, else the model syllable. Any other
+ * the entry matching the model syllable (exact, then ignoring tone); when it
+ * has entries and none matches, the attempt fails ("pinyin mismatch"); with no
+ * entry, the model syllable stands. Any other
  * unknown segment uses the model's syllables. Non-Han segments add nothing.
  * @param {string[]} segments
  * @param {(w: string) => string | string[] | undefined} readingOf numbered, space-separated reading(s)
@@ -137,7 +145,7 @@ export function examplePinyin(segments, readingOf, modelSyllables, charReadings)
   return derive(segments, readingOf, modelSyllables, charReadings).pinyin;
 }
 
-/** @returns {{ pinyin: string, tonelessFallback: boolean }} */
+/** @returns {{ pinyin: string, tonelessFallback: boolean, mismatch: boolean }} */
 function derive(
   /** @type {string[]} */ segments,
   /** @type {(w: string) => string | string[] | undefined} */ readingOf,
@@ -148,6 +156,7 @@ function derive(
   const out = [];
   let index = 0;
   let tonelessFallback = false;
+  let mismatch = false;
   for (const seg of segments) {
     if (!isHan(seg)) continue;
     const n = [...seg].length;
@@ -170,11 +179,12 @@ function derive(
         out.push(hit);
         continue;
       }
+      if (options.length > 0) mismatch = true;
     }
     out.push(...model);
     if (n > 1 && model.length > 0 && model.every((x) => x.endsWith('5'))) tonelessFallback = true;
   }
-  return { pinyin: out.join(' '), tonelessFallback };
+  return { pinyin: out.join(' '), tonelessFallback, mismatch };
 }
 
 /**
@@ -217,6 +227,7 @@ export function checkExample(ex, word, allowed, bundle, readingOf = () => undefi
     const d = derive(segments, readingOf, pinyin.split(' '), charReadings);
     derived = d.pinyin;
     if (d.tonelessFallback) reasons.push('toneless pinyin');
+    if (d.mismatch) reasons.push('pinyin mismatch');
   }
 
   if (typeof ex.translation !== 'string' || !ex.translation.trim()) reasons.push('no translation');

@@ -38,6 +38,11 @@ describe('syllabify', () => {
     expect(syllabify('péngyou', 3)).toBeNull();
     expect(syllabify('péngyou', 2)).toBe('peng2 you5');
   });
+  it('never starts a syllable inside a word with a, o or e', () => {
+    expect(syllabify('piàoliang', 4)).toBeNull();
+    expect(syllabify('liǎng', 2)).toBeNull();
+    expect(syllabify("xī'ān", 2)).toBe('xi1 an1');
+  });
   it('handles ü and punctuation', () => {
     expect(syllabify('nǚ, hái.', 2)).toBe('nv3 hai2');
   });
@@ -64,7 +69,18 @@ describe('examplePinyin', () => {
     const chars = (c: string) => (c === '龘' ? ['da2', 'ta4'] : undefined);
     expect(examplePinyin(['龘'], () => undefined, ['ta5'], chars)).toBe('ta4');
     expect(examplePinyin(['龘'], () => undefined, ['da2'], chars)).toBe('da2');
-    expect(examplePinyin(['龘'], () => undefined, ['zz5'], chars)).toBe('zz5');
+  });
+  it('rejects a model syllable that matches none of the dictionary readings', () => {
+    const chars = (c: string) => (c === '了' ? ['le5', 'liao3'] : undefined);
+    const r = checkExample(
+      { text: '我等了很久。', pinyin: 'wǒ děng li jiǔ hěn', translation: 'x' },
+      { hanzi: '等' },
+      new Set(['我', '等', '很', '久']),
+      'taiwan',
+      (w) => ({ 我: 'wo3', 等: 'deng3', 很: 'hen3', 久: 'jiu3' })[w],
+      chars,
+    );
+    expect((r as { reasons: string[] }).reasons).toContain('pinyin mismatch');
   });
   it('keeps erhua as its own r5 syllable, one per character', () => {
     expect(examplePinyin(['一', '点', '儿'], (w) => ({ 一: 'yi1', 点: 'dian3', 儿: 'r5' })[w], ['yi1', 'dian3', 'r5'])).toBe('yi1 dian3 r5');

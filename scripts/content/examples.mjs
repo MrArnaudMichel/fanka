@@ -11,6 +11,8 @@ import { openCache, TRANSPORT } from './lib/cache.mjs';
 import { parseCedict } from './lib/cedict.mjs';
 
 export const PROMPT_VERSION = 'v2';
+/** Waits after each transport failure in a row; one more failure aborts the run. */
+export const BACKOFF_MS = [5_000, 30_000, 120_000, 300_000];
 const SAMPLE_SIZE = 400;
 
 const SCRIPT_NAME = {
@@ -125,17 +127,25 @@ function meaningPrompt(/** @type {any} */ word, /** @type {string} */ bundle) {
 
 /**
  * @param {any[]} words
- * @param {{ bundle: 'mainland'|'taiwan', client: { chat(p: string): Promise<string> }, cache: ReturnType<typeof openCache>, promptVersion: string, attempts: number, limit?: number, levels?: number[], charReadings?: (ch: string) => string[] | undefined, maxTransportFailures?: number, onProgress?: (done: number, total: number) => void }} opts
+ * @param {{ bundle: 'mainland'|'taiwan', client: { chat(p: string): Promise<string> }, cache: ReturnType<typeof openCache>, promptVersion: string, attempts: number, limit?: number, levels?: number[], charReadings?: (ch: string) => string[] | undefined, sleep?: (ms: number) => Promise<void>, onRetry?: (message: string, waitMs: number) => void, onProgress?: (done: number, total: number) => void }} opts
  */
 export async function generate(words, opts) {
-  const { bundle, client, cache, promptVersion, attempts, limit, levels, onProgress, charReadings, maxTransportFailures = 5 } = opts;
+  const { bundle, client, cache, promptVersion, attempts, limit, levels, onProgress, charReadings } = opts;
+  const sleep = opts.sleep ?? ((/** @type {number} */ ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   let consecutive = 0;
-  /** Counts a transport failure; too many in a row aborts the run. */
-  const transportFailed = (/** @type {unknown} */ e) => {
+  /**
+   * Counts a transport failure and backs off (an Ollama restart refuses
+   * connections for a while); one more in a row than BACKOFF_MS has steps
+   * aborts the run.
+   */
+  const transportFailed = async (/** @type {unknown} */ e) => {
     consecutive += 1;
-    if (consecutive >= maxTransportFailures) {
+    const wait = BACKOFF_MS[consecutive - 1];
+    if (wait === undefined) {
       throw new Error(`Stopped: ${consecutive} transport failures in a row (${e instanceof Error ? e.message : String(e)}). Is Ollama running? Run again to resume.`);
     }
+    opts.onRetry?.(e instanceof Error ? e.message : String(e), wait);
+    await sleep(wait);
   };
   const byLevel = allowedByLevel(words);
   const readingOf = readingLookup(words);
@@ -147,22 +157,28 @@ export async function generate(words, opts) {
     const rec = { id: word.id, v: promptVersion };
     let meanings = word.readings[0]?.meanings ?? [];
     if (word.needsMeaning) {
-      try {
-        const text = await client.chat(meaningPrompt(word, bundle));
-        consecutive = 0;
-        const reply = parseJson(text);
-        const m = Array.isArray(reply?.meanings)
-          ? reply.meanings.filter((/** @type {any} */ x) => typeof x === 'string' && x.trim()).map((/** @type {string} */ x) => x.trim()).slice(0, 3)
-          : [];
-        if (m.length > 0) {
-          rec.meaning = m;
-          meanings = m;
+      /** @type {string[]} */
+      let m = [];
+      let transport = false;
+      for (let attempt = 0; attempt < attempts && m.length === 0; attempt += 1) {
+        try {
+          const reply = parseJson(await client.chat(meaningPrompt(word, bundle)));
+          consecutive = 0;
+          m = Array.isArray(reply?.meanings)
+            ? reply.meanings.filter((/** @type {any} */ x) => typeof x === 'string' && x.trim()).map((/** @type {string} */ x) => x.trim()).slice(0, 3)
+            : [];
+        } catch (e) {
+          // Not a verdict on the word: leave it for a later run.
+          transport = true;
+          await transportFailed(e);
+          break;
         }
-      } catch (e) {
-        // Not a verdict on the word: leave it for a later run.
-        transportFailed(e);
-        continue;
       }
+      // Without a meaning the word is not done, and its example is not
+      // prompted (it would be prompted with no sense): a later run retries.
+      if (transport || m.length === 0) continue;
+      rec.meaning = m;
+      meanings = m;
     }
     const allowed = byLevel.get(word.level) ?? new Set();
     /** @type {string[]} */
@@ -192,7 +208,7 @@ export async function generate(words, opts) {
       } catch (e) {
         transport = true;
         rejected.push(`${TRANSPORT} ${e instanceof Error ? e.message : String(e)}`);
-        transportFailed(e);
+        await transportFailed(e);
       }
     }
     // A transport failure is not a verdict: write nothing so a resume retries.
@@ -231,6 +247,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
     attempts: 3,
     limit,
     levels,
+    onRetry(message, waitMs) {
+      console.warn(`Transport failure (${message}), retrying in ${waitMs / 1000} s`);
+    },
     onProgress(done, total) {
       if (done % 50 !== 0 && done !== total) return;
       const rate = (Date.now() - started) / 1000 / done;

@@ -30,8 +30,8 @@ describe('generate', () => {
     await run(['not json', valid], f);
     const out = lines(f).filter((l) => l.id === 'hsk1-0002');
     expect(out).toHaveLength(1);
-    expect(out[0].rejected).toBeUndefined(); expect(out[0].example.pinyin).toBe('wo3 de5 peng2 you5 hen3 hao3');
     expect(out[0].rejected).toBeUndefined();
+    expect(out[0].example.pinyin).toBe('wo3 de5 peng2 you5 hen3 hao3');
   });
   it('skips a cached id', async () => {
     const f = file();
@@ -50,15 +50,28 @@ describe('generate', () => {
     expect(text.endsWith('\n')).toBe(true);
     expect(text.trim().split('\n').map((l) => JSON.parse(l).id)).toEqual(['hsk1-0001', 'hsk1-0003']);
   });
-  it('writes nothing on transport failures and aborts after five in a row', async () => {
+  it('writes nothing on transport failures and aborts after five in a row, backing off between them', async () => {
     const f = file();
     const client = { chat: async () => { throw new Error('connect ECONNREFUSED'); } };
     const cache = openCache(f);
+    const slept: number[] = [];
     await expect(
-      generate(words, { bundle: 'mainland', client, cache, promptVersion: 'v2', attempts: 3 }),
+      generate(words, { bundle: 'mainland', client, cache, promptVersion: 'v2', attempts: 3, sleep: async (ms: number) => { slept.push(ms); } }),
     ).rejects.toThrow(/Is Ollama running/);
+    expect(slept).toEqual([5_000, 30_000, 120_000, 300_000]);
     expect(cache.all()).toHaveLength(0);
     expect(existsSync(f)).toBe(false);
+  });
+  it('resumes after an outage shorter than the back-off', async () => {
+    const f = file();
+    const pre = openCache(f);
+    for (const w of words) if (w.id !== 'hsk1-0002') pre.append({ id: w.id, v: 'v2', rejected: [] });
+    let fails = 2;
+    const client = { chat: async () => { if (fails-- > 0) throw new Error('connect ECONNREFUSED'); return valid; } };
+    const slept: number[] = [];
+    await generate(words, { bundle: 'mainland', client, cache: openCache(f), promptVersion: 'v2', attempts: 3, sleep: async (ms: number) => { slept.push(ms); } });
+    expect(slept).toEqual([5_000, 30_000]);
+    expect(openCache(f).get('hsk1-0002', 'v2').example).toBeDefined();
   });
   it('treats a record of only transport errors as not done', async () => {
     const f = file();
@@ -87,6 +100,19 @@ describe('generate', () => {
     const out = lines(f).filter((l) => l.id === 'hsk1-0002');
     expect(out[0].example).toBeUndefined();
     expect(out[0].rejected).toHaveLength(3);
+  });
+  it('retries a bad meaning reply, then leaves the word not done and skips its example', async () => {
+    const f = file();
+    const calls = await run(['not json', JSON.stringify({ meanings: [] }), JSON.stringify({ x: 1 }), valid], f, ['hsk1-0003']);
+    expect(calls).toHaveLength(3);
+    expect(calls.every((p) => p.startsWith('Give 1 to 3 short English glosses'))).toBe(true);
+    expect(lines(f).filter((l) => l.id === 'hsk1-0003')).toEqual([]);
+    expect(openCache(f).isDone('hsk1-0003', 'v2')).toBe(false);
+  });
+  it('fills a missing meaning on a retry', async () => {
+    const f = file();
+    await run(['not json', JSON.stringify({ meanings: ['of'] }), valid], f, ['hsk1-0003']);
+    expect(lines(f).find((l) => l.id === 'hsk1-0003').meaning).toEqual(['of']);
   });
   it('fills a missing meaning', async () => {
     const f = file();
