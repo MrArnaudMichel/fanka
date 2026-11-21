@@ -23,7 +23,9 @@ const make = (i: number, withExample: boolean): Word => ({
 
 const level = Array.from({ length: 40 }, (_, i) => make(i, i % 2 === 0));
 const lesson = level.slice(0, 10);
-const opts = { listening: true, writing: true };
+const everyStroke = () => true;
+const noStroke = () => false;
+const opts = { listening: true, hasStrokes: everyStroke };
 
 describe('seededRng', () => {
   it('is deterministic per seed and in [0, 1)', () => {
@@ -79,17 +81,74 @@ describe('buildExercises', () => {
   it('has at most one writing exercise, none when off', () => {
     for (const seed of ['a', 'b', 'c']) {
       expect(build(seed).filter((e) => e.kind === 'writing')).toHaveLength(1);
-      expect(build(seed, { listening: true, writing: false }).some((e) => e.kind === 'writing')).toBe(false);
+      expect(build(seed, { listening: true, hasStrokes: noStroke }).some((e) => e.kind === 'writing')).toBe(false);
+    }
+  });
+
+  it('draws only the first character, and only of a word whose first character has stroke data', () => {
+    const drawable = new Set(lesson.slice(0, 3).map((w) => w.hanzi));
+    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+      const writing = build(seed, { listening: true, hasStrokes: (ch) => drawable.has(ch) }).filter((e) => e.kind === 'writing');
+      expect(writing).toHaveLength(1);
+      const word = lesson.find((w) => w.id === writing[0]!.wordId)!;
+      expect(drawable.has(word.hanzi)).toBe(true);
+      expect(writing[0]!.answer).toBe([...word.hanzi][0]);
+    }
+  });
+
+  it('draws the first Han character of a longer word', () => {
+    const long: Word = { ...make(0, false), hanzi: '你好嗎' };
+    const [writing] = buildExercises([long], level, seededRng('z'), { listening: false, hasStrokes: everyStroke }).filter((e) => e.kind === 'writing');
+    expect(writing!.answer).toBe('你');
+  });
+
+  it('has no writing exercise when no word has stroke data for its first character', () => {
+    const second = (ch: string) => ch === 'x';
+    expect(build('a', { listening: true, hasStrokes: second }).some((e) => e.kind === 'writing')).toBe(false);
+  });
+
+  it('degrades for a word with neither meaning nor example, instead of throwing', () => {
+    const bare: Word = { ...make(50, false), readings: [{ pinyin: 'ba1', meanings: [] }] };
+    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+      const exercises = buildExercises([bare], level, seededRng(seed), { listening: false, hasStrokes: noStroke });
+      expect(exercises.length).toBeGreaterThan(0);
+      expect(exercises.every((e) => e.kind === 'reading')).toBe(true);
+    }
+  });
+
+  it('never offers a homophone beside the answer when listening', () => {
+    const tas: Word[] = ['他', '她', '它', '牠'].map((hanzi, i) => ({
+      id: `t${i}`, hanzi, readings: [{ pinyin: 'ta1', meanings: [`m${i}`] }], level: 1, lesson: 'l',
+    }));
+    const others = [...tas, ...level.slice(0, 6)];
+    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']) {
+      for (const e of buildExercises(tas, others, seededRng(seed), { listening: true, hasStrokes: noStroke })) {
+        if (e.kind !== 'listening') continue;
+        expect(e.choices!.filter((c) => tas.some((t) => t.hanzi === c))).toEqual([e.answer]);
+      }
+    }
+  });
+
+  it('never offers two hanzi with the same meaning to pick from', () => {
+    const twins: Word[] = ['看', '見', '望'].map((hanzi, i) => ({
+      id: `s${i}`, hanzi, readings: [{ pinyin: `kan${i + 1}`, meanings: ['to look'] }], level: 1, lesson: 'l',
+    }));
+    const others = [...twins, ...level.slice(0, 6)];
+    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']) {
+      for (const e of buildExercises(twins, others, seededRng(seed), { listening: false, hasStrokes: noStroke })) {
+        if (e.kind !== 'meaning-to-hanzi') continue;
+        expect(e.choices!.filter((c) => twins.some((t) => t.hanzi === c))).toEqual([e.answer]);
+      }
     }
   });
 
   it('leaves out listening when off', () => {
-    expect(build('a', { listening: false, writing: true }).some((e) => e.kind === 'listening')).toBe(false);
+    expect(build('a', { listening: false, hasStrokes: everyStroke }).some((e) => e.kind === 'listening')).toBe(false);
   });
 
   it('never repeats a kind three times in a row', () => {
     for (const seed of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
-      const kinds = build(seed, { listening: false, writing: false }).map((e) => e.kind);
+      const kinds = build(seed, { listening: false, hasStrokes: noStroke }).map((e) => e.kind);
       kinds.forEach((k, i) => {
         if (i >= 2) expect(!(kinds[i - 1] === k && kinds[i - 2] === k)).toBe(true);
       });

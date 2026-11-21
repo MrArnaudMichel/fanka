@@ -19,6 +19,14 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ done: [right: boolean]; speak: [text: string] }>();
 
+/** Continue is acted on once: a double tap must not answer the next exercise too. */
+let sent = false;
+function finish(right: boolean): void {
+  if (sent) return;
+  sent = true;
+  emit('done', right);
+}
+
 const chosen = ref<string | null>(null);
 const right = computed(() => chosen.value === props.exercise.answer);
 const continueButton = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
@@ -115,7 +123,7 @@ onMounted(() => {
   </kt-card>
 
   <div v-if="chosen !== null" class="fk-session-actions">
-    <kt-button ref="continueButton" variant="primary" size="large" full-width @click="emit('done', right)">Continue</kt-button>
+    <kt-button ref="continueButton" variant="primary" size="large" full-width @click="finish(right)">Continue</kt-button>
   </div>
 </template>
 

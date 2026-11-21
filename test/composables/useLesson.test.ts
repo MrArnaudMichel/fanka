@@ -72,3 +72,37 @@ describe('useLesson after a failed write', () => {
     vi.doUnmock('~core/db/curriculum');
   });
 });
+
+describe('useLesson writing session', () => {
+  const strokeFetch = () =>
+    vi.fn(async (url: string) => {
+      if (url.startsWith('/strokes/')) return { ok: true, status: 200, json: async () => ({ strokes: ['M0 0'], medians: [[[0, 0]]] }) };
+      return { ok: true, status: 200, json: async () => (url.endsWith('index.json') ? index : words) };
+    });
+
+  it('has nothing to write while no word of the unit has a card, and writes nothing', async () => {
+    vi.stubGlobal('fetch', strokeFetch());
+    const { useLesson } = await import('../../app/composables/useLesson');
+    const lesson = useLesson('hsk1-u01-writing');
+    await lesson.start();
+    expect(lesson.exercises.value).toHaveLength(0);
+    expect(lesson.nothingToWrite.value).toBe('cards');
+    await lesson.finish();
+    expect(await db.lessonProgress.count()).toBe(0);
+  });
+
+  it('builds the session from the words that have a card only', async () => {
+    vi.stubGlobal('fetch', strokeFetch());
+    const { completeLesson } = await import('~core/db/curriculum');
+    const { schedulerFor } = await import('~core/srs');
+    await completeLesson({
+      bundle: 'mainland', level: index.levels[0]!, lesson: index.levels[0]!.lessons[0]!, words: [words[0]!],
+      results: [], durationMs: 1, now: Date.now(), scheduler: schedulerFor('FSRS'), settings: { desiredRetention: 0.9, maxInterval: 365 },
+    });
+    const { useLesson } = await import('../../app/composables/useLesson');
+    const lesson = useLesson('hsk1-u01-writing');
+    await lesson.start();
+    expect(lesson.nothingToWrite.value).toBeNull();
+    expect(lesson.exercises.value.map((e) => e.wordId)).toEqual(['hsk1-0001']);
+  });
+});

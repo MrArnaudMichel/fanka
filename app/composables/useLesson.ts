@@ -1,4 +1,4 @@
-import { completeLesson, completeWriting } from '~core/db/curriculum';
+import { cardedWordIds, completeLesson, completeWriting } from '~core/db/curriculum';
 import { loadSettings } from '~core/db/settings';
 import { writingId } from '~core/curriculum/engine';
 import { type Exercise, buildExercises, seededRng } from '~core/curriculum/exercises';
@@ -41,6 +41,8 @@ export function useLesson(id: string) {
   const loading = ref(true);
   const finished = ref(false);
   const missing = ref(false);
+  /** Why a writing session has nothing to draw, when it has none: no word of the unit has a card yet, or none has stroke data. */
+  const nothingToWrite = ref<'cards' | 'strokes' | null>(null);
   let startedAt = Date.now();
   let shownAt = Date.now();
   let finishing: Promise<void> | null = null;
@@ -57,6 +59,7 @@ export function useLesson(id: string) {
   async function start(): Promise<void> {
     loading.value = true;
     missing.value = false;
+    nothingToWrite.value = null;
     try {
       await content.loadIndex(bundle);
       const index = content.index.value;
@@ -74,23 +77,29 @@ export function useLesson(id: string) {
       const lesson = level.lessons.find((l) => l.id === id);
       if (lesson) {
         const words = wordsOf(lesson.wordIds);
+        if (words.length === 0) {
+          missing.value = true;
+          return;
+        }
         const withStrokes = await strokeSet(words);
         await speech.ready;
         target.value = { kind: 'lesson', level, lesson, words };
         exercises.value = buildExercises(words, levelWords, rng, {
           listening: speech.supported.value,
-          writing: writingCharacters(words, (ch) => withStrokes.has(ch)).length > 0,
+          hasStrokes: (ch) => withStrokes.has(ch),
         });
       } else {
         const unit = level.units.find((u) => writingId(u.id) === id)!;
         const lessonIds = new Set(unit.lessonIds);
         const words = wordsOf(level.lessons.filter((l) => lessonIds.has(l.id)).flatMap((l) => l.wordIds));
-        const withStrokes = await strokeSet(words);
+        const carded = await cardedWordIds(words.map((w) => w.id));
+        const withStrokes = await strokeSet(words.filter((w) => carded.has(w.id)));
         const writable = new Set(writingCharacters(words, (ch) => withStrokes.has(ch)).map((w) => w.wordId));
         target.value = { kind: 'writing', level, unit, words };
         exercises.value = words
-          .filter((w) => writable.has(w.id))
+          .filter((w) => carded.has(w.id) && writable.has(w.id))
           .map((w) => ({ kind: 'writing' as const, wordId: w.id, prompt: w.readings[0]?.meanings[0] ?? '', answer: w.hanzi }));
+        if (exercises.value.length === 0) nothingToWrite.value = carded.size === 0 ? 'cards' : 'strokes';
       }
       position.value = 0;
       answers.value = [];
@@ -160,6 +169,6 @@ export function useLesson(id: string) {
     await refreshDueCounts();
   }
 
-  return { target, exercises, current, position, answers, loading, missing, done, finished, error: content.error, start, answer, finish };
+  return { target, exercises, current, position, answers, loading, missing, nothingToWrite, done, finished, error: content.error, start, answer, finish };
 }
 

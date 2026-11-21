@@ -14,6 +14,14 @@ import LessonReading from '~/components/lesson/LessonReading.vue';
 const props = defineProps<{ exercise: Exercise; word: Word; settings: DeepReadonly<Settings> }>();
 const emit = defineEmits<{ done: [right: boolean] }>();
 
+/** Continue is acted on once: a double tap must not answer the next exercise too. */
+let sent = false;
+function finish(right: boolean): void {
+  if (sent) return;
+  sent = true;
+  emit('done', right);
+}
+
 const segments = computed(() => props.exercise.choices ?? []);
 const placed = ref<number[]>([]);
 const checked = ref(false);
@@ -81,7 +89,7 @@ async function check(): Promise<void> {
   </kt-card>
 
   <div class="fk-session-actions">
-    <kt-button v-if="checked" ref="continueButton" variant="primary" size="large" full-width @click="emit('done', right)">
+    <kt-button v-if="checked" ref="continueButton" variant="primary" size="large" full-width @click="finish(right)">
       Continue
     </kt-button>
     <kt-button v-else variant="primary" size="large" icon="check" full-width :disabled="!complete" @click="check">Check</kt-button>

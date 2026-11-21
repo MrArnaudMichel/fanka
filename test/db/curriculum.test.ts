@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { completeLesson, completeWriting } from '~core/db/curriculum';
 import { db } from '~core/db/db';
+import { loadStudyDeckIds, saveStudyDeckIds } from '~core/db/study-decks';
 import { itemId } from '~core/db/schema';
 import type { Scheduler, SchedulerSettings } from '~core/srs/types';
 import type { LessonRef, LevelRef, UnitRef, Word } from '~core/curriculum/types';
@@ -124,6 +125,19 @@ describe('deleted decks and cards', () => {
   });
 });
 
+describe('study decks', () => {
+  it('adds a newly created curriculum deck to a study-deck filter that is set', async () => {
+    await saveStudyDeckIds(['other']);
+    await completeLesson({ ...base, results: [r('hsk1-0001', true)] });
+    expect(await loadStudyDeckIds()).toEqual(['other', 'curriculum:hsk1']);
+  });
+
+  it('leaves an unset filter alone', async () => {
+    await completeLesson({ ...base, results: [r('hsk1-0001', true)] });
+    expect(await loadStudyDeckIds()).toEqual([]);
+  });
+});
+
 describe('completeWriting', () => {
   const writing = { bundle: 'mainland' as const, level, unit, words, now: NOW, scheduler, settings };
   const wr = (wordId: string, right: boolean) => ({ wordId, right, at: NOW, durationMs: 800 });
@@ -139,10 +153,11 @@ describe('completeWriting', () => {
     expect(await db.lessonProgress.get('hsk1-u01-writing')).toMatchObject({ kind: 'writing', known: false });
   });
 
-  it('skips a word with no card', async () => {
+  it('skips a word with no card, and records no session when nothing was kept', async () => {
     await completeWriting({ ...writing, results: [wr('hsk1-0001', true)], hasStrokes: () => true });
     expect(await db.items.count()).toBe(0);
-    expect(await db.lessonProgress.get('hsk1-u01-writing')).toBeDefined();
+    expect(await db.lessonProgress.get('hsk1-u01-writing')).toBeUndefined();
+    expect(await db.outbox.count()).toBe(0);
   });
 });
 

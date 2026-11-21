@@ -8,6 +8,7 @@ import type { Scheduler, SchedulerSettings } from '~core/srs/types';
 import { buildAttempt } from './attempts';
 import { db } from './db';
 import { outboxEntry } from './repositories';
+import { loadStudyDeckIds, saveStudyDeckIds } from './study-decks';
 import { type Card, type Deck, type Direction, type Item, type PartOfSpeech, SELF_GRADED, itemId } from './schema';
 
 export interface LessonResult {
@@ -88,6 +89,10 @@ async function ensureDeck(bundle: Bundle, level: LevelRef, now: number): Promise
   };
   await db.decks.put(deck);
   await db.outbox.put(outboxEntry('deck', id, 'put', now));
+  // With decks picked to study, a new deck outside the pick would keep these
+  // words out of Review, which the lesson says they are in.
+  const studied = await loadStudyDeckIds();
+  if (studied.length > 0) await saveStudyDeckIds([...studied, id]);
   return id;
 }
 
@@ -173,7 +178,7 @@ export async function completeLesson(input: {
   settings: SchedulerSettings;
 }): Promise<void> {
   const { bundle, level, lesson, words, results, now, scheduler, settings } = input;
-  await db.transaction('rw', [db.decks, db.cards, db.items, db.attempts, db.lessonProgress, db.outbox], async () => {
+  await db.transaction('rw', [db.decks, db.cards, db.items, db.attempts, db.lessonProgress, db.outbox, db.settings], async () => {
     const deckId = await ensureDeck(bundle, level, now);
     const itemsByWord = new Map<string, Item>();
     for (const word of words) {
@@ -205,11 +210,16 @@ export async function completeWriting(input: {
 }): Promise<void> {
   const { bundle, level, unit, words, results, now, scheduler, settings, hasStrokes } = input;
   const writable = new Set(writingCharacters(words, hasStrokes).map((w) => w.wordId));
-  await db.transaction('rw', [db.decks, db.cards, db.items, db.attempts, db.lessonProgress, db.outbox], async () => {
+  await db.transaction('rw', [db.decks, db.cards, db.items, db.attempts, db.lessonProgress, db.outbox, db.settings], async () => {
+    const candidates = words.filter((word) => writable.has(word.id));
+    const carded = await cardedWordIds(candidates.map((word) => word.id));
+    // Nothing to write (no card yet, no stroke data) is not a session done: it
+    // would hide the unit's writing from the next step for good.
+    if (!results.some((result) => carded.has(result.wordId))) return;
     const deckId = await ensureDeck(bundle, level, now);
     const itemsByWord = new Map<string, Item>();
-    for (const word of words) {
-      if (!writable.has(word.id) || !(await db.cards.get(word.id))) continue;
+    for (const word of candidates) {
+      if (!carded.has(word.id)) continue;
       await ensureCard(word, deckId, level.name, now);
       itemsByWord.set(word.id, await ensureItem(word.id, 'production', allRight(results, word.id), now, scheduler, settings));
     }
@@ -217,4 +227,10 @@ export async function completeWriting(input: {
     for (const result of kept) await logAttempt(itemsByWord.get(result.wordId)!, deckId, 'writing', result);
     await putProgress(writingId(unit.id), bundle, 'writing', kept, now);
   });
+}
+
+/** The ids among `wordIds` that have a card (a card id is its word's id). */
+export async function cardedWordIds(wordIds: string[]): Promise<Set<string>> {
+  const cards = await db.cards.bulkGet(wordIds);
+  return new Set(cards.flatMap((card) => (card ? [card.id] : [])));
 }

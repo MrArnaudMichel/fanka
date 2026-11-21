@@ -53,15 +53,16 @@ async function load(): Promise<void> {
   const t = lesson.target.value;
   if (!t) return;
   discoverAt.value = 0;
-  if (lesson.exercises.value.length === 0) void toSummary();
-  else phase.value = t.kind === 'lesson' && t.words.length > 0 ? 'discover' : 'exercises';
+  // A session with nothing to do is never finished: it would be recorded as done.
+  if (lesson.exercises.value.length === 0) return;
+  phase.value = t.kind === 'lesson' && t.words.length > 0 ? 'discover' : 'exercises';
 }
 onMounted(load);
 
 const heading = computed(() => {
   const t = target.value;
   if (!t) return 'Lesson';
-  if (t.kind === 'writing') return `Writing · Unit ${t.level.units.indexOf(t.unit) + 1}`;
+  if (t.kind === 'writing') return `Writing · unit ${t.level.units.indexOf(t.unit) + 1}`;
   return `Lesson ${t.level.lessons.indexOf(t.lesson) + 1}`;
 });
 
@@ -151,6 +152,19 @@ const guard = useLeaveGuard(inProgress);
       <kt-button slot="actions" variant="secondary" size="medium" @click="navigateTo('/lessons')">Back to lessons</kt-button>
     </kt-empty-state>
 
+    <kt-empty-state
+      v-else-if="lesson.nothingToWrite.value"
+      icon="pen-line"
+      :heading="lesson.nothingToWrite.value === 'cards' ? 'Finish this unit\'s lessons first' : 'No stroke data for these words'"
+      :description="
+        lesson.nothingToWrite.value === 'cards'
+          ? 'Writing starts once the unit\'s words are in your reviews.'
+          : 'Stroke data could not be loaded. Check your connection and try again.'
+      "
+    >
+      <kt-button slot="actions" variant="secondary" size="medium" @click="navigateTo('/lessons')">Back to lessons</kt-button>
+    </kt-empty-state>
+
     <kt-skeleton v-else-if="phase === 'loading' || !target" height="320px" />
 
     <template v-else-if="phase === 'discover' && words[discoverAt]">
@@ -167,6 +181,7 @@ const guard = useLeaveGuard(inProgress);
         :word="currentWord"
         :settings="settings"
         :can-speak="canSpeak"
+        :draw="lesson.current.value.answer as string"
         :demo="target.kind === 'writing'"
         @speak="speak"
         @done="answered"

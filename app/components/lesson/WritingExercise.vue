@@ -13,6 +13,8 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
 /**
  * Write a lesson word from its meaning, checked as on the Writing page
  * (whole character on Check, or stroke by stroke when that setting is on).
+ * `draw` is what to write: a lesson asks for the word's first character, the
+ * unit's writing session for the whole word.
  * With `demo` — the unit's writing session — each character's stroke order
  * plays first, and drawing starts when the learner is ready.
  *
@@ -20,8 +22,16 @@ import { useWritingAttempt } from '~/composables/useWritingAttempt';
  * shows how the word is written. A word with a character that has no stroke
  * data cannot be checked: the learner reveals it and says whether they got it.
  */
-const props = defineProps<{ word: Word; settings: DeepReadonly<Settings>; canSpeak: boolean; demo?: boolean }>();
+const props = defineProps<{ word: Word; settings: DeepReadonly<Settings>; canSpeak: boolean; draw: string; demo?: boolean }>();
 const emit = defineEmits<{ done: [right: boolean]; speak: [text: string] }>();
+
+/** Continue is acted on once: a double tap must not answer the next exercise too. */
+let sent = false;
+function finish(right: boolean): void {
+  if (sent) return;
+  sent = true;
+  emit('done', right);
+}
 
 const card = computed(() => {
   const first = props.word.readings[0];
@@ -44,7 +54,7 @@ const selfRevealed = ref(false);
 const demoSeen = ref(-1);
 const continueButton = ref<HTMLElement & { updateComplete?: Promise<boolean> }>();
 
-onMounted(() => void attempt.start(props.word.hanzi));
+onMounted(() => void attempt.start(props.draw));
 watch(attempt.position, () => {
   drawn.value = [];
 });
@@ -145,11 +155,11 @@ async function giveUp(): Promise<void> {
       variant="primary"
       size="large"
       full-width
-      @click="emit('done', checked && attempt.correct.value)"
+      @click="finish(checked && attempt.correct.value)"
     >
       Continue
     </kt-button>
-    <WritingButtons v-else-if="selfRevealed" :busy="false" @grade="(g) => emit('done', g === 3)" />
+    <WritingButtons v-else-if="selfRevealed" :busy="false" @grade="(g) => finish(g === 3)" />
     <kt-button v-else-if="demoing" variant="primary" size="large" icon="pen-line" full-width @click="demoSeen = attempt.position.value">
       Start drawing
     </kt-button>

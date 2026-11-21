@@ -47,6 +47,13 @@ function shuffled<T>(items: readonly T[], rng: () => number): T[] {
   return out;
 }
 
+const HAN = /\p{Script=Han}/u;
+
+/** The word's first Han character, the one a lesson asks to draw. */
+function firstHan(word: Word): string | null {
+  return [...word.hanzi].find((ch) => HAN.test(ch)) ?? null;
+}
+
 const meaningOf = (word: Word): string => word.readings[0]?.meanings[0] ?? '';
 const pinyinOf = (word: Word): string => word.readings[0]?.pinyin ?? '';
 
@@ -65,13 +72,15 @@ function pickChoices(
   level: Word[],
   value: (w: Word) => string,
   rng: () => number,
+  /** A word that would also be a right answer, so it must not be offered. */
+  alsoRight: (other: Word) => boolean = () => false,
 ): string[] {
   const seen = new Set([answer]);
   const picked: string[] = [];
   for (const pool of [shuffled(lesson, rng), shuffled(level, rng)]) {
     for (const other of pool) {
       if (picked.length === CHOICES - 1) break;
-      if (other.id === word.id) continue;
+      if (other.id === word.id || alsoRight(other)) continue;
       const candidate = value(other);
       if (candidate === '' || seen.has(candidate)) continue;
       seen.add(candidate);
@@ -110,7 +119,7 @@ function build(
       return {
         ...base,
         prompt: meaningOf(word),
-        choices: pickChoices(word.hanzi, word, lesson, level, (w) => w.hanzi, rng),
+        choices: pickChoices(word.hanzi, word, lesson, level, (w) => w.hanzi, rng, (w) => meaningOf(w) === meaningOf(word)),
         answer: word.hanzi,
       };
     case 'hanzi-to-meaning':
@@ -126,7 +135,7 @@ function build(
       return {
         ...base,
         prompt: word.hanzi,
-        choices: pickChoices(word.hanzi, word, lesson, level, (w) => w.hanzi, rng),
+        choices: pickChoices(word.hanzi, word, lesson, level, (w) => w.hanzi, rng, (w) => pinyinOf(w) === pinyinOf(word)),
         answer: word.hanzi,
       };
     case 'cloze': {
@@ -148,7 +157,7 @@ function build(
       };
     }
     case 'writing':
-      return { ...base, prompt: meaningOf(word), answer: word.hanzi };
+      return { ...base, prompt: meaningOf(word), answer: firstHan(word) ?? word.hanzi };
   }
 }
 
@@ -163,13 +172,14 @@ function kindsFor(word: Word, listening: boolean): ExerciseKind[] {
 
 /**
  * A lesson's exercises: every word at least once, a couple of repeats up to
- * twelve, at most one writing exercise, and no kind three times in a row.
+ * twelve, at most one writing exercise (the first character of a word that
+ * has stroke data), and no kind three times in a row.
  */
 export function buildExercises(
   lesson: Word[],
   level: Word[],
   rng: () => number,
-  opts: { listening: boolean; writing: boolean },
+  opts: { listening: boolean; hasStrokes: (ch: string) => boolean },
 ): Exercise[] {
   if (lesson.length === 0) return [];
   const count = Math.max(lesson.length, Math.min(MAX_EXERCISES, lesson.length + 2));
@@ -177,7 +187,11 @@ export function buildExercises(
   while (slots.length < count) {
     slots.push(...shuffled(lesson, rng).slice(0, count - slots.length));
   }
-  const writingSlot = opts.writing ? Math.floor(rng() * slots.length) : -1;
+  const drawable = slots.flatMap((w, i) => {
+    const first = firstHan(w);
+    return first !== null && opts.hasStrokes(first) ? [i] : [];
+  });
+  const writingSlot = drawable.length > 0 ? drawable[Math.floor(rng() * drawable.length)]! : -1;
 
   const used = new Map<ExerciseKind, number>();
   const perWord = new Map<string, Set<ExerciseKind>>();
@@ -191,7 +205,10 @@ export function buildExercises(
     } else {
       const last = out.slice(-2).map((e) => e.kind);
       const runs = last.length === 2 && last[0] === last[1] ? last[0] : null;
-      const options = kindsFor(word, opts.listening).filter((k) => k !== runs);
+      const all = kindsFor(word, opts.listening);
+      const spaced = all.filter((k) => k !== runs);
+      // A word with one possible kind may have to repeat it rather than throw.
+      const options = spaced.length > 0 ? spaced : all;
       const scored = options.map((k) => ({
         k,
         score: (seenForWord.has(k) ? 1000 : 0) + (used.get(k) ?? 0) * 10 + rng(),

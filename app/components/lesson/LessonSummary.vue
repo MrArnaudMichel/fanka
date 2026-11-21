@@ -20,7 +20,7 @@ const emit = defineEmits<{ next: []; back: []; retry: [] }>();
 
 const missedItems = computed(() => props.missed.map((w) => ({ term: w.hanzi, detail: w.readings[0]?.meanings.join('; ') ?? '' })));
 const reviewsLine = computed(() => {
-  if (props.kind === 'writing') return 'Writing reviews start tomorrow for these words.';
+  if (props.kind === 'writing') return 'These words now have writing reviews.';
   return props.wordCount === 1 ? 'This word is now in your reviews.' : `These ${props.wordCount} words are now in your reviews.`;
 });
 </script>
