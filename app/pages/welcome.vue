@@ -46,7 +46,7 @@ watch(bundle, async (value) => {
   start.value = 'new';
   knownLevel.value = null;
   levels.value = value ? await levelsOf(value).catch(() => []) : [];
-});
+}, { immediate: true });
 
 const LESSON_OPTIONS: KtSegmentedOption[] = [1, 2, 3].map((n) => ({ value: n, label: String(n) }));
 const dailyLessons = ref<1 | 2 | 3>(settings.value.dailyLessons);

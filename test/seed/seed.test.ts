@@ -33,19 +33,17 @@ describe('seedIfNeeded', () => {
     expect((await seedIfNeeded(NOW)).seeded).toBe(false);
   });
 
-  it('soft-deletes a starter deck nothing was answered in, and queues the change', async () => {
+  it('leaves an existing starter deck alone, reviewed or not', async () => {
     await oldInstall();
     await db.outbox.clear();
     await seedIfNeeded(NOW + 1000);
-    expect((await decks.get(STARTER))!.deletedAt).toBe(NOW + 1000);
-    expect(await db.outbox.toArray()).toMatchObject([{ entity: 'deck', entityId: STARTER }]);
-  });
+    expect((await decks.get(STARTER))!.deletedAt).toBeNull();
+    expect(await db.outbox.count()).toBe(0);
 
-  it('leaves a starter deck that was reviewed alone', async () => {
-    await oldInstall();
     const item = (await db.items.toArray())[0]!;
     await reviews.record({ item, before: item, grade: 3, reviewedAt: NOW, durationMs: 1 });
-    await seedIfNeeded(NOW + 1000);
+    await db.settings.put({ key: 'seedVersion', value: 1 });
+    await seedIfNeeded(NOW + 2000);
     expect((await decks.get(STARTER))!.deletedAt).toBeNull();
   });
 });
