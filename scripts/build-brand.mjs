@@ -59,8 +59,8 @@ await png(markSvg(), 512).toFile('store/icon-512.png');
 
 const feature = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500">
   <text x="470" y="230" font-family="${LATIN_FONT}" font-weight="800" font-size="120" fill="${C.title}">Fanka</text>
-  <text x="474" y="300" font-family="${LATIN_FONT}" font-weight="500" font-size="38" fill="${C.tagline}">Learn Traditional Chinese</text>
-  <text x="474" y="350" font-family="${LATIN_FONT}" font-weight="500" font-size="38" fill="${C.tagline}">with spaced repetition</text>
+  <text x="474" y="300" font-family="${LATIN_FONT}" font-weight="500" font-size="38" fill="${C.tagline}">Learn Mandarin Chinese</text>
+  <text x="474" y="350" font-family="${LATIN_FONT}" font-weight="500" font-size="38" fill="${C.tagline}">Mainland or Taiwan</text>
 </svg>`;
 await solid(1024, 500)
   .composite([

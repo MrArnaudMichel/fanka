@@ -133,37 +133,43 @@ for 14 days in a row before it can apply for production.
 
 **Short description** (80):
 
-> Learn Traditional Chinese with spaced repetition, stroke order and audio.
+> Mandarin for Mainland or Taiwan: HSK and TBCL lessons, reviews and writing.
 
 **Full description** (4000):
 
-> Fanka is a spaced-repetition app for Traditional Chinese.
+> Fanka teaches Mandarin Chinese with short lessons and spaced repetition.
 >
-> Review the cards that are due today, grade how well you remembered each one,
-> and Fanka schedules the next review for when you are about to forget it.
+> Choose what you learn when you start:
 >
-> - Decks grouped by lesson, with characters, pinyin and translations
+> - Mainland Chinese: simplified characters and pinyin, with every word of the
+>   HSK syllabus, levels 1 to 9.
+> - Taiwanese Mandarin: traditional characters, zhuyin and pinyin, with every
+>   word of the TBCL, Taiwan's official standard, levels 1 to 7.
+>
+> Each lesson brings 10 new words: discover them with their pronunciation,
+> meaning and an example sentence, practise them with quick exercises, and they
+> join your daily reviews. Every three lessons, a writing session teaches you to
+> draw them stroke by stroke.
+>
+> - Spaced repetition that schedules each word just before you would forget it
 > - Writing practice with stroke order
-> - Speaking practice: answer discussion questions aloud, then hear a model
->   answer
-> - The 80 most common radicals
 > - Pronunciation with your device's own voice
 > - Stats: retention, streak, forecast of upcoming reviews
 > - Daily reminders
-> - Import your own cards
+> - Your own decks and card import
+> - The 80 most common radicals (Taiwan course)
 >
 > Fanka works offline. Without an account, everything stays on your phone. Sign
 > in with your email to sync across devices; there are no ads, no tracking and
 > no analytics.
->
-> Traditional characters only.
 
 **Graphics** (`store/`, rebuilt with `node scripts/build-brand.mjs`):
 
 - App icon: `store/icon-512.png`
 - Feature graphic: `store/feature-graphic.png`
 - Phone screenshots, 2 to 8, 9:16 or 16:9, at least 1080 px wide: take them on
-  the phone (Today, Review with a card revealed, Writing, Decks, Stats).
+  the phone (Today, a lesson's word, an exercise, Review with a card revealed,
+  Writing, Stats).
 
 ## Data safety answers
 
