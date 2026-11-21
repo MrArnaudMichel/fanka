@@ -23,8 +23,8 @@ const make = (i: number, withExample: boolean): Word => ({
 
 const level = Array.from({ length: 40 }, (_, i) => make(i, i % 2 === 0));
 const lesson = level.slice(0, 10);
-const everyStroke = () => true;
-const noStroke = () => false;
+const everyStroke = (_ch: string) => true;
+const noStroke = (_ch: string) => false;
 const opts = { listening: true, hasStrokes: everyStroke };
 
 describe('seededRng', () => {

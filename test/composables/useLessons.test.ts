@@ -109,6 +109,42 @@ describe('useLessons', () => {
   });
 });
 
+describe('useLessons precomputed labels', () => {
+  it('numbers lessons and units per level and heads each section', async () => {
+    const l = mount();
+    await flush();
+    const row = l.levels.value[0]!;
+    expect(row.numbers.get('l4')).toBe(4);
+    expect(row.unitNumbers.get('u2')).toBe(2);
+    expect(row.sections).toHaveLength(1);
+    expect(row.sections[0]!.heading).toBe('Lessons 1–4');
+    expect(row.sections[0]!.units.map((u) => u.unit.id)).toEqual(['u1', 'u2']);
+  });
+
+  it('labels the next step the way Today shows it', async () => {
+    const l = mount();
+    await flush();
+    expect(l.nextLabel.value).toBe('Lesson 1 · Taiwan 1');
+    for (const id of ['l1', 'l2', 'l3']) await lessonProgress.put(row(id, Date.now() - 3 * 86_400_000));
+    await l.retry();
+    expect(l.nextLabel.value).toBe('Writing · unit 1');
+  });
+
+  it('drops the previous bundle’s done marks while the new one loads', async () => {
+    await lessonProgress.put(row('l1', Date.now() - 3 * 86_400_000));
+    const l = mount();
+    await flush();
+    expect(l.loaded.value).toBe(true);
+    let release: () => void = () => {};
+    loadIndex.mockImplementationOnce(() => new Promise<void>((resolve) => { release = () => { index.value = { ...content, bundle: 'mainland' }; resolve(); }; }));
+    settings.value = { ...settings.value, bundle: 'mainland' };
+    await flush();
+    expect(l.loaded.value).toBe(false);
+    release();
+    await flush();
+  });
+});
+
 describe('sectionsOf', () => {
   const unit = (n: number) => ({ unit: { id: `u${n}`, lessonIds: [] }, lessons: Array.from({ length: 3 }, (_, i) => ({ ref: lesson(`l${n}-${i}`, `u${n}`), done: false })), writingDone: false });
   it('keeps a short level whole and splits a long one at 50 lessons', () => {

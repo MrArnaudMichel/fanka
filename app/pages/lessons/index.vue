@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { writingId } from '~core/curriculum/engine';
-import { sectionsOf, useLessons, type LevelRow, type UnitRow } from '~/composables/useLessons';
+import UnitList from '~/components/lesson/UnitList.vue';
+import { useLessons, type LevelRow, type SectionRow } from '~/composables/useLessons';
 
 const { levels, next, error, loaded, retry } = useLessons();
-
-/** A lesson's number in its level, so "Lesson 3" means the same here and on Today. */
-function numbers(row: LevelRow): Map<string, number> {
-  return new Map(row.level.lessons.map((lesson, i) => [lesson.id, i + 1]));
-}
 
 const nextId = computed(() => {
   const step = next.value;
@@ -15,17 +11,21 @@ const nextId = computed(() => {
   return step.kind === 'lesson' ? step.lesson.id : writingId(step.unit.id);
 });
 
-const holdsNext = (units: UnitRow[]) =>
+const holdsNext = (units: SectionRow['units']) =>
   units.some((u) => u.lessons.some((l) => l.ref.id === nextId.value) || writingId(u.unit.id) === nextId.value);
 
-const sections = (row: LevelRow) => sectionsOf(row.units);
-const sectionHeading = (units: UnitRow[], row: LevelRow, numbering: Map<string, number>) => {
-  const first = numbering.get(units[0]?.lessons[0]?.ref.id ?? '');
-  const last = [...units].reverse().flatMap((u) => u.lessons).at(-1);
-  return `Lessons ${first ?? 1}–${last ? numbering.get(last.ref.id) : row.level.lessons.length}`;
+/**
+ * What the learner opened or closed, by key. A collapsible is a <details>, so
+ * closed content would still be in the DOM; this decides what is rendered, and
+ * the one holding the next step starts open.
+ */
+const toggled = reactive(new Map<string, boolean>());
+const isOpen = (key: string, holds: boolean) => toggled.get(key) ?? holds;
+const onToggle = (key: string, event: Event) => {
+  toggled.set(key, (event as CustomEvent<{ open: boolean }>).detail.open);
 };
-const unitLabel = (row: LevelRow, unit: UnitRow) => `Unit ${row.units.indexOf(unit) + 1}`;
-const words = (n: number) => `${n} word${n === 1 ? '' : 's'}`;
+const levelKey = (row: LevelRow) => `level:${row.level.level}`;
+const sectionKey = (row: LevelRow, s: number) => `${levelKey(row)}:${s}`;
 </script>
 
 <template>
@@ -41,7 +41,7 @@ const words = (n: number) => `${n} word${n === 1 ? '' : 's'}`;
       <kt-button slot="actions" variant="secondary" size="medium" icon="refresh-cw" @click="retry">Retry</kt-button>
     </kt-empty-state>
 
-    <kt-skeleton v-else-if="!loaded" height="120px" />
+    <kt-skeleton v-else-if="!loaded" count="4" />
 
     <kt-empty-state
       v-else-if="levels.length === 0"
@@ -55,40 +55,20 @@ const words = (n: number) => `${n} word${n === 1 ? '' : 's'}`;
         v-for="row in levels"
         :key="row.level.level"
         :heading="`${row.level.name} · ${row.level.lessons.length} lessons`"
-        :open="holdsNext(row.units)"
+        :open="isOpen(levelKey(row), holdsNext(row.units))"
+        @kt-toggle="onToggle(levelKey(row), $event)"
       >
-        <template v-for="(units, s) in sections(row)" :key="s">
-          <component
-            :is="sections(row).length > 1 ? 'kt-collapsible' : 'div'"
-            v-bind="sections(row).length > 1 ? { heading: sectionHeading(units, row, numbers(row)), open: holdsNext(units) } : {}"
-            class="section"
+        <template v-if="isOpen(levelKey(row), holdsNext(row.units))">
+          <UnitList v-if="row.sections.length === 1" :row="row" :units="row.sections[0]!.units" :next-id="nextId" />
+          <kt-collapsible
+            v-for="(section, s) in row.sections.length > 1 ? row.sections : []"
+            :key="s"
+            :heading="section.heading"
+            :open="isOpen(sectionKey(row, s), holdsNext(section.units))"
+            @kt-toggle="onToggle(sectionKey(row, s), $event)"
           >
-            <div v-for="unit in units" :key="unit.unit.id" class="unit">
-              <p class="overline">{{ unitLabel(row, unit) }}</p>
-              <div v-for="lesson in unit.lessons" :key="lesson.ref.id" class="row">
-                <kt-button
-                  :variant="lesson.ref.id === nextId ? 'primary' : 'secondary'"
-                  size="small"
-                  @click="navigateTo(`/lessons/${lesson.ref.id}`)"
-                >
-                  Lesson {{ numbers(row).get(lesson.ref.id) }}
-                </kt-button>
-                <span class="meta">{{ words(lesson.ref.wordIds.length) }}</span>
-                <kt-badge v-if="lesson.done" tone="success" size="small" label="Done" />
-              </div>
-              <div class="row">
-                <kt-button
-                  :variant="writingId(unit.unit.id) === nextId ? 'primary' : 'secondary'"
-                  size="small"
-                  icon="pen-line"
-                  @click="navigateTo(`/lessons/${writingId(unit.unit.id)}`)"
-                >
-                  Writing
-                </kt-button>
-                <kt-badge v-if="unit.writingDone" tone="success" size="small" label="Done" />
-              </div>
-            </div>
-          </component>
+            <UnitList v-if="isOpen(sectionKey(row, s), holdsNext(section.units))" :row="row" :units="section.units" :next-id="nextId" />
+          </kt-collapsible>
         </template>
       </kt-collapsible>
     </kt-card>
@@ -96,9 +76,5 @@ const words = (n: number) => `${n} word${n === 1 ? '' : 's'}`;
 </template>
 
 <style scoped>
-.lessons-page { display: flex; flex-direction: column; gap: 24px; }
-.unit { display: flex; flex-direction: column; gap: var(--gap-button); padding-block: var(--gap-form); }
-.row { display: flex; align-items: center; gap: var(--gap-button); }
-.overline { margin: 0; font: var(--font-title-overline); letter-spacing: var(--letter-spacing-overline); text-transform: uppercase; color: var(--text-muted); }
-.meta { font: var(--font-normal-small); color: var(--text-muted); }
+.lessons-page { display: flex; flex-direction: column; gap: var(--gap-card); }
 </style>

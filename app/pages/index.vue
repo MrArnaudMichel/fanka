@@ -12,14 +12,8 @@ const { counts, refresh } = useDueCounts();
 const { failed: seedFailed, retry: retrySeedStatus } = useSeedStatus();
 const { listAll: listDecks } = useDecks();
 
-const { next, todayCount, goal } = useLessons();
-const nextLabel = computed(() => {
-  const step = next.value;
-  if (!step) return null;
-  return step.kind === 'lesson'
-    ? `Next: Lesson ${step.level.lessons.findIndex((l) => l.id === step.lesson.id) + 1} · ${step.level.name}`
-    : `Next: Writing · unit ${step.level.units.findIndex((u) => u.id === step.unit.id) + 1}`;
-});
+const { next, nextLabel: lessonLabel, todayCount, goal } = useLessons();
+const nextLabel = computed(() => (lessonLabel.value ? `Next: ${lessonLabel.value}` : null));
 const nextHref = computed(() => {
   const step = next.value;
   if (!step) return '/lessons';

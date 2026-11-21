@@ -4,17 +4,25 @@
   --fk-font-hanzi-serif: 'Noto Serif TC', 'Songti TC', serif;
   --fk-font-hanzi-sans: 'Noto Sans TC', 'PingFang TC', sans-serif;
   --fk-font-hanzi: var(--fk-font-hanzi-serif);
-  /* Hanzi and reading sizes for the lesson screens, matching the review cards. */
+  /*
+   * Hanzi and reading sizes for the lesson screens, matching the review cards.
+   * Kanto's type tokens are `font` shorthands with no size on its own, and
+   * PinyinText takes a bare length, so these stay literals, scaled by Kanto's
+   * `--text-scale` so the text-size setting still applies. The two hanzi
+   * clamps are the documented exception the review cards already take.
+   */
   --fk-hanzi-display: clamp(64px, 14vw, 110px);
   --fk-hanzi-prompt: clamp(44px, 10vw, 72px);
-  --fk-hanzi-choice: 28px;
-  --fk-reading-size: 22px;
-  --fk-reading-size-small: 16px;
+  --fk-hanzi-choice: calc(28px * var(--text-scale, 1));
+  --fk-reading-size: calc(22px * var(--text-scale, 1));
+  --fk-reading-size-small: calc(16px * var(--text-scale, 1));
   /*
    * A drawing pad wide enough to draw in, never so tall that the sticky
    * action bar covers its lower edge (see writing.vue), never below 200px.
+   * A drawing surface has no Kanto dimension; these bounds are its own.
    */
   --fk-pad-max: min(100%, 420px, max(200px, calc(100dvh - 440px)));
+  /* A readable line length for prompts: Kanto has no measure token. */
   --fk-intro-max: 560px;
 }
 
