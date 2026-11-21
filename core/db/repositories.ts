@@ -668,6 +668,11 @@ export const lessonProgress = {
     return new Set((await db.lessonProgress.where('bundle').equals(bundle).primaryKeys()) as string[]);
   },
 
+  /** The bundles that have any lesson progress, marked known or finished. */
+  async bundles(): Promise<Bundle[]> {
+    return (await db.lessonProgress.orderBy('bundle').uniqueKeys()) as Bundle[];
+  },
+
   /** Records a finished lesson or writing session; finishing one again replaces its row. */
   async put(row: LessonProgress): Promise<void> {
     await db.transaction('rw', db.lessonProgress, db.outbox, async () => {

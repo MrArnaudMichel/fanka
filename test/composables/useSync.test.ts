@@ -43,6 +43,14 @@ const { readSyncDetails } = vi.hoisted(() => ({
   readSyncDetails: vi.fn(async () => ({ pending: 0, decks: 2, cards: 40, reviews: 7 })),
 }));
 
+const { bundles, settingsRef, update } = vi.hoisted(() => ({
+  bundles: vi.fn(async (): Promise<string[]> => []),
+  settingsRef: { value: { bundle: 'taiwan', onboardedAt: 1 } as { bundle: string | null; onboardedAt: number | null } },
+  update: vi.fn(async (_patch: object) => {}),
+}));
+
+vi.mock('~core/db/repositories', () => ({ lessonProgress: { bundles } }));
+vi.mock('~/composables/useSettings', () => ({ useSettings: () => ({ settings: settingsRef, update }) }));
 vi.mock('~core/sync', () => ({ runSync }));
 vi.mock('~core/db/sync-details', () => ({ readSyncDetails }));
 vi.mock('~core/sync/supabase', () => ({ createSupabaseTransport: vi.fn(() => ({})) }));
@@ -145,5 +153,45 @@ describe('useSync', () => {
 
     expect(status.value).toBe('error');
     expect(error.value).toBe('network down');
+  });
+
+  describe('following the studied bundle after sign-in', () => {
+    async function signInAs(id: string, studied: string[], active: string | null, onboardedAt: number | null) {
+      const { useSync } = await import('~/composables/useSync');
+      calls.length = 0;
+      update.mockClear();
+      bundles.mockResolvedValue(studied);
+      settingsRef.value = { bundle: active, onboardedAt };
+      userRef.value = { id };
+      const run = useSync().triggerSync();
+      calls[0]!.resolve();
+      await run;
+      userRef.value = { id: 'user-1' };
+    }
+
+    it('switches to the only bundle with lesson progress and marks the device onboarded', async () => {
+      await signInAs('follow-1', ['mainland'], 'taiwan', null);
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenCalledWith({ bundle: 'mainland', onboardedAt: expect.any(Number) });
+    });
+
+    it('keeps onboardedAt when it is already set', async () => {
+      await signInAs('follow-2', ['mainland'], 'taiwan', 5);
+      expect(update).toHaveBeenCalledWith({ bundle: 'mainland' });
+    });
+
+    it('leaves the choice alone when progress is in both bundles, in neither, or already in the active one', async () => {
+      await signInAs('follow-3', ['mainland', 'taiwan'], 'taiwan', 5);
+      await signInAs('follow-4', [], 'taiwan', 5);
+      await signInAs('follow-5', ['taiwan'], 'taiwan', 5);
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it('does it only on the first pull after a sign-in', async () => {
+      await signInAs('follow-6', ['mainland'], 'taiwan', 5);
+      update.mockClear();
+      await signInAs('follow-6', ['mainland'], 'taiwan', 5);
+      expect(update).not.toHaveBeenCalled();
+    });
   });
 });

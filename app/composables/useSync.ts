@@ -1,7 +1,9 @@
 import { type SyncDetails, readSyncDetails } from '~core/db/sync-details';
 import { runSync } from '~core/sync';
 import { createSupabaseTransport } from '~core/sync/supabase';
+import { lessonProgress } from '~core/db/repositories';
 import { useAuth } from '~/composables/useAuth';
+import { useSettings } from '~/composables/useSettings';
 import { getSupabaseClient } from '~/utils/supabaseClient';
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline';
@@ -34,6 +36,29 @@ function currentTransport() {
   return createSupabaseTransport(getSupabaseClient(), user.value.id);
 }
 
+/** The account whose studied bundle was last followed, so only the first pull after a sign-in does it. */
+let followedFor: string | null = null;
+
+/**
+ * After the first pull following a sign-in: an account with lesson progress
+ * in exactly one bundle studies that one, so a device set up for the other
+ * switches to it (and counts as onboarded). Progress in both, or in neither,
+ * leaves the choice alone.
+ */
+async function followStudiedBundle(): Promise<void> {
+  try {
+    const bundles = await lessonProgress.bundles();
+    if (bundles.length !== 1) return;
+    const { settings, update } = useSettings();
+    const patch: { bundle?: typeof bundles[number]; onboardedAt?: number } = {};
+    if (settings.value.bundle !== bundles[0]) patch.bundle = bundles[0];
+    if (settings.value.onboardedAt === null) patch.onboardedAt = Date.now();
+    if (Object.keys(patch).length > 0) await update(patch);
+  } catch (err) {
+    console.error('useSync: could not follow the studied bundle', err);
+  }
+}
+
 async function runOnce(): Promise<void> {
   const transport = currentTransport();
   if (!transport) {
@@ -47,6 +72,11 @@ async function runOnce(): Promise<void> {
   status.value = 'syncing';
   try {
     await runSync(transport);
+    const userId = useAuth().user.value?.id ?? null;
+    if (userId && userId !== followedFor) {
+      followedFor = userId;
+      await followStudiedBundle();
+    }
     lastSyncedAt.value = Date.now();
     status.value = 'idle';
     error.value = '';
